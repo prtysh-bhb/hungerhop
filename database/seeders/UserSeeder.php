@@ -13,17 +13,22 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Admin user
+        // Super Admin user
         User::updateOrCreate(
-            ['email' => 'admin@example.com'],
+            ['email' => 'superadmin@hungerhop.com'],
             [
-                'first_name' => 'Admin',
-                'last_name' => 'User',
-                'phone' => '8853217658',
+                'first_name' => 'Super',
+                'last_name' => 'Admin',
+                'phone' => '9876543210',
                 'role' => 'super_admin',
                 'status' => 'active',
-                'password' => Hash::make('Admin@123'),
+                'password' => Hash::make('SuperAdmin@123'),
+                'email_verified_at' => now(),
             ]
         );
+
+        $this->command->info('Super Admin created successfully!');
+        $this->command->info('Email: superadmin@hungerhop.com');
+        $this->command->info('Password: SuperAdmin@123');
     }
 }
