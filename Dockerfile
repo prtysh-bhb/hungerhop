@@ -1,0 +1,26 @@
+# Stage 1: Frontend build
+FROM node:18 AS frontend
+WORKDIR /app
+COPY package*.json vite.config.js ./
+COPY resources ./resources
+COPY public ./public
+RUN npm install
+RUN npm run build
+
+# Stage 2: Backend
+FROM php:8.2-fpm AS backend
+WORKDIR /var/www
+
+RUN apt-get update && apt-get install -y \
+    git curl unzip libpq-dev libonig-dev libzip-dev zip \
+    && docker-php-ext-install pdo pdo_mysql mbstring zip
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+COPY . .
+COPY --from=frontend /app/public/dist ./public/dist
+
+RUN composer install --no-dev --optimize-autoloader
+RUN php artisan config:clear && php artisan route:clear && php artisan view:clear
+
+CMD ["php-fpm"]

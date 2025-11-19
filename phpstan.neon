@@ -1,0 +1,16 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app/
+        - database/
+        - routes/
+        - tests/
+    level: 5
+    ignoreErrors:
+        - '#PHPDoc tag @var#'
+        - '#Call to an undefined method App\\Models\\User::#'
+    excludePaths:
+        - ./*/*/FileToBeExcluded.php
+    reportUnmatchedIgnoredErrors: false
