@@ -123,7 +123,7 @@
                                     <label for="document_file">Replace Document File (Optional)</label>
                                     <input type="file" class="form-control-file" id="document_file" name="document_file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
                                     <small class="form-text text-muted">
-                                        Leave empty to keep current file. Supported formats: PDF, JPG, PNG, DOC, DOCX. Maximum size: 5MB
+                                        Leave empty to keep current file. Supported formats: PDF, JPG, PNG, DOC, DOCX. Maximum size: 10MB
                                     </small>
                                     <div id="filePreview" class="mt-2" style="display: none;">
                                         <div class="card" style="max-width: 300px;">

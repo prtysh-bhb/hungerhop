@@ -76,6 +76,13 @@ class RestaurantAdminController extends Controller
      */
     public function storeRegistration(Request $request)
     {
+        // Log incoming request for debugging
+        Log::info('Restaurant registration request received', [
+            'has_file' => $request->hasFile('image_url'),
+            'all_files' => $request->allFiles(),
+            'content_type' => $request->header('Content-Type'),
+        ]);
+
         // Define all validation rules upfront with comprehensive validation
 
         $rules = [
@@ -313,8 +320,18 @@ class RestaurantAdminController extends Controller
         // Process business hours
         $businessHours = $this->processBusinessHours($data['business_hours']);
 
+        // Handle image upload
+        $imageUrl = null;
+        if ($request->hasFile('image_url')) {
+            $imagePath = $request->file('image_url')->store('restaurants/images', 'public');
+            $imageUrl = $imagePath;
+            Log::info('Image uploaded successfully', ['path' => $imageUrl]);
+        } else {
+            Log::warning('No image file received in request');
+        }
+
         try {
-            return DB::transaction(function () use ($request, $data, $businessHours) {
+            return DB::transaction(function () use ($request, $data, $businessHours, $imageUrl) {
                 $tenantId = null;
                 $locationAdminId = null;
 
@@ -412,7 +429,7 @@ class RestaurantAdminController extends Controller
                 }
 
                 // Create restaurant with business hours
-                $restaurant = Restaurant::create([
+                $restaurantData = [
                     'tenant_id' => $tenantId,
                     'location_admin_id' => $locationAdminId,
                     'user_id' => auth()->id(),
@@ -437,8 +454,13 @@ class RestaurantAdminController extends Controller
                     'restaurant_commission_percentage' => $data['restaurant_commission_percentage'],
                     'is_open' => (bool) ($data['is_open'] ?? false),
                     'business_hours' => $businessHours,
+                    'image_url' => $imageUrl,
                     'status' => 'pending',
-                ]);
+                ];
+
+                Log::info('Creating restaurant with data', ['image_url' => $imageUrl, 'has_image' => ! is_null($imageUrl)]);
+
+                $restaurant = Restaurant::create($restaurantData);
 
                 // If we just created a location admin, update their restaurant_id
                 if (isset($locationAdmin) && $restaurant) {
@@ -809,23 +831,21 @@ class RestaurantAdminController extends Controller
         if ($request->hasFile('image')) {
             // Delete old image
             if ($restaurant->image_url) {
-                $oldImagePath = str_replace('/storage/', '', $restaurant->image_url);
-                Storage::disk('public')->delete($oldImagePath);
+                Storage::disk('public')->delete($restaurant->image_url);
             }
 
             $imagePath = $request->file('image')->store('restaurants/images', 'public');
-            $validated['image_url'] = Storage::url($imagePath);
+            $validated['image_url'] = $imagePath;
         }
 
         if ($request->hasFile('cover_image')) {
             // Delete old cover image
             if ($restaurant->cover_image_url) {
-                $oldCoverImagePath = str_replace('/storage/', '', $restaurant->cover_image_url);
-                Storage::disk('public')->delete($oldCoverImagePath);
+                Storage::disk('public')->delete($restaurant->cover_image_url);
             }
 
             $coverImagePath = $request->file('cover_image')->store('restaurants/covers', 'public');
-            $validated['cover_image_url'] = Storage::url($coverImagePath);
+            $validated['cover_image_url'] = $coverImagePath;
         }
 
         // Update slug if name changed
@@ -888,6 +908,46 @@ class RestaurantAdminController extends Controller
 
         return redirect()->route('restaurant-admin.list')
             ->with('success', 'Restaurant deleted successfully!');
+    }
+
+    /**
+     * Update restaurant status (suspend/unsuspend)
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        try {
+            $restaurant = Restaurant::findOrFail($id);
+
+            $validated = $request->validate([
+                'status' => 'required|string|in:approved,suspended,rejected,pending',
+                'reason' => 'nullable|string|max:500',
+            ]);
+
+            $oldStatus = $restaurant->status;
+            $restaurant->status = $validated['status'];
+
+            // If suspending or rejecting, store the reason
+            if (in_array($validated['status'], ['suspended', 'rejected']) && isset($validated['reason'])) {
+                $restaurant->special_instructions = ($restaurant->special_instructions ? $restaurant->special_instructions."\n\n" : '')
+                    .ucfirst($validated['status']).' Reason ('.now()->format('Y-m-d H:i').'): '.$validated['reason'];
+            }
+
+            $restaurant->save();
+
+            Log::info('Restaurant status updated', [
+                'restaurant_id' => $id,
+                'old_status' => $oldStatus,
+                'new_status' => $validated['status'],
+                'updated_by' => auth()->id(),
+            ]);
+
+            return redirect()->back()->with('success', 'Restaurant status updated to '.$validated['status'].' successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('Restaurant status update failed: '.$e->getMessage());
+
+            return redirect()->back()->with('error', 'Failed to update restaurant status: '.$e->getMessage());
+        }
     }
 
     /**

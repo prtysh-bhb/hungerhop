@@ -127,10 +127,29 @@
                                             <tr class="hover-primary {{ $restaurant->is_paused ? 'table-danger' : '' }}">
                                                 <td>
                                                     <div class="d-flex align-items-center">
-                                                        @if ($restaurant->image_url)
-                                                            <img src="{{ $restaurant->image_url }}"
+                                                        @php
+                                                            $imagePath = null;
+                                                            if ($restaurant->image_url) {
+                                                                $fullPath = public_path(
+                                                                    'storage/' . $restaurant->image_url,
+                                                                );
+                                                                if (file_exists($fullPath)) {
+                                                                    $imagePath = asset(
+                                                                        'storage/' . $restaurant->image_url,
+                                                                    );
+                                                                }
+                                                            }
+                                                        @endphp
+
+                                                        @if ($imagePath)
+                                                            <img src="{{ $imagePath }}"
                                                                 class="avatar avatar-md rounded me-3"
-                                                                alt="{{ $restaurant->restaurant_name }}">
+                                                                alt="{{ $restaurant->restaurant_name }}"
+                                                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                            <div class="avatar avatar-md rounded me-3 bg-primary-light"
+                                                                style="display:none;">
+                                                                <i class="fa fa-utensils"></i>
+                                                            </div>
                                                         @else
                                                             <div class="avatar avatar-md rounded me-3 bg-primary-light">
                                                                 <i class="fa fa-utensils"></i>
@@ -252,8 +271,33 @@
                                                                 <li>
                                                                     <hr class="dropdown-divider">
                                                                 </li>
-                                                                <li><a class="dropdown-item text-warning"
-                                                                        href="#">Suspend</a></li>
+                                                                @if (in_array(auth()->user()->role, ['super_admin', 'tenant_admin']))
+                                                                    @if ($restaurant->status === 'approved')
+                                                                        <li><a class="dropdown-item text-warning"
+                                                                                href="#"
+                                                                                onclick="updateStatus({{ $restaurant->id }}, 'suspended')">Suspend</a>
+                                                                        </li>
+                                                                    @elseif($restaurant->status === 'suspended')
+                                                                        <li><a class="dropdown-item text-success"
+                                                                                href="#"
+                                                                                onclick="updateStatus({{ $restaurant->id }}, 'approved')">Activate</a>
+                                                                        </li>
+                                                                    @elseif($restaurant->status === 'pending')
+                                                                        <li><a class="dropdown-item text-success"
+                                                                                href="#"
+                                                                                onclick="updateStatus({{ $restaurant->id }}, 'approved')">Approve</a>
+                                                                        </li>
+                                                                        <li><a class="dropdown-item text-danger"
+                                                                                href="#"
+                                                                                onclick="updateStatus({{ $restaurant->id }}, 'rejected')">Reject</a>
+                                                                        </li>
+                                                                    @elseif($restaurant->status === 'rejected')
+                                                                        <li><a class="dropdown-item text-success"
+                                                                                href="#"
+                                                                                onclick="updateStatus({{ $restaurant->id }}, 'approved')">Approve</a>
+                                                                        </li>
+                                                                    @endif
+                                                                @endif
                                                                 <li><a class="dropdown-item text-danger" href="#"
                                                                         onclick="confirmDelete({{ $restaurant->id }})">Delete</a>
                                                                 </li>
@@ -271,32 +315,31 @@
                                 {{ $restaurants->appends(request()->query())->links('pagination::bootstrap-4') }}
                             </nav>
 
-<style>
-.pagination .page-item.disabled .page-link,
-.pagination .page-item.active .page-link {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-    color: #fff;
-    pointer-events: none;
-}
+                            <style>
+                                .pagination .page-item.disabled .page-link,
+                                .pagination .page-item.active .page-link {
+                                    background-color: #0d6efd;
+                                    border-color: #0d6efd;
+                                    color: #fff;
+                                    pointer-events: none;
+                                }
 
-.pagination .page-item.disabled .page-link {
-    background-color: #e9ecef;
-    color: #6c757d;
-    border-color: #dee2e6;
-}
+                                .pagination .page-item.disabled .page-link {
+                                    background-color: #e9ecef;
+                                    color: #6c757d;
+                                    border-color: #dee2e6;
+                                }
 
-.pagination .page-link {
-    border-radius: 6px !important;
-    padding: 6px 12px;
-    font-size: 0.875rem;
-}
+                                .pagination .page-link {
+                                    border-radius: 6px !important;
+                                    padding: 6px 12px;
+                                    font-size: 0.875rem;
+                                }
 
-.pagination {
-    justify-content: center;
-}
-</style>
-
+                                .pagination {
+                                    justify-content: center;
+                                }
+                            </style>
                         @else
                             <div class="text-center py-5">
                                 <img src="{{ asset('images/no-data.svg') }}" class="w-120" alt="No Data">
@@ -324,6 +367,65 @@
 
 @push('scripts')
     <script>
+        function updateStatus(restaurantId, newStatus) {
+            let confirmMessage = `Are you sure you want to ${newStatus} this restaurant?`;
+            let reason = null;
+
+            // Ask for reason if suspending or rejecting
+            if (newStatus === 'suspended') {
+                reason = prompt('Please provide a reason for suspension:');
+                if (reason === null) {
+                    return; // User cancelled
+                }
+                if (reason.trim() === '') {
+                    alert('Suspension reason is required.');
+                    return;
+                }
+            } else if (newStatus === 'rejected') {
+                reason = prompt('Please provide a reason for rejection:');
+                if (reason === null) {
+                    return; // User cancelled
+                }
+                if (reason.trim() === '') {
+                    alert('Rejection reason is required.');
+                    return;
+                }
+            }
+
+            if (confirm(confirmMessage)) {
+                // Create and submit form
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/restaurant-admin/${restaurantId}/update-status`;
+
+                // CSRF token
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                form.appendChild(csrfInput);
+
+                // Status input
+                const statusInput = document.createElement('input');
+                statusInput.type = 'hidden';
+                statusInput.name = 'status';
+                statusInput.value = newStatus;
+                form.appendChild(statusInput);
+
+                // Reason input (if provided)
+                if (reason) {
+                    const reasonInput = document.createElement('input');
+                    reasonInput.type = 'hidden';
+                    reasonInput.name = 'reason';
+                    reasonInput.value = reason;
+                    form.appendChild(reasonInput);
+                }
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
         function confirmDelete(id) {
             if (confirm('Are you sure you want to delete this restaurant? This action cannot be undone.')) {
                 // Create form and submit

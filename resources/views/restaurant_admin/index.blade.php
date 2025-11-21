@@ -175,7 +175,7 @@
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         @if ($restaurant->image_url)
-                                                            <img src="{{ $restaurant->image_url }}"
+                                                            <img src="sto{{ $restaurant->image_url }}"
                                                                 class="avatar avatar-md rounded me-3"
                                                                 alt="{{ $restaurant->restaurant_name }}">
                                                         @else

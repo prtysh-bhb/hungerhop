@@ -24,14 +24,29 @@
                             <!-- Restaurant Image -->
                             <div class="col-md-4">
                                 <div class="text-center">
-                                    @if ($restaurant->image_url)
-                                        <img src="storage/{{ $restaurant->image_url }}" alt="{{ $restaurant->restaurant_name }}"
+                                    @php
+                                        $imagePath = null;
+                                        if ($restaurant->image_url) {
+                                            $fullPath = public_path('storage/' . $restaurant->image_url);
+                                            if (file_exists($fullPath)) {
+                                                $imagePath = asset('storage/' . $restaurant->image_url);
+                                            }
+                                        }
+                                    @endphp
+
+                                    @if ($imagePath)
+                                        <img src="{{ $imagePath }}" alt="{{ $restaurant->restaurant_name }}"
                                             class="img-fluid rounded"
-                                            style="max-width: 100%; height: 200px; object-fit: cover;">
+                                            style="max-width: 100%; height: 200px; object-fit: cover;"
+                                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="bg-secondary text-white align-items-center justify-content-center rounded"
+                                            style="height: 200px; display:none;">
+                                            <i class="fa fa-utensils fa-3x"></i>
+                                        </div>
                                     @else
                                         <div class="bg-secondary text-white d-flex align-items-center justify-content-center rounded"
                                             style="height: 200px;">
-                                            <i class="fa fa-restaurant fa-3x"></i>
+                                            <i class="fa fa-utensils fa-3x"></i>
                                         </div>
                                     @endif
 
@@ -63,7 +78,8 @@
                                 <h2 class="text-center">{{ $restaurant->restaurant_name }}</h2>
                                 <p class="text-muted text-center">{{ $restaurant->slug }}</p>
                                 @if ($restaurant->contact_person_name)
-                                    <p class="text-center"><strong>Contact Person:</strong> {{ $restaurant->contact_person_name }}</p>
+                                    <p class="text-center"><strong>Contact Person:</strong>
+                                        {{ $restaurant->contact_person_name }}</p>
                                 @endif
                                 @if ($restaurant->description)
                                     <p>{{ $restaurant->description }}</p>
@@ -82,7 +98,7 @@
                                                 ${{ number_format($restaurant->base_delivery_fee, 2) }}</li>
                                         </ul>
                                     </div>
-                                    
+
                                     <div class="col-md-6">
                                         <h3>Contact Information</h3>
                                         <ul class="list-unstyled">
@@ -419,7 +435,7 @@
         function deleteRestaurant() {
             if (confirm(
                     'Are you sure you want to delete this restaurant? This action cannot be undone and will delete all associated data.'
-                    )) {
+                )) {
                 $.ajax({
                     url: '{{ route('restaurant-admin.management.destroy', $restaurant->id) }}',
                     method: 'DELETE',

@@ -110,14 +110,23 @@
         }
 
         .plan-card {
-            border: 2px solid #e3e6f0;
-            border-radius: 0.35rem;
-            padding: 1rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            height: 100%;
-            background: white;
+            position: relative;
+            /* IMPORTANT */
         }
+
+        .plan-card input[type="radio"] {
+            position: absolute;
+            /* IMPORTANT */
+            top: 15px;
+            right: 15px;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            z-index: 3;
+            opacity: 0;
+            /* optional (hide real radio but keep click) */
+        }
+
 
         .plan-card:hover,
         .plan-card.selected {
@@ -127,30 +136,15 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
 
-        .plan-card input[type="radio"] {
+
+        .plan-card .radio-indicator {
+            position: absolute;
+            /* IMPORTANT */
             top: 15px;
             right: 15px;
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
             z-index: 2;
         }
 
-        .plan-card .radio-indicator {
-            top: 15px;
-            right: 15px;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #007bff;
-            border-radius: 50%;
-            background: white;
-            cursor: pointer;
-            z-index: 1;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
 
         .plan-card.selected .radio-indicator {
             background: #007bff;
@@ -183,6 +177,16 @@
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+
+        .payment-card {
+            position: relative;
+            z-index: 1;
+        }
+
+        #plan-change-form .plan-card {
+            position: relative;
+            z-index: 9999 !important;
         }
     </style>
 @endsection
@@ -361,7 +365,7 @@
                         <div class="payment-summary">
                             <h5 class="mb-3">Payment Summary</h5>
 
-                            <div class="payment-breakdown">
+                            <div class="payment-breakdown" id="current-plan-summary">
                                 <div class="breakdown-row">
                                     <span>Base Fee:</span>
                                     <span>₹{{ number_format((float) $tenant->monthly_base_fee) }}</span>
@@ -373,6 +377,47 @@
                                 <div class="breakdown-row">
                                     <span>Total Monthly:</span>
                                     <span>₹{{ number_format((float) $subscriptionAmount) }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Order Summary for Plan Change -->
+                            <div class="payment-breakdown mt-3" id="order-summary"
+                                style="display: none; background: #f0fff4; border: 2px solid #4CAF50; border-radius: 0.5rem; padding: 1rem;">
+                                <h6 class="mb-2" style="color: #2d7a3e;"><i class="fa fa-shopping-cart"></i> Order Summary
+                                </h6>
+                                <div class="breakdown-row" style="border-bottom: 1px solid #ddd;">
+                                    <span>Selected Plan:</span>
+                                    <span id="summary-plan-name" style="font-weight: 600;">-</span>
+                                </div>
+                                <div class="breakdown-row" style="border-bottom: 1px solid #ddd;">
+                                    <span>Base Fee:</span>
+                                    <span id="summary-base-fee">₹0</span>
+                                </div>
+                                <div class="breakdown-row" style="border-bottom: 1px solid #ddd;">
+                                    <span>Restaurants:</span>
+                                    <span id="summary-restaurants">0</span>
+                                </div>
+                                <div class="breakdown-row" style="border-bottom: 1px solid #ddd;">
+                                    <span>Per Restaurant Fee:</span>
+                                    <span id="summary-per-restaurant">₹0</span>
+                                </div>
+                                <div class="breakdown-row" style="border-bottom: 1px solid #ddd;">
+                                    <span>Restaurant Cost:</span>
+                                    <span id="summary-restaurant-cost">₹0</span>
+                                </div>
+                                <div class="breakdown-row" style="border-bottom: 1px solid #ddd;">
+                                    <span>Banners:</span>
+                                    <span id="summary-banners">0</span>
+                                </div>
+                                <div class="breakdown-row" style="border-bottom: 2px solid #2d7a3e;">
+                                    <span style="font-weight: 600;">New Plan Total:</span>
+                                    <span id="summary-total" style="font-weight: 600; color: #2d7a3e;">₹0</span>
+                                </div>
+                                <div class="breakdown-row"
+                                    style="background: #fff3cd; margin: 0.5rem -1rem -1rem -1rem; padding: 0.75rem 1rem; border-radius: 0 0 0.5rem 0.5rem;">
+                                    <span style="font-weight: 700; font-size: 1.1rem;">Amount to Pay:</span>
+                                    <span id="summary-pay-now"
+                                        style="font-weight: 700; font-size: 1.1rem; color: #d97706;">₹0</span>
                                 </div>
                             </div>
 
@@ -408,157 +453,247 @@
 
                 <div class="d-flex justify-content-center">
                     <div style="max-width: 1000px; width: 100%;">
-                        <form id="plan-change-form" action="{{ route('admin.tenant.payment.update-plan') }}" method="POST">
+                        <form id="plan-change-form" action="{{ route('admin.tenant.payment.update-plan') }}"
+                            method="POST">
                             @csrf
                             <div class="row justify-content-center p-3">
-                        <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
-                            <label
-                                class="plan-card {{ $tenant->subscription_plan === 'LITE' || empty($tenant->subscription_plan) ? 'selected' : '' }}"
-                                for="plan_lite">
-                                <input type="radio" id="plan_lite" name="subscription_plan" value="LITE"
-                                    {{ $tenant->subscription_plan === 'LITE' || empty($tenant->subscription_plan) ? 'checked' : '' }}>
-                                <div class="radio-indicator"></div>
-                                <div class="text-center">
-                                    <div class="icon-circle bg-info text-white mx-auto mb-2"
-                                        style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
-                                        <i class="fa fa-rocket fa-2x"></i>
-                                    </div>
-                                    <h6>Lite Plan</h6>
-                                    <div class="h4 text-primary">₹3,700<small class="text-muted fs-6">/month</small></div>
-                                    <small class="text-muted">Includes 5 restaurants</small>
-                                    @if ($tenant->subscription_plan !== 'LITE')
-                                        @php
-                                            $upgradeCost = $tenant->calculateUpgradeCost('LITE');
-                                            $isWithin3Days = $tenant->isWithin3DayPricingWindow();
-                                        @endphp
-                                        @if ($upgradeCost > 0)
-                                            <div class="upgrade-cost text-success">
-                                                <small>Upgrade cost: ₹{{ number_format($upgradeCost, 2) }}</small>
-                                                @if ($isWithin3Days)
-                                                    <div class="text-warning" style="font-size: 0.75rem;">
-                                                        <i class="fa fa-star"></i> Special 3-day pricing!
+                                <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+                                    <label
+                                        class="plan-card {{ $tenant->subscription_plan === 'LITE' || empty($tenant->subscription_plan) ? 'selected' : '' }}"
+                                        for="plan_lite">
+                                        <input type="radio" id="plan_lite" name="subscription_plan" value="LITE"
+                                            {{ $tenant->subscription_plan === 'LITE' || empty($tenant->subscription_plan) ? 'checked' : '' }}>
+                                        <div class="radio-indicator"></div>
+                                        <div class="text-center">
+                                            <div class="icon-circle bg-info text-white mx-auto mb-2"
+                                                style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                                                <i class="fa fa-rocket fa-2x"></i>
+                                            </div>
+                                            <h6>Lite Plan</h6>
+                                            <div class="h4 text-primary">₹3,700<small
+                                                    class="text-muted fs-6">/month</small></div>
+                                            <small class="text-muted d-block mb-2">Base Fee: ₹1,200 + (5 × ₹500)</small>
+                                            <small class="text-muted">Includes 5 restaurants</small>
+                                            @if ($tenant->subscription_plan !== 'LITE')
+                                                @php
+                                                    $upgradeCost = $tenant->calculateUpgradeCost('LITE');
+                                                    $isWithin3Days = $tenant->isWithin3DayPricingWindow();
+                                                    $currentSubscription = $tenant->getCurrentSubscriptionPayment();
+                                                    $alreadyPaid = $currentSubscription
+                                                        ? $currentSubscription->total_amount
+                                                        : 0;
+                                                    $litePlanLimits = $tenant->getPlanLimits('LITE');
+                                                    $newPlanTotal =
+                                                        $litePlanLimits['base_fee'] +
+                                                        5 * $litePlanLimits['per_restaurant_fee'];
+                                                    // If no previous payment, show full amount
+                                                    if ($alreadyPaid == 0) {
+                                                        $upgradeCost = $newPlanTotal;
+                                                    }
+                                                @endphp
+                                                @if ($upgradeCost > 0)
+                                                    <div class="upgrade-cost-details mt-2 p-2"
+                                                        style="background: #f0f8ff; border-radius: 5px; border-left: 3px solid #4CAF50;">
+                                                        <small class="d-block mb-1"><strong>Payment
+                                                                Breakdown:</strong></small>
+                                                        @if ($alreadyPaid > 0)
+                                                            <small class="d-block text-muted">Current Plan:
+                                                                ₹{{ number_format($alreadyPaid, 2) }}</small>
+                                                        @endif
+                                                        <small class="d-block text-muted">New Plan:
+                                                            ₹{{ number_format($newPlanTotal, 2) }}/month</small>
+                                                        <small class="d-block text-muted"
+                                                            style="font-size: 0.7rem;">(₹{{ number_format($litePlanLimits['base_fee']) }}
+                                                            base + 5 ×
+                                                            ₹{{ number_format($litePlanLimits['per_restaurant_fee']) }})</small>
+                                                        <hr style="margin: 0.5rem 0; border-top: 1px dashed #ddd;">
+                                                        <small class="d-block text-success"><strong>Pay Now:
+                                                                ₹{{ number_format($upgradeCost, 2) }}</strong></small>
+                                                        @if ($isWithin3Days && $alreadyPaid > 0)
+                                                            <div class="text-warning mt-1" style="font-size: 0.75rem;">
+                                                                <i class="fa fa-star"></i> Special 3-day pricing active!
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                @elseif($tenant->canUpgradeToPlan('LITE'))
+                                                    <div class="downgrade-note text-warning mt-2">
+                                                        <small>Downgrade (credit applied)</small>
                                                     </div>
                                                 @endif
+                                            @else
+                                                <div class="current-plan-badge text-primary mt-2">
+                                                    <small><i class="fa fa-check-circle"></i> Current Plan</small>
+                                                </div>
+                                            @endif
+                                            <p class="text-muted small mb-2">Basic features for small businesses</p>
+                                            <div class="plan-features">
+                                                <small>✓ Up to 5 Restaurants</small><br>
+                                                <small>✓ 1 Banner</small><br>
+                                                <small>✓ Basic Support</small><br>
+                                                <small>✓ ₹500 per restaurant</small>
                                             </div>
-                                        @elseif($tenant->canUpgradeToPlan('LITE'))
-                                            <div class="downgrade-note text-warning">
-                                                <small>Downgrade (credit applied)</small>
-                                            </div>
-                                        @endif
-                                    @else
-                                        <div class="current-plan-badge text-primary">
-                                            <small><i class="fa fa-check-circle"></i> Current Plan</small>
                                         </div>
-                                    @endif
-                                    <p class="text-muted small mb-2">Basic features for small businesses</p>
-                                    <div class="plan-features">
-                                        <small>✓ Up to 5 Restaurants</small><br>
-                                        <small>✓ 1 Banner</small><br>
-                                        <small>✓ Basic Support</small><br>
-                                        <small>✓ ₹500 per restaurant</small>
-                                    </div>
+                                    </label>
                                 </div>
-                            </label>
-                        </div>
 
-                        <div class="col-md-4">
-                            <label class="plan-card {{ $tenant->subscription_plan === 'PLUS' ? 'selected' : '' }}"
-                                for="plan_plus">
-                                <input type="radio" id="plan_plus" name="subscription_plan" value="PLUS"
-                                    {{ $tenant->subscription_plan === 'PLUS' ? 'checked' : '' }}>
-                                <div class="radio-indicator"></div>
-                                <div class="text-center">
-                                    <div class="icon-circle bg-warning text-white mx-auto mb-2"
-                                        style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
-                                        <i class="fa fa-star fa-2x"></i>
-                                    </div>
-                                    <h6>Plus Plan</h6>
-                                    <div class="h4 text-primary">₹2,000</div>
-                                    @if ($tenant->subscription_plan !== 'PLUS')
-                                        @php
-                                            $upgradeCost = $tenant->calculateUpgradeCost('PLUS');
-                                            $isWithin3Days = $tenant->isWithin3DayPricingWindow();
-                                        @endphp
-                                        @if ($upgradeCost > 0)
-                                            <div class="upgrade-cost text-success">
-                                                <small>Upgrade cost: ₹{{ number_format($upgradeCost, 2) }}</small>
-                                                @if ($isWithin3Days)
-                                                    <div class="text-warning" style="font-size: 0.75rem;">
-                                                        <i class="fa fa-star"></i> Special 3-day pricing!
+                                <div class="col-md-4">
+                                    <label class="plan-card {{ $tenant->subscription_plan === 'PLUS' ? 'selected' : '' }}"
+                                        for="plan_plus">
+                                        <input type="radio" id="plan_plus" name="subscription_plan" value="PLUS"
+                                            {{ $tenant->subscription_plan === 'PLUS' ? 'checked' : '' }}>
+                                        <div class="radio-indicator"></div>
+                                        <div class="text-center">
+                                            <div class="icon-circle bg-warning text-white mx-auto mb-2"
+                                                style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                                                <i class="fa fa-star fa-2x"></i>
+                                            </div>
+                                            <h6>Plus Plan</h6>
+                                            <div class="h4 text-primary">₹22,000<small
+                                                    class="text-muted fs-6">/month</small></div>
+                                            <small class="text-muted d-block mb-2">Base Fee: ₹2,000 + (20 × ₹1,000)</small>
+                                            <small class="text-muted">Includes 20 restaurants</small>
+                                            @if ($tenant->subscription_plan !== 'PLUS')
+                                                @php
+                                                    $upgradeCost = $tenant->calculateUpgradeCost('PLUS');
+                                                    $isWithin3Days = $tenant->isWithin3DayPricingWindow();
+                                                    $currentSubscription = $tenant->getCurrentSubscriptionPayment();
+                                                    $alreadyPaid = $currentSubscription
+                                                        ? $currentSubscription->total_amount
+                                                        : 0;
+                                                    $plusPlanLimits = $tenant->getPlanLimits('PLUS');
+                                                    $newPlanTotal =
+                                                        $plusPlanLimits['base_fee'] +
+                                                        20 * $plusPlanLimits['per_restaurant_fee'];
+                                                    // If no previous payment, show full amount
+                                                    if ($alreadyPaid == 0) {
+                                                        $upgradeCost = $newPlanTotal;
+                                                    }
+                                                @endphp
+                                                @if ($upgradeCost > 0)
+                                                    <div class="upgrade-cost-details mt-2 p-2"
+                                                        style="background: #f0f8ff; border-radius: 5px; border-left: 3px solid #4CAF50;">
+                                                        <small class="d-block mb-1"><strong>Payment
+                                                                Breakdown:</strong></small>
+                                                        @if ($alreadyPaid > 0)
+                                                            <small class="d-block text-muted">Current Plan:
+                                                                ₹{{ number_format($alreadyPaid, 2) }}</small>
+                                                        @endif
+                                                        <small class="d-block text-muted">New Plan:
+                                                            ₹{{ number_format($newPlanTotal, 2) }}/month</small>
+                                                        <small class="d-block text-muted"
+                                                            style="font-size: 0.7rem;">(₹{{ number_format($plusPlanLimits['base_fee']) }}
+                                                            base + 20 ×
+                                                            ₹{{ number_format($plusPlanLimits['per_restaurant_fee']) }})</small>
+                                                        <hr style="margin: 0.5rem 0; border-top: 1px dashed #ddd;">
+                                                        <small class="d-block text-success"><strong>Pay Now:
+                                                                ₹{{ number_format($upgradeCost, 2) }}</strong></small>
+                                                        @if ($isWithin3Days && $alreadyPaid > 0)
+                                                            <div class="text-warning mt-1" style="font-size: 0.75rem;">
+                                                                <i class="fa fa-star"></i> Special 3-day pricing active!
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                @else
+                                                    <div class="downgrade-note text-warning mt-2">
+                                                        <small>Downgrade (credit applied)</small>
                                                     </div>
                                                 @endif
+                                            @else
+                                                <div class="current-plan-badge text-primary mt-2">
+                                                    <small><i class="fa fa-check-circle"></i> Current Plan</small>
+                                                </div>
+                                            @endif
+                                            <p class="text-muted small mb-2">Advanced features for growing businesses</p>
+                                            <div class="plan-features">
+                                                <small>✓ <strong>20 Restaurants Included</strong></small><br>
+                                                <small>✓ 3 Banners</small><br>
+                                                <small>✓ Priority Support</small><br>
+                                                <small>✓ Advanced analytics</small>
                                             </div>
-                                        @else
-                                            <div class="downgrade-note text-warning">
-                                                <small>Downgrade (credit applied)</small>
-                                            </div>
-                                        @endif
-                                    @else
-                                        <div class="current-plan-badge text-primary">
-                                            <small><i class="fa fa-check-circle"></i> Current Plan</small>
                                         </div>
-                                    @endif
-                                    <p class="text-muted small mb-2">Advanced features for growing businesses</p>
-                                    <div class="plan-features">
-                                        <small>✓ <strong>20 Restaurants Included</strong></small><br>
-                                        <small>✓ 3 Banners</small><br>
-                                        <small>✓ Priority Support</small><br>
-                                        <small>✓ Advanced analytics</small>
-                                    </div>
+                                    </label>
                                 </div>
-                            </label>
-                        </div>
 
-                        <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
-                            <label class="plan-card {{ $tenant->subscription_plan === 'PRO_MAX' ? 'selected' : '' }}"
-                                for="plan_pro">
-                                <input type="radio" id="plan_pro" name="subscription_plan" value="PRO_MAX"
-                                    {{ $tenant->subscription_plan === 'PRO_MAX' ? 'checked' : '' }}>
-                                <div class="radio-indicator"></div>
-                                <div class="text-center">
-                                    <div class="icon-circle bg-success text-white mx-auto mb-2"
-                                        style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
-                                        <i class="fa-sharp fa-solid fa-crown"></i>
-                                    </div>
-                                    <h6>Pro Max Plan</h6>
-                                    <div class="h4 text-primary">₹47,500<small class="text-muted fs-6">/month</small>
-                                    </div>
-                                    <small class="text-muted">Includes 30 restaurants</small>
-                                    @if ($tenant->subscription_plan !== 'PRO_MAX')
-                                        @php
-                                            $upgradeCost = $tenant->calculateUpgradeCost('PRO_MAX');
-                                            $isWithin3Days = $tenant->isWithin3DayPricingWindow();
-                                        @endphp
-                                        @if ($upgradeCost > 0)
-                                            <div class="upgrade-cost text-success">
-                                                <small>Upgrade cost: ₹{{ number_format($upgradeCost, 2) }}</small>
-                                                @if ($isWithin3Days)
-                                                    <div class="text-warning" style="font-size: 0.75rem;">
-                                                        <i class="fa fa-star"></i> Special 3-day pricing!
+                                <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+                                    <label
+                                        class="plan-card {{ $tenant->subscription_plan === 'PRO_MAX' ? 'selected' : '' }}"
+                                        for="plan_pro">
+                                        <input type="radio" id="plan_pro" name="subscription_plan" value="PRO_MAX"
+                                            {{ $tenant->subscription_plan === 'PRO_MAX' ? 'checked' : '' }}>
+                                        <div class="radio-indicator"></div>
+                                        <div class="text-center">
+                                            <div class="icon-circle bg-success text-white mx-auto mb-2"
+                                                style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                                                <i class="fa-sharp fa-solid fa-crown"></i>
+                                            </div>
+                                            <h6>Pro Max Plan</h6>
+                                            <div class="h4 text-primary">₹47,500<small
+                                                    class="text-muted fs-6">/month</small>
+                                            </div>
+                                            <small class="text-muted d-block mb-2">Base Fee: ₹2,500 + (30 × ₹1,500)</small>
+                                            <small class="text-muted">Includes 30 restaurants</small>
+                                            @if ($tenant->subscription_plan !== 'PRO_MAX')
+                                                @php
+                                                    $upgradeCost = $tenant->calculateUpgradeCost('PRO_MAX');
+                                                    $isWithin3Days = $tenant->isWithin3DayPricingWindow();
+                                                    $currentSubscription = $tenant->getCurrentSubscriptionPayment();
+                                                    $alreadyPaid = $currentSubscription
+                                                        ? $currentSubscription->total_amount
+                                                        : 0;
+                                                    $proMaxPlanLimits = $tenant->getPlanLimits('PRO_MAX');
+                                                    $newPlanTotal =
+                                                        $proMaxPlanLimits['base_fee'] +
+                                                        30 * $proMaxPlanLimits['per_restaurant_fee'];
+                                                    // If no previous payment, show full amount
+                                                    if ($alreadyPaid == 0) {
+                                                        $upgradeCost = $newPlanTotal;
+                                                    }
+                                                @endphp
+                                                @if ($upgradeCost > 0)
+                                                    <div class="upgrade-cost-details mt-2 p-2"
+                                                        style="background: #f0f8ff; border-radius: 5px; border-left: 3px solid #4CAF50;">
+                                                        <small class="d-block mb-1"><strong>Payment
+                                                                Breakdown:</strong></small>
+                                                        @if ($alreadyPaid > 0)
+                                                            <small class="d-block text-muted">Current Plan:
+                                                                ₹{{ number_format($alreadyPaid, 2) }}</small>
+                                                        @endif
+                                                        <small class="d-block text-muted">New Plan:
+                                                            ₹{{ number_format($newPlanTotal, 2) }}/month</small>
+                                                        <small class="d-block text-muted"
+                                                            style="font-size: 0.7rem;">(₹{{ number_format($proMaxPlanLimits['base_fee']) }}
+                                                            base + 30 ×
+                                                            ₹{{ number_format($proMaxPlanLimits['per_restaurant_fee']) }})</small>
+                                                        <hr style="margin: 0.5rem 0; border-top: 1px dashed #ddd;">
+                                                        <small class="d-block text-success"><strong>Pay Now:
+                                                                ₹{{ number_format($upgradeCost, 2) }}</strong></small>
+                                                        @if ($isWithin3Days && $alreadyPaid > 0)
+                                                            <div class="text-warning mt-1" style="font-size: 0.75rem;">
+                                                                <i class="fa fa-star"></i> Special 3-day pricing active!
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                @else
+                                                    <div class="downgrade-note text-warning mt-2">
+                                                        <small>Downgrade (credit applied)</small>
                                                     </div>
                                                 @endif
+                                            @else
+                                                <div class="current-plan-badge text-primary mt-2">
+                                                    <small><i class="fa fa-check-circle"></i> Current Plan</small>
+                                                </div>
+                                            @endif
+                                            <p class="text-muted small mb-2">Premium features for enterprise</p>
+                                            <div class="plan-features">
+                                                <small>✓ <strong>30 Restaurants Included</strong></small><br>
+                                                <small>✓ 10 Banners</small><br>
+                                                <small>✓ Premium Support</small><br>
+                                                <small>✓ All enterprise features</small>
                                             </div>
-                                        @else
-                                            <div class="downgrade-note text-warning">
-                                                <small>Downgrade (credit applied)</small>
-                                            </div>
-                                        @endif
-                                    @else
-                                        <div class="current-plan-badge text-primary">
-                                            <small><i class="fa fa-check-circle"></i> Current Plan</small>
                                         </div>
-                                    @endif
-                                    <p class="text-muted small mb-2">Premium features for enterprise</p>
-                                    <div class="plan-features">
-                                        <small>✓ <strong>30 Restaurants Included</strong></small><br>
-                                        <small>✓ 10 Banners</small><br>
-                                        <small>✓ Premium Support</small><br>
-                                        <small>✓ All enterprise features</small>
-                                    </div>
+                                    </label>
                                 </div>
-                            </label>
-                        </div>
-                    </div>
+                            </div>
 
                             <div class="text-center mt-4">
                                 <button type="submit" class="btn btn-success btn-lg px-5">
@@ -841,6 +976,82 @@
                 }
             }
 
+            // Function to update order summary
+            function updateOrderSummary(plan) {
+                const planDetails = {
+                    'LITE': {
+                        name: 'Lite Plan',
+                        baseAmount: 1200,
+                        perRestaurant: 500,
+                        maxRestaurants: 5,
+                        maxBanners: 1
+                    },
+                    'PLUS': {
+                        name: 'Plus Plan',
+                        baseAmount: 2000,
+                        perRestaurant: 1000,
+                        maxRestaurants: 20,
+                        maxBanners: 3
+                    },
+                    'PRO_MAX': {
+                        name: 'Pro Max Plan',
+                        baseAmount: 2500,
+                        perRestaurant: 1500,
+                        maxRestaurants: 30,
+                        maxBanners: 10
+                    }
+                };
+
+                if (planDetails[plan]) {
+                    const details = planDetails[plan];
+                    const currentRestaurants = {{ $tenant->total_restaurants }};
+
+                    // Calculate costs
+                    const restaurantCost = details.maxRestaurants * details.perRestaurant;
+                    const totalAmount = details.baseAmount + restaurantCost;
+
+                    // Calculate amount to pay (considering already paid amount)
+                    const alreadyPaid = {{ $alreadyPaid ?? 0 }};
+                    let amountToPay = totalAmount;
+
+                    // If there's a previous payment, calculate upgrade cost
+                    if (alreadyPaid > 0) {
+                        // Use the same calculation as the PHP backend
+                        const currentPlan = '{{ $tenant->subscription_plan }}';
+                        const currentPlanDetails = planDetails[currentPlan];
+                        if (currentPlanDetails) {
+                            const currentTotal = currentPlanDetails.baseAmount + (currentPlanDetails
+                                .maxRestaurants * currentPlanDetails.perRestaurant);
+                            amountToPay = Math.max(0, totalAmount - currentTotal);
+                        }
+                    }
+
+                    // Update all order summary fields
+                    $('#summary-plan-name').text(details.name);
+                    $('#summary-base-fee').text('₹' + details.baseAmount.toLocaleString());
+                    $('#summary-restaurants').text(details.maxRestaurants);
+                    $('#summary-per-restaurant').text('₹' + details.perRestaurant.toLocaleString());
+                    $('#summary-restaurant-cost').text('₹' + restaurantCost.toLocaleString());
+                    $('#summary-banners').text(details.maxBanners);
+                    $('#summary-total').text('₹' + totalAmount.toLocaleString());
+                    $('#summary-pay-now').text('₹' + amountToPay.toLocaleString());
+
+                    // Show the order summary
+                    $('#order-summary').slideDown();
+                }
+            }
+
+            // Update order summary when plan selection changes
+            $('input[name="subscription_plan"]').on('change', function() {
+                const selectedPlan = $(this).val();
+                updateOrderSummary(selectedPlan);
+            });
+
+            // Hide order summary when cancel button is clicked
+            $('#cancel-change-btn').on('click', function() {
+                $('#order-summary').slideUp();
+            });
+
             // Form validation before submission
             $('#plan-change-form').on('submit', function(e) {
                 const selectedPlan = $('input[name="subscription_plan"]:checked').val();
@@ -852,9 +1063,64 @@
                     return false;
                 }
 
-                if (!confirm(
-                        'Are you sure you want to change your subscription plan? This will affect your billing immediately.'
-                    )) {
+                // Get payment breakdown from the selected plan card
+                const selectedCard = $('input[name="subscription_plan"]:checked').closest('.plan-card');
+                const paymentBreakdown = selectedCard.find('.upgrade-cost-details');
+
+                // Plan details
+                const planDetails = {
+                    'LITE': {
+                        name: 'Lite Plan',
+                        maxBanners: 1,
+                        baseAmount: 1200,
+                        perRestaurant: 500,
+                        restaurants: 5
+                    },
+                    'PLUS': {
+                        name: 'Plus Plan',
+                        maxBanners: 3,
+                        baseAmount: 2000,
+                        perRestaurant: 1000,
+                        restaurants: 20
+                    },
+                    'PRO_MAX': {
+                        name: 'Pro Max Plan',
+                        maxBanners: 10,
+                        baseAmount: 2500,
+                        perRestaurant: 1500,
+                        restaurants: 30
+                    }
+                };
+
+                const currentBanners = {{ $tenant->banner_limit }};
+                const newPlanBanners = planDetails[selectedPlan]?.maxBanners || 0;
+
+                // Build confirmation message with payment details
+                let confirmMessage = `You are about to change to ${planDetails[selectedPlan].name}\n\n`;
+
+                // Add payment breakdown if available
+                if (paymentBreakdown.length > 0) {
+                    const payNowText = paymentBreakdown.find('strong:contains("Pay Now")').parent().text();
+                    const alreadyPaidText = paymentBreakdown.find('.text-decoration-line-through').text();
+
+                    if (payNowText) {
+                        confirmMessage += `💰 Payment Details:\n`;
+                        if (alreadyPaidText) {
+                            confirmMessage += `   Already Paid: ${alreadyPaidText}\n`;
+                        }
+                        confirmMessage += `   ${payNowText}\n\n`;
+                    }
+                }
+
+                // Show informational alert if banner limit will be reduced
+                if (currentBanners > newPlanBanners) {
+                    confirmMessage +=
+                        `⚠️ Note: Your banner limit will be reduced from ${currentBanners} to ${newPlanBanners} banners.\nPlease adjust your active banners accordingly after the plan change.\n\n`;
+                }
+
+                confirmMessage += `Do you want to proceed?`;
+
+                if (!confirm(confirmMessage)) {
                     e.preventDefault();
                     return false;
                 }

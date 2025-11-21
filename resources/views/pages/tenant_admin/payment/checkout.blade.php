@@ -1,3 +1,25 @@
+ @php
+                                $newPlanTotal =
+                                    $planLimits['base_fee'] +
+                                    $planLimits['max_restaurants'] * $planLimits['per_restaurant_fee'];
+
+                                // Get current plan value (what was already paid)
+                                $currentPlanLimits = $tenant->getPlanLimits($tenant->subscription_plan);
+                                $alreadyPaid = 0;
+
+                                if ($currentPlanLimits) {
+                                    $alreadyPaid =
+                                        $currentPlanLimits['base_fee'] +
+                                        $currentPlanLimits['max_restaurants'] *
+                                            $currentPlanLimits['per_restaurant_fee'];
+                                }
+
+                                // The actual amount to pay is in $subscriptionAmount (from pending payment)
+                                // $amountToPay = $subscriptionAmount;
+                            $subscriptionAmount = $newPlanTotal - $alreadyPaid;
+                            $amountToPay = $subscriptionAmount;
+                            @endphp
+
 @extends('layouts.admin')
 
 @section('title', 'Payment Checkout')
@@ -261,7 +283,7 @@
 
                             <div id="general-errors" class="text-danger mb-15" role="alert"></div>
                             <button type="submit" id="submit" class="btn btn-primary w-100 py-15">
-                                <span id="button-text">Pay ₹{{ number_format((float) $subscriptionAmount) }}
+                                <span id="button-text">Pay ₹{{ number_format((float) $amountToPay) }}
                                     Securely</span>
                                 <span id="spinner" class="spinner-border spinner-border-sm align-middle ms-2 d-none"
                                     role="status" aria-hidden="true"></span>
@@ -284,38 +306,80 @@
                                     <i class="fa fa-arrow-up text-success me-2"></i>
                                     <div>
                                         <small class="text-muted">Plan Upgrade</small>
-                                        <div class="fw-600">{{ $tenant->subscription_plan }} → {{ $planLimits['name'] }}
-                                        </div>
+                                        <div class="fw-600">{{ $planLimits['name'] }}</div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="d-flex justify-content-between py-5 border-bottom">
-                                <span>Upgrade Cost</span>
-                                <span>₹{{ number_format((float) $subscriptionAmount) }}</span>
+
+                           
+
+                            <!-- New Plan Breakdown -->
+                            <div class="mb-3">
+                                <small class="text-muted d-block mb-2"><strong>New Plan Details:</strong></small>
+                                <div class="d-flex justify-content-between py-2">
+                                    <span>Base Fee</span>
+                                    <span>₹{{ number_format($planLimits['base_fee']) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between py-2">
+                                    <span>Restaurants ({{ $planLimits['max_restaurants'] }} ×
+                                        ₹{{ number_format($planLimits['per_restaurant_fee']) }})</span>
+                                    <span>₹{{ number_format($planLimits['max_restaurants'] * $planLimits['per_restaurant_fee']) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between py-2 border-bottom">
+                                    <span>Banners</span>
+                                    <span>{{ $planLimits['max_banners'] }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between py-2 fw-600">
+                                    <span>New Plan Total</span>
+                                    <span>₹{{ number_format($newPlanTotal) }}</span>
+                                </div>
                             </div>
-                            @if ($tenant->isWithin3DayPricingWindow())
-                                <div class="d-flex justify-content-between py-5 border-bottom text-success">
-                                    <span><i class="fa fa-clock"></i> 3-Day Special Pricing</span>
-                                    <span>Only pay the difference!</span>
+
+                            @if ($alreadyPaid > 0)
+                                <div class="d-flex justify-content-between py-2 border-top pt-3">
+                                    <span><small>Current Plan ({{ $tenant->subscription_plan }})</small></span>
+                                    <span><small>₹{{ number_format($alreadyPaid) }}</small></span>
+                                </div>
+                                <div class="d-flex justify-content-between py-2 pb-3 border-bottom">
+                                    <span class="text-muted"><small>Calculation: New Plan - Current Plan</small></span>
+                                    <span class="text-muted"><small>₹{{ number_format($newPlanTotal) }} -
+                                            ₹{{ number_format($alreadyPaid) }}</small></span>
+                                </div>
+                                @if ($tenant->isWithin3DayPricingWindow())
+                                    <div class="alert alert-success p-2 mt-2 mb-2">
+                                        <small><i class="fa fa-clock"></i> <strong>3-Day Special Pricing</strong> - Pay
+                                            only the difference!</small>
+                                    </div>
+                                @endif
+                            @else
+                                <div class="alert alert-info p-2 mt-2 mb-2">
+                                    <small><i class="fa fa-info-circle"></i> First subscription - Pay full plan
+                                        amount</small>
                                 </div>
                             @endif
                         @else
                             <!-- Regular Subscription Summary -->
                             <div class="d-flex justify-content-between py-5 border-bottom">
-                                <span>{{ $planLimits['name'] ?? $tenant->subscription_plan }} Plan</span>
-                                <span>₹{{ number_format((float) $tenant->monthly_base_fee) }}</span>
+                                <span>Base Fee</span>
+                                <span>₹{{ number_format((float) $planLimits['base_fee']) }}</span>
                             </div>
                             <div class="d-flex justify-content-between py-5 border-bottom">
-                                <span>Restaurants ({{ $tenant->total_restaurants }})</span>
-                                <span>₹{{ number_format($tenant->total_restaurants * (float) $tenant->per_restaurant_fee) }}</span>
+                                <span>Restaurants ({{ $planLimits['max_restaurants'] }} ×
+                                    ₹{{ number_format($planLimits['per_restaurant_fee']) }})</span>
+                                <span>₹{{ number_format($planLimits['max_restaurants'] * $planLimits['per_restaurant_fee']) }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-5 border-bottom">
+                                <span>Banners</span>
+                                <span>{{ $planLimits['max_banners'] }}</span>
                             </div>
                         @endif
-                        <div class="d-flex justify-content-between pt-10 mt-5 border-top">
+                        <div class="d-flex justify-content-between pt-10 mt-5 border-top"
+                            style="background: #fff9e6; padding: 15px; border-radius: 8px; margin-top: 15px !important;">
                             <span class="fs-16 fw-700">
                                 @if (isset($isUpgradePayment) && $isUpgradePayment)
-                                    Upgrade Amount
+                                    💰 Amount to Pay Now
                                 @else
-                                    Total Amount
+                                    💰 Total Amount
                                 @endif
                             </span>
                             <span

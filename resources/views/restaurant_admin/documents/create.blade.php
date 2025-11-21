@@ -28,9 +28,6 @@
                         @if (session('error'))
                             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                                 <i class="fa fa-exclamation-circle"></i> {{ session('error') }}
-                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
                             </div>
                         @endif
 
@@ -43,9 +40,6 @@
                                         <li>{{ $error }}</li>
                                     @endforeach
                                 </ul>
-                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
                             </div>
                         @endif
                         <form action="{{ route('restaurant-admin.documents.store') }}" method="POST"
@@ -122,7 +116,7 @@
                                         <input type="file"
                                             class="form-control-file @error('document_file') is-invalid @enderror"
                                             id="document_file" name="document_file" required
-                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"><br>
                                         <small class="form-text text-muted">
                                             Supported formats: PDF, JPG, PNG, DOC, DOCX. Maximum size: 10MB
                                         </small>
@@ -326,7 +320,7 @@
                     else if (fileType.includes('word')) fileIcon = 'fa-file-word-o';
 
                     $('#fileInfo').html(`
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center" style="gap: 10px;">
                     <i class="fa ${fileIcon} fa-2x text-primary mr-3"></i>
                     <div>
                         <strong>${fileName}</strong><br>

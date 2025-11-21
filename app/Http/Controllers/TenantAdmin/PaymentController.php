@@ -569,20 +569,10 @@ class PaymentController extends Controller
         $newPlanTier = $planHierarchy[$newPlan] ?? 0;
         $isDowngrade = $newPlanTier < $currentPlanTier;
 
-        // Only check banner limits when downgrading (moving to a lower tier plan) AND user has an existing plan
-        if ($isDowngrade && ! empty($currentPlan)) {
-            // Check if current banner limit exceeds new plan limit
-            if ($tenant->banner_limit > $newLimits['max_banners']) {
-                return redirect()->route('admin.tenant.payment.plans')
-                    ->with('error', "Cannot downgrade to {$newLimits['name']}. You currently use {$tenant->banner_limit} banners, but {$newLimits['name']} allows only {$newLimits['max_banners']} banners.")
-                    ->with('banner_suggestions', [
-                        "Reduce your banner usage to {$newLimits['max_banners']} or fewer banners first",
-                        'Go to Banner Management → Delete/disable extra banners',
-                        "Current usage: {$tenant->banner_limit} banners",
-                        "Plan limit: {$newLimits['max_banners']} banners",
-                        'Alternative: Choose Pro Max Plan (allows 10 banners)',
-                    ]);
-            }
+        // Prepare warning message if banner limit will be reduced
+        $bannerWarning = null;
+        if ($isDowngrade && ! empty($currentPlan) && $tenant->banner_limit > $newLimits['max_banners']) {
+            $bannerWarning = "Note: Your banner limit will be reduced from {$tenant->banner_limit} to {$newLimits['max_banners']} banners. Please adjust your active banners accordingly.";
         }
 
         DB::beginTransaction();
@@ -631,12 +621,18 @@ class PaymentController extends Controller
                     'monthly_base_fee' => $newLimits['base_fee'],
                     'per_restaurant_fee' => $newLimits['per_restaurant_fee'],
                     'total_restaurants' => $newRestaurantCount,
+                    'banner_limit' => $newLimits['max_banners'], // Update banner limit to match new plan
                 ]);
 
                 DB::commit();
 
+                $successMessage = "Plan upgraded to {$newLimits['name']}! Upgrade cost: ₹".number_format($upgradeCost, 2).' (prorated for remaining billing period). Please complete the payment to activate your new plan.';
+                if ($bannerWarning) {
+                    $successMessage .= ' ' . $bannerWarning;
+                }
+
                 return redirect()->route('admin.tenant.payment.checkout')
-                    ->with('success', "Plan upgraded to {$newLimits['name']}! Upgrade cost: ₹".number_format($upgradeCost, 2).' (prorated for remaining billing period). Please complete the payment to activate your new plan.')
+                    ->with('success', $successMessage)
                     ->with('upgrade_info', [
                         'from_plan' => $currentLimits['name'] ?? $currentPlan,
                         'to_plan' => $newLimits['name'],
@@ -651,12 +647,18 @@ class PaymentController extends Controller
                     'monthly_base_fee' => $newLimits['base_fee'],
                     'per_restaurant_fee' => $newLimits['per_restaurant_fee'],
                     'total_restaurants' => $newRestaurantCount,
+                    'banner_limit' => $newLimits['max_banners'], // Update banner limit to match new plan
                 ]);
 
                 DB::commit();
 
+                $successMessage = "Plan changed to {$newLimits['name']} successfully! No additional payment required.";
+                if ($bannerWarning) {
+                    $successMessage .= ' ' . $bannerWarning;
+                }
+
                 return redirect()->route('admin.tenant.payment.plans')
-                    ->with('success', "Plan changed to {$newLimits['name']} successfully! No additional payment required.")
+                    ->with('success', $successMessage)
                     ->with('change_info', [
                         'from_plan' => $currentLimits['name'] ?? $currentPlan,
                         'to_plan' => $newLimits['name'],

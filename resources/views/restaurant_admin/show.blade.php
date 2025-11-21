@@ -15,7 +15,7 @@
                                 <p class="text-muted mb-0">Restaurant Details</p>
                             </div>
                             <div class="d-flex gap-2">
-                                <a href="{{ route('restaurant-admin.list') }}" class="btn btn-outline-primary btn-sm">
+                                <a href="{{ route('restaurant-admin.list') }}" class="btn btn-primary btn-sm">
                                     <i class="fa fa-list me-1"></i> Back to List
                                 </a>
                                 <a href="{{ route('restaurant-admin.edit', $restaurant->id) }}" class="btn btn-warning btn-sm">
@@ -477,16 +477,16 @@
                                 <div class="row g-2">
                                     <div class="col-12">
                                         <label class="form-label text-muted small mb-1">Created</label>
-                                        <p class="mb-2">{{ $restaurant->created_at->format('M d, Y h:i A') }}</p>
+                                        <p class="mb-2">{{ $restaurant->created_at->addHours(5.5)->format('M d, Y h:i A') }}</p>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label text-muted small mb-1">Last Updated</label>
-                                        <p class="mb-2">{{ $restaurant->updated_at->format('M d, Y h:i A') }}</p>
+                                        <p class="mb-2">{{ $restaurant->updated_at->addHours(5.5)->format('M d, Y h:i A') }}</p>
                                     </div>
                                     @if ($restaurant->approved_at)
                                         <div class="col-12">
                                             <label class="form-label text-muted small mb-1">Approved</label>
-                                            <p class="mb-2">{{ $restaurant->approved_at->format('M d, Y h:i A') }}</p>
+                                            <p class="mb-2">{{ $restaurant->approved_at->addHours(5.5)->format('M d, Y h:i A') }}</p>
                                         </div>
                                     @endif
                                 </div>

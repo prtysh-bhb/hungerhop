@@ -92,8 +92,8 @@
                                     <tr>
                                         <td>{{ $document->id }}</td>
                                         <td>
-                                            <strong>{{ $document->restaurant->restaurant_name }}</strong>
-                                            <br><small class="text-muted">{{ $document->restaurant->email }}</small>
+                                            <strong>{{ $document?->restaurant?->restaurant_name }}</strong>
+                                            <br><small class="text-muted">{{ $document?->restaurant?->email }}</small>
                                         </td>
                                         <td>
                                             <span class="badge badge-info">{{ ucwords(str_replace('_', ' ', $document->document_type)) }}</span>

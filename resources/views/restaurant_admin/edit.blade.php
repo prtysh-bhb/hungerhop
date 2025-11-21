@@ -188,16 +188,16 @@
                                                         onclick="selectRestaurantType('new')">
                                                         <div class="card-body">
                                                             <input type="radio" class="form-check-input"
-                                                            name="tenant_selection" id="new_independent"
-                                                            value="new"
-                                                            {{ old('tenant_selection') == 'new' ? 'checked' : '' }}>
+                                                                name="tenant_selection" id="new_independent"
+                                                                value="new"
+                                                                {{ old('tenant_selection') == 'new' ? 'checked' : '' }}>
                                                             <label class="form-check-label" for="new_independent"
-                                                            style="cursor: pointer;">
-                                                            <i class="fa fa-plus-circle fa-2x text-success mb-2"></i>
+                                                                style="cursor: pointer;">
+                                                                <i class="fa fa-plus-circle fa-2x text-success mb-2"></i>
                                                                 <h6 class="text-primary"><strong>Update Franchise
-                                                                    Details</strong></h6>
-                                                                    <small class="text-muted">Modify current franchise
-                                                                        information</small>
+                                                                        Details</strong></h6>
+                                                                <small class="text-muted">Modify current franchise
+                                                                    information</small>
                                                             </label>
                                                         </div>
                                                     </div>
@@ -674,20 +674,21 @@
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label for="restaurant_image">Restaurant Image</label>
+                                                <label for="image">Restaurant Image</label>
                                                 @if ($restaurant->image_url)
                                                     <div class="mb-2">
-                                                        <img src="{{ $restaurant->image_url }}" alt="Current Image"
-                                                            class="img-thumbnail" style="max-height: 150px;">
+                                                        <img src="{{ asset('storage/' . $restaurant->image_url) }}"
+                                                            alt="Current Image" class="img-thumbnail"
+                                                            style="max-height: 150px;">
                                                         <p class="text-muted small">Current restaurant image</p>
                                                     </div>
                                                 @endif
                                                 <input type="file"
-                                                    class="form-control-file @error('restaurant_image') is-invalid @enderror"
-                                                    id="restaurant_image" name="restaurant_image" accept="image/*"><br>
+                                                    class="form-control-file @error('image') is-invalid @enderror"
+                                                    id="image" name="image" accept="image/*"><br>
                                                 <small class="form-text text-muted">Upload a new image to replace the
                                                     current one</small>
-                                                @error('restaurant_image')
+                                                @error('image')
                                                     <div class="invalid-feedback">{{ $message }}</div>
                                                 @enderror
                                             </div>
@@ -697,8 +698,9 @@
                                                 <label for="cover_image">Cover Image</label>
                                                 @if ($restaurant->cover_image_url)
                                                     <div class="mb-2">
-                                                        <img src="{{ $restaurant->cover_image_url }}" alt="Current Cover"
-                                                            class="img-thumbnail" style="max-height: 150px;">
+                                                        <img src="{{ asset('storage/' . $restaurant->cover_image_url) }}"
+                                                            alt="Current Cover" class="img-thumbnail"
+                                                            style="max-height: 150px;">
                                                         <p class="text-muted small">Current cover image</p>
                                                     </div>
                                                 @endif

@@ -233,7 +233,7 @@ class Tenant extends Model
             return 0;
         }
 
-        return $this->monthly_base_fee + ($this->total_restaurants * $this->per_restaurant_fee);
+        return $limits['base_fee'] + ($limits['max_restaurants'] * $limits['per_restaurant_fee']);
     }
 
     /**
@@ -254,7 +254,7 @@ class Tenant extends Model
 
         if (! $currentSubscription) {
             // No current subscription, charge full amount for new plan
-            return $newPlanLimits['base_fee'] + ($this->restaurants()->count() * $newPlanLimits['per_restaurant_fee']);
+            return $newPlanLimits['base_fee'] + ($newPlanLimits['max_restaurants'] * $newPlanLimits['per_restaurant_fee']);
         }
 
         // Check if payment was made within last 3 days (special pricing window)
@@ -271,20 +271,20 @@ class Tenant extends Model
             // Current plan has expired
             if ($isWithin3DayWindow) {
                 // Still within 3-day window, charge only difference
-                $currentPlanTotal = $currentPlanLimits['base_fee'] + ($this->total_restaurants * $currentPlanLimits['per_restaurant_fee']);
-                $newPlanTotal = $newPlanLimits['base_fee'] + ($this->total_restaurants * $newPlanLimits['per_restaurant_fee']);
+                $currentPlanTotal = $currentPlanLimits['base_fee'] + ($currentPlanLimits['max_restaurants'] * $currentPlanLimits['per_restaurant_fee']);
+                $newPlanTotal = $newPlanLimits['base_fee'] + ($newPlanLimits['max_restaurants'] * $newPlanLimits['per_restaurant_fee']);
 
                 return max(0, $newPlanTotal - $currentPlanTotal);
             } else {
                 // Outside 3-day window, charge full amount for new plan
-                return $newPlanLimits['base_fee'] + ($this->total_restaurants * $newPlanLimits['per_restaurant_fee']);
+                return $newPlanLimits['base_fee'] + ($newPlanLimits['max_restaurants'] * $newPlanLimits['per_restaurant_fee']);
             }
         }
 
         // Special 3-day window pricing: Only charge the difference between plans
         if ($isWithin3DayWindow) {
-            $currentPlanTotal = $currentPlanLimits['base_fee'] + ($this->total_restaurants * $currentPlanLimits['per_restaurant_fee']);
-            $newPlanTotal = $newPlanLimits['base_fee'] + ($this->total_restaurants * $newPlanLimits['per_restaurant_fee']);
+            $currentPlanTotal = $currentPlanLimits['base_fee'] + ($currentPlanLimits['max_restaurants'] * $currentPlanLimits['per_restaurant_fee']);
+            $newPlanTotal = $newPlanLimits['base_fee'] + ($newPlanLimits['max_restaurants'] * $newPlanLimits['per_restaurant_fee']);
             $planDifference = $newPlanTotal - $currentPlanTotal;
 
             // Return only the difference (can be negative for downgrades)
@@ -294,8 +294,8 @@ class Tenant extends Model
         // Standard prorated billing for changes after 3 days
         // Calculate daily rate for both plans
         $daysInMonth = 30; // Assuming 30-day billing cycle
-        $currentDailyRate = ($currentPlanLimits['base_fee'] + ($this->total_restaurants * $currentPlanLimits['per_restaurant_fee'])) / $daysInMonth;
-        $newDailyRate = ($newPlanLimits['base_fee'] + ($this->total_restaurants * $newPlanLimits['per_restaurant_fee'])) / $daysInMonth;
+        $currentDailyRate = ($currentPlanLimits['base_fee'] + ($currentPlanLimits['max_restaurants'] * $currentPlanLimits['per_restaurant_fee'])) / $daysInMonth;
+        $newDailyRate = ($newPlanLimits['base_fee'] + ($newPlanLimits['max_restaurants'] * $newPlanLimits['per_restaurant_fee'])) / $daysInMonth;
 
         // Calculate refund for remaining days of current plan
         $refundAmount = $currentDailyRate * $remainingDays;

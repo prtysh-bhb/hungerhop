@@ -350,4 +350,187 @@ class TenantController extends Controller
             'new_status' => $validated['status'],
         ]);
     }
+
+    /**
+     * Export tenants to Excel (CSV)
+     */
+    public function exportExcel(Request $request)
+    {
+        $user = Auth::user();
+        $query = Tenant::query();
+
+        // Role-based filtering
+        if ($user->role === 'tenant_admin') {
+            $query->where('id', $user->tenant_id);
+        }
+
+        // Apply filters
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('tenant_name', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%')
+                    ->orWhere('contact_person', 'like', '%'.$search.'%');
+            });
+        }
+
+        if ($request->filled('subscription_plan')) {
+            $query->where('subscription_plan', $request->subscription_plan);
+        }
+
+        $tenants = $query->get();
+
+        $filename = 'tenants_' . date('Y-m-d_His') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function() use ($tenants) {
+            $file = fopen('php://output', 'w');
+            
+            // Add CSV headers
+            fputcsv($file, [
+                'ID',
+                'Tenant Name',
+                'Contact Person',
+                'Email',
+                'Phone',
+                'Subscription Plan',
+                'Monthly Fee',
+                'Per Restaurant Fee',
+                'Total Restaurants',
+                'Active Restaurants',
+                'Status',
+                'Created Date',
+                'Approved Date'
+            ]);
+
+            // Add data rows
+            foreach ($tenants as $tenant) {
+                fputcsv($file, [
+                    $tenant->id,
+                    $tenant->tenant_name,
+                    $tenant->contact_person,
+                    $tenant->email,
+                    $tenant->phone,
+                    $tenant->subscription_plan,
+                    $tenant->monthly_base_fee,
+                    $tenant->per_restaurant_fee,
+                    $tenant->total_restaurants,
+                    $tenant->restaurants()->count(),
+                    $tenant->status,
+                    $tenant->created_at->format('Y-m-d H:i:s'),
+                    $tenant->approved_at ? $tenant->approved_at->format('Y-m-d H:i:s') : 'N/A'
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Export tenants to PDF
+     */
+    public function exportPdf(Request $request)
+    {
+        $user = Auth::user();
+        $query = Tenant::query();
+
+        // Role-based filtering
+        if ($user->role === 'tenant_admin') {
+            $query->where('id', $user->tenant_id);
+        }
+
+        // Apply filters
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('tenant_name', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%')
+                    ->orWhere('contact_person', 'like', '%'.$search.'%');
+            });
+        }
+
+        if ($request->filled('subscription_plan')) {
+            $query->where('subscription_plan', $request->subscription_plan);
+        }
+
+        $tenants = $query->get();
+
+        $html = '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Tenants Report</title>
+            <style>
+                body { font-family: Arial, sans-serif; font-size: 12px; }
+                h1 { text-align: center; color: #333; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #4CAF50; color: white; }
+                tr:nth-child(even) { background-color: #f2f2f2; }
+                .header { text-align: center; margin-bottom: 20px; }
+                .date { text-align: right; color: #666; margin-bottom: 10px; }
+            </style>
+        </head>
+        <body>
+            <div class="date">Generated: ' . date('Y-m-d H:i:s') . '</div>
+            <div class="header">
+                <h1>Tenants Report</h1>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tenant Name</th>
+                        <th>Contact</th>
+                        <th>Email</th>
+                        <th>Plan</th>
+                        <th>Restaurants</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>';
+
+        foreach ($tenants as $tenant) {
+            $html .= '
+                    <tr>
+                        <td>' . $tenant->id . '</td>
+                        <td>' . htmlspecialchars($tenant->tenant_name) . '</td>
+                        <td>' . htmlspecialchars($tenant->contact_person) . '</td>
+                        <td>' . htmlspecialchars($tenant->email) . '</td>
+                        <td>' . $tenant->subscription_plan . '</td>
+                        <td>' . $tenant->restaurants()->count() . ' / ' . $tenant->total_restaurants . '</td>
+                        <td>' . ucfirst($tenant->status) . '</td>
+                        <td>' . $tenant->created_at->format('Y-m-d') . '</td>
+                    </tr>';
+        }
+
+        $html .= '
+                </tbody>
+            </table>
+            <div style="margin-top: 30px; text-align: center; color: #666; font-size: 10px;">
+                <p>To save as PDF: Use your browser\'s Print function (Ctrl+P / Cmd+P) and select "Save as PDF"</p>
+            </div>
+        </body>
+        </html>';
+
+        return response($html)
+            ->header('Content-Type', 'text/html')
+            ->header('Content-Disposition', 'inline; filename="tenants_' . date('Y-m-d_His') . '.html"');
+    }
 }
