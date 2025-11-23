@@ -1,1 +1,20 @@
-/public/assets/vendor_components/zingchart_branded_version/
+# Ignore heavy vendor assets not needed for build
+public/assets/vendor_components/
+
+# Laravel storage — runtime only
+storage/
+
+# Node modules should be installed fresh on Railway
+node_modules/
+
+# If you store uploads in public, ignore them in build
+public/uploads/
+public/images/uploads/
+
+# Git/IDE temp files
+*.log
+*.tmp
+*.swp
+.DS_Store
+.idea/
+.vscode/
