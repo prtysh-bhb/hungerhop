@@ -11,3 +11,7 @@ commands = [
   "php artisan route:cache",
   "php artisan view:cache"
 ]
+
+# Prevent Nixpacks from scanning the public directory
+[variables]
+NIXPACKS_IGNORE_FILES = "public/**"
