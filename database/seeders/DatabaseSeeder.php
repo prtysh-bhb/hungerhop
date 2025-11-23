@@ -12,9 +12,9 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            CountrySeeder::class,
-            StateSeeder::class,
-            CitySeeder::class,
+            // CountrySeeder::class,
+            // StateSeeder::class,
+            // CitySeeder::class,
             UserSeeder::class,
             MenuTemplateSeeder::class,
             MenuCategorySeeder::class,
