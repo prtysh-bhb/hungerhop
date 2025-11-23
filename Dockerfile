@@ -26,6 +26,11 @@ COPY --from=node-builder /app/public ./public
 
 # Laravel optimizations
 RUN composer install --optimize-autoloader --no-dev \
+ && mkdir -p storage/framework/cache \
+    storage/framework/sessions \
+    storage/framework/views \
+    bootstrap/cache \
+ && chmod -R 775 storage bootstrap/cache \
  && php artisan config:cache \
  && php artisan route:cache \
  && php artisan view:cache
