@@ -24,16 +24,16 @@ COPY . .
 # Copy built assets
 COPY --from=node-builder /app/public ./public
 
-# Laravel optimizations
-RUN composer install --optimize-autoloader --no-dev \
- && mkdir -p storage/framework/cache \
+# Laravel dependencies install only (no artisan commands during build)
+RUN composer install --optimize-autoloader --no-dev
+
+# Ensure writable directories exist
+RUN mkdir -p storage/framework/cache \
     storage/framework/sessions \
     storage/framework/views \
     bootstrap/cache \
- && chmod -R 775 storage bootstrap/cache \
- && php artisan config:cache \
- && php artisan route:cache \
- && php artisan view:cache
+ && chmod -R 775 storage bootstrap/cache
+
 
 EXPOSE 9000
 CMD ["php-fpm"]
