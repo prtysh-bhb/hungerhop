@@ -14,4 +14,9 @@ export default defineConfig({
         outDir: 'public/dist',
         emptyOutDir: true,
     },
+    optimizeDeps: {
+        exclude: [
+            'public/assets/vendor_components/zingchart_branded_version/modules/zingchart-maps-mda.min.js'
+        ],
+    },
 });
