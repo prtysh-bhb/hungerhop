@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Repositories\Contracts\RestaurantRepositoryInterface;
 use App\Repositories\RestaurantRepository;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -79,6 +80,11 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
         }
+        
+        if (!Schema::hasTable('migrations')) {
+        Artisan::call('migrate --force');
+        Artisan::call('db:seed --force');
+    }
     }
     
 }
