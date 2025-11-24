@@ -1,5 +1,4 @@
 node_modules
 vendor
 storage
-public/uploads
-public/assets/vendor_components
+public/uploads\
