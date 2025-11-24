@@ -34,14 +34,17 @@ COPY . .
 RUN chown -R www-data:www-data /app \
  && chmod -R 775 /app/storage /app/bootstrap/cache
 
-# Optimize dependencies
-RUN composer dump-autoload --optimize --classmap-authoritative
+# Laravel post-install steps (THIS FIXES THE LOGIN 500)
+RUN composer dump-autoload --optimize --classmap-authoritative && \
+    php artisan key:generate --force && \
+    php artisan storage:link && \
+    php artisan migrate --force && \
+    php artisan db:seed --force || true && \
+    php artisan optimize
 
 # Copy Caddy configuration for FrankenPHP
 COPY Caddyfile /etc/caddy/Caddyfile
 
-# Expose port (Caddy runtime will map to Railway $PORT)
 EXPOSE 8080
 
-# Start FrankenPHP server
 CMD ["frankenphp", "run", "--config", "/etc/caddy/Caddyfile"]
