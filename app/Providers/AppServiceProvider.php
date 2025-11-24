@@ -81,10 +81,6 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
         
-        if (!Schema::hasTable('migrations')) {
-        Artisan::call('migrate --force');
-        Artisan::call('db:seed --force');
-    }
     }
     
 }

@@ -34,15 +34,22 @@ COPY . .
 RUN chown -R www-data:www-data /app \
  && chmod -R 775 /app/storage /app/bootstrap/cache
 
-# Laravel post-install steps (THIS FIXES THE LOGIN 500)
-RUN composer dump-autoload --optimize --classmap-authoritative && \
-    php artisan key:generate --force && \
-    php artisan storage:link && \
-    php artisan optimize
+# Generate optimized autoloader only (no artisan commands during build)
+RUN composer dump-autoload --optimize --classmap-authoritative --no-scripts
 
 # Copy Caddy configuration for FrankenPHP
 COPY Caddyfile /etc/caddy/Caddyfile
 
+# Create entrypoint script to run migrations at startup
+RUN echo '#!/bin/sh\n\
+php artisan migrate --force\n\
+php artisan storage:link || true\n\
+php artisan config:cache\n\
+php artisan route:cache\n\
+php artisan view:cache\n\
+exec frankenphp run --config /etc/caddy/Caddyfile' > /entrypoint.sh \
+ && chmod +x /entrypoint.sh
+
 EXPOSE 8080
 
-CMD ["frankenphp", "run", "--config", "/etc/caddy/Caddyfile"]
+CMD ["/entrypoint.sh"]
