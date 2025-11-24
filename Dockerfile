@@ -45,7 +45,7 @@ RUN echo $'{\n\
     order php_server before file_server\n\
 }\n\
 \n\
-:{$PORT:8000} {\n\
+:8000 {\n\
     root * /app/public\n\
     php_server\n\
     encode gzip\n\
@@ -53,9 +53,11 @@ RUN echo $'{\n\
     log {\n\
         output stdout\n\
         format console\n\
+        level INFO\n\
     }\n\
 }' > /etc/caddy/Caddyfile
 
 EXPOSE 8000
 
+# Use FrankenPHP directly (not artisan serve)
 CMD ["frankenphp", "run", "--config", "/etc/caddy/Caddyfile"]
