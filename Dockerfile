@@ -38,8 +38,6 @@ RUN chown -R www-data:www-data /app \
 RUN composer dump-autoload --optimize --classmap-authoritative && \
     php artisan key:generate --force && \
     php artisan storage:link && \
-    php artisan migrate --force && \
-    php artisan db:seed --force || true && \
     php artisan optimize
 
 # Copy Caddy configuration for FrankenPHP
