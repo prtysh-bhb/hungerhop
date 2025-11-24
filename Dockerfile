@@ -32,16 +32,12 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 # Copy application files
 COPY . .
 
-# Create .env file for build-time commands
-RUN cp .env.example .env || touch .env \
-    && echo "APP_KEY=base64:dGVtcG9yYXJ5a2V5Zm9yYnVpbGRvbmx5MTIzNDU2Nzg5MA==" >> .env
-
-# Generate optimized autoloader (without triggering package discovery)
-RUN composer dump-autoload --optimize --no-dev --no-scripts
-
-# Set permissions for Laravel
+# Set permissions BEFORE autoload to ensure cache directories are writable
 RUN chown -R www-data:www-data /app \
     && chmod -R 775 /app/storage /app/bootstrap/cache
+
+# Generate optimized autoloader (skip all scripts to avoid cache path errors)
+RUN composer dump-autoload --optimize --no-scripts --classmap-authoritative
 
 # Create a Caddyfile for FrankenPHP
 RUN echo $'{\n\
