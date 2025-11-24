@@ -1,0 +1,16 @@
+{
+    frankenphp
+    order php_server before file_server
+}
+
+:${PORT:-8080} {
+    root * /app/public
+    php_server
+    encode gzip
+    file_server
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+}

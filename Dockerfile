@@ -1,7 +1,7 @@
-# Use FrankenPHP base image (includes PHP + Caddy)
+# Use FrankenPHP base image (PHP + Caddy)
 FROM dunglas/frankenphp:latest-php8.2
 
-# Install system dependencies and PHP extensions
+# Install PHP extensions
 RUN install-php-extensions \
     pdo_mysql \
     gd \
@@ -16,47 +16,31 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
-# Create necessary cache directories before autoloader
+# Create necessary storage/cache folders
 RUN mkdir -p /app/storage/framework/cache \
     /app/storage/framework/sessions \
     /app/storage/framework/views \
     /app/storage/logs \
     /app/bootstrap/cache
 
-# Copy composer files
+# Copy composer files first for layer caching
 COPY composer.json composer.lock ./
-
-# Install dependencies without scripts first
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
-# Copy application source
+# Copy full application source
 COPY . .
 
-# Permissions before autoload
+# Permissions
 RUN chown -R www-data:www-data /app \
-    && chmod -R 775 /app/storage /app/bootstrap/cache
+ && chmod -R 775 /app/storage /app/bootstrap/cache
 
-# Generate autoload
+# Optimize dependencies
 RUN composer dump-autoload --optimize --classmap-authoritative
 
-# Generate dynamic Caddyfile
-RUN echo $'{\n\
-    frankenphp\n\
-    order php_server before file_server\n\
-}\n\
-\n\
-:{$PORT} {\n\
-    root * /app/public\n\
-    php_server\n\
-    encode gzip\n\
-    file_server\n\
-    log {\n\
-        output stdout\n\
-        format console\n\
-        level INFO\n\
-    }\n\
-}' > /etc/caddy/Caddyfile
+# Copy Caddy configuration for FrankenPHP
+COPY Caddyfile /etc/caddy/Caddyfile
 
+# Expose port (Caddy runtime will map to Railway $PORT)
 EXPOSE 8080
 
 # Start FrankenPHP server
