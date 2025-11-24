@@ -1,0 +1,15 @@
+# Ignore large vendor files and minified assets that cause UTF-8 issues
+public/assets/vendor_components/
+node_modules/
+vendor/
+.git/
+storage/logs/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+bootstrap/cache/
+.env
+.env.*
+!.env.example
+tests/
+.phpunit.result.cache
