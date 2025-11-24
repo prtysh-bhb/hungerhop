@@ -1,0 +1,46 @@
+# ----- Build Stage -----
+FROM node:18 AS node-builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+# ----- PHP Stage -----
+FROM php:8.2-cli
+
+# System dependencies
+RUN apt-get update && apt-get install -y \
+    git unzip libzip-dev libpng-dev libonig-dev curl \
+    && docker-php-ext-install pdo pdo_mysql zip gd \
+    && rm -rf /var/lib/apt/lists/*
+
+# Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+# Ensure writable directories exist BEFORE copying files
+RUN mkdir -p storage/framework/cache \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    bootstrap/cache
+
+COPY . .
+
+# Copy built assets
+COPY --from=node-builder /app/public ./public
+
+# Set proper permissions BEFORE composer install
+RUN chmod -R 775 storage bootstrap/cache
+
+# Laravel dependencies install (with dev for package discovery to work)
+RUN composer install --optimize-autoloader --no-interaction
+
+# Clear and create necessary cache
+RUN php artisan config:clear || true \
+    && php artisan cache:clear || true
+
+EXPOSE 8000
+CMD php artisan serve --host=0.0.0.0 --port=8000
