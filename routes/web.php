@@ -532,3 +532,8 @@ Route::prefix('admin/restaurant/{restaurant}')->name('admin.restaurant.')->middl
 Route::get('/test-sidebar', function () {
     return view('partials.right-sidebar');
 })->name('test-sidebar');
+Route::get('/run-migrations', function () {
+    \Artisan::call('migrate --force');
+    \Artisan::call('db:seed --force');
+    return 'Migrations and seed completed!';
+});
