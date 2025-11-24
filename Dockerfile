@@ -16,36 +16,36 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
-# Create necessary directories with proper permissions
+# Create necessary cache directories before autoloader
 RUN mkdir -p /app/storage/framework/cache \
     /app/storage/framework/sessions \
     /app/storage/framework/views \
     /app/storage/logs \
     /app/bootstrap/cache
 
-# Copy composer files first for better caching
+# Copy composer files
 COPY composer.json composer.lock ./
 
-# Install PHP dependencies (production only, skip scripts to avoid cache errors)
+# Install dependencies without scripts first
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
-# Copy application files
+# Copy application source
 COPY . .
 
-# Set permissions BEFORE autoload to ensure cache directories are writable
+# Permissions before autoload
 RUN chown -R www-data:www-data /app \
     && chmod -R 775 /app/storage /app/bootstrap/cache
 
-# Generate optimized autoloader (skip all scripts to avoid cache path errors)
-RUN composer dump-autoload --optimize --no-scripts --classmap-authoritative
+# Generate autoload
+RUN composer dump-autoload --optimize --classmap-authoritative
 
-# Create a Caddyfile for FrankenPHP
+# Generate dynamic Caddyfile
 RUN echo $'{\n\
     frankenphp\n\
     order php_server before file_server\n\
 }\n\
 \n\
-:8000 {\n\
+:{$PORT} {\n\
     root * /app/public\n\
     php_server\n\
     encode gzip\n\
@@ -57,7 +57,7 @@ RUN echo $'{\n\
     }\n\
 }' > /etc/caddy/Caddyfile
 
-EXPOSE 8000
+EXPOSE 8080
 
-# Use FrankenPHP directly (not artisan serve)
+# Start FrankenPHP server
 CMD ["frankenphp", "run", "--config", "/etc/caddy/Caddyfile"]
