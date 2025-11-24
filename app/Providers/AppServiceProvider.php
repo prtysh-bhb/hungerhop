@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 
 // use app\Models\Restaurant;
 // use App\Models\MenuItem;
@@ -26,6 +27,8 @@ class AppServiceProvider extends ServiceProvider
             RestaurantRepository::class
         );
     }
+
+     
 
     /**
      * Bootstrap any application services.
@@ -72,5 +75,11 @@ class AppServiceProvider extends ServiceProvider
             // add others here...
         ]);
         Schema::defaultStringLength(191);
+        
+        if (config('app.env') === 'production') {
+            URL::forceScheme('https');
+        }
     }
+    
 }
+
