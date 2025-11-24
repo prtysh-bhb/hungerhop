@@ -16,40 +16,48 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
-# Create necessary storage/cache folders
-RUN mkdir -p /app/storage/framework/cache \
-    /app/storage/framework/sessions \
-    /app/storage/framework/views \
-    /app/storage/logs \
-    /app/bootstrap/cache
+# Create necessary Laravel folders
+RUN mkdir -p storage/framework/cache \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    bootstrap/cache
 
-# Copy composer files first for layer caching
+# Copy composer files first (better caching)
 COPY composer.json composer.lock ./
+
+# Install PHP dependencies, BUT DON'T RUN SCRIPTS (so no artisan at build time)
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
 # Copy full application source
 COPY . .
 
-# Permissions
+# Fix permissions for storage and cache
 RUN chown -R www-data:www-data /app \
- && chmod -R 775 /app/storage /app/bootstrap/cache
+ && chmod -R 775 storage bootstrap/cache
 
-# Generate optimized autoloader only (no artisan commands during build)
+# Generate optimized autoloader ONLY (still no scripts here)
 RUN composer dump-autoload --optimize --classmap-authoritative --no-scripts
 
 # Copy Caddy configuration for FrankenPHP
 COPY Caddyfile /etc/caddy/Caddyfile
 
-# Create entrypoint script to run migrations at startup
-RUN echo '#!/bin/sh\n\
-php artisan migrate --force\n\
-php artisan storage:link || true\n\
-php artisan config:cache\n\
-php artisan route:cache\n\
-php artisan view:cache\n\
-exec frankenphp run --config /etc/caddy/Caddyfile' > /entrypoint.sh \
+# Create entrypoint script that will run AFTER env + DB are available
+RUN echo '#!/bin/sh'                                      >  /entrypoint.sh \
+ && echo 'php artisan config:clear'                      >> /entrypoint.sh \
+ && echo 'php artisan cache:clear'                       >> /entrypoint.sh \
+ && echo 'php artisan route:clear'                       >> /entrypoint.sh \
+ && echo 'php artisan view:clear'                        >> /entrypoint.sh \
+ && echo 'php artisan key:generate --force'              >> /entrypoint.sh \
+ && echo 'php artisan package:discover --ansi || true'   >> /entrypoint.sh \
+ && echo 'php artisan migrate --force || true'           >> /entrypoint.sh \
+ && echo 'php artisan db:seed --force || true'           >> /entrypoint.sh \
+ && echo 'php artisan storage:link || true'              >> /entrypoint.sh \
+ && echo 'php artisan optimize'                          >> /entrypoint.sh \
+ && echo 'exec frankenphp run --config /etc/caddy/Caddyfile' >> /entrypoint.sh \
  && chmod +x /entrypoint.sh
 
 EXPOSE 8080
 
+# Start Laravel + FrankenPHP via entrypoint
 CMD ["/entrypoint.sh"]
