@@ -1,9 +1,10 @@
 {
     frankenphp
+    auto_https off
     order php_server before file_server
 }
 
-:${PORT:-8080} {
+:{$PORT} {
     root * /app/public
     php_server
     encode gzip
