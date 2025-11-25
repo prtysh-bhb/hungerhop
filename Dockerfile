@@ -22,20 +22,25 @@ WORKDIR /build
 
 RUN install-php-extensions \
     pdo_mysql \
+    pdo_pgsql \
+    mysqli \
     bcmath \
     gd \
     zip \
+    opcache \
     intl \
     exif \
     pcntl \
     redis \
+    soap \
     sockets \
     mbstring \
     curl \
     xml \
     xmlwriter \
     simplexml \
-    fileinfo
+    fileinfo \
+    openssl
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 COPY composer.json composer.lock ./
@@ -48,6 +53,32 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 FROM dunglas/frankenphp:latest-php8.2-alpine
 
 WORKDIR /app
+
+# Install runtime PHP extensions
+RUN install-php-extensions \
+    pdo_mysql \
+    pdo_pgsql \
+    mysqli \
+    bcmath \
+    gd \
+    zip \
+    opcache \
+    intl \
+    exif \
+    pcntl \
+    redis \
+    soap \
+    sockets \
+    mbstring \
+    curl \
+    xml \
+    xmlwriter \
+    simplexml \
+    fileinfo \
+    openssl
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 COPY --from=backend-builder --chown=www-data:www-data /build/vendor ./vendor
 COPY --chown=www-data:www-data . .
@@ -64,7 +95,21 @@ RUN mkdir -p \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
+# PHP Configuration optimizations
+RUN echo "memory_limit=256M" > /usr/local/etc/php/conf.d/memory.ini && \
+    echo "upload_max_filesize=20M" > /usr/local/etc/php/conf.d/upload.ini && \
+    echo "post_max_size=20M" >> /usr/local/etc/php/conf.d/upload.ini && \
+    echo "max_execution_time=300" >> /usr/local/etc/php/conf.d/upload.ini && \
+    echo "opcache.enable=1" > /usr/local/etc/php/conf.d/opcache.ini && \
+    echo "opcache.memory_consumption=128" >> /usr/local/etc/php/conf.d/opcache.ini && \
+    echo "opcache.interned_strings_buffer=8" >> /usr/local/etc/php/conf.d/opcache.ini && \
+    echo "opcache.max_accelerated_files=10000" >> /usr/local/etc/php/conf.d/opcache.ini && \
+    echo "opcache.revalidate_freq=2" >> /usr/local/etc/php/conf.d/opcache.ini && \
+    echo "opcache.fast_shutdown=1" >> /usr/local/etc/php/conf.d/opcache.ini
+
 COPY --chown=www-data:www-data Caddyfile /etc/caddy/Caddyfile
+COPY --chown=www-data:www-data entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 USER www-data
 
@@ -75,5 +120,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --retries=5 \
   CMD wget -qO- http://localhost:8080/ || exit 1
 
-# 🚨 THIS LINE IS REQUIRED (otherwise app will never start)
-ENTRYPOINT ["frankenphp", "run", "--config=/etc/caddy/Caddyfile"]
+# Run Laravel initialization then start FrankenPHP
+ENTRYPOINT ["/entrypoint.sh"]
