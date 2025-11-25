@@ -532,3 +532,5 @@ Route::prefix('admin/restaurant/{restaurant}')->name('admin.restaurant.')->middl
 Route::get('/test-sidebar', function () {
     return view('partials.right-sidebar');
 })->name('test-sidebar');
+Route::get('/', fn() => 'OK');
+Route::get('/health-check', fn() => response()->json(['status' => 'OK']))->name('health-check');
