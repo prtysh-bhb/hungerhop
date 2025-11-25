@@ -4,14 +4,46 @@
     order php_server before file_server
 }
 
-:{$PORT} {
+:{$PORT:8080} {
     root * /app/public
+    
+    # PHP server with FrankenPHP
     php_server
-    encode gzip
+    
+    # Enable gzip compression
+    encode gzip zstd
+    
+    # Serve static files
     file_server
+    
+    # Handle Laravel routes
+    try_files {path} {path}/ /index.php?{query}
+    
+    # Security headers
+    header {
+        # Remove server information
+        -Server
+        -X-Powered-By
+        
+        # Security headers
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        
+        # Enable HSTS (only if using HTTPS)
+        # Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    }
+    
+    # Logging
     log {
         output stdout
         format console
         level INFO
+    }
+    
+    # Error handling
+    handle_errors {
+        respond "{err.status_code} {err.status_text}"
     }
 }

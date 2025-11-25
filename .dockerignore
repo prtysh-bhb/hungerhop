@@ -1,4 +1,73 @@
+# Dependencies
 node_modules
 vendor
-storage
+
+# Development files
+.git
+.gitignore
+.gitattributes
+.editorconfig
+.env
+.env.*
+!.env.example
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+tests
+.phpunit.result.cache
+phpunit.xml
+phpstan.neon
+.phpcs.xml
+
+# Documentation
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE
+docs
+
+# Build artifacts
+storage/app/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+!storage/app/.gitignore
+!storage/framework/.gitignore
+!storage/framework/cache/.gitignore
+!storage/logs/.gitignore
+
+# Public build artifacts (will be built during Docker build)
+public/hot
+public/storage
 public/uploads
+
+# Backup
+backup
+*.sql
+*.zip
+*.tar.gz
+
+# Docker
+docker-compose.yml
+docker-compose.prod.yml
+docker-compose.override.yml
+Dockerfile
+.dockerignore
+
+# CI/CD
+.github
+.gitlab-ci.yml
+railway.toml
+
+# Temporary files
+*.log
+*.tmp
+.cache
