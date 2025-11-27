@@ -335,36 +335,53 @@
             @endif
 
             <!-- Activity Timeline -->
-            <div class="box">
-                <div class="box-header with-border">
-                    <h4 class="box-title">Activity Timeline</h4>
-                </div>
-                <div class="box-body">
-                    <div class="timeline">
-                        <div class="timeline-item">
-                            <h6 class="mb-2">Tenant Created</h6>
-                            <p class="text-muted mb-1">{{ $tenant->created_at->format('M d, Y \a\t h:i A') }}</p>
-                            <small class="text-muted">Initial tenant registration</small>
-                        </div>
+            <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-0 pb-0">
+                <h5 class="card-title fw-bold mb-1">Activity Timeline</h5>
+                <p class="text-muted small">Latest recent activities</p>
+            </div>
 
-                        @if ($tenant->approved_at)
-                            <div class="timeline-item">
-                                <h6 class="mb-2">Tenant Approved</h6>
-                                <p class="text-muted mb-1">{{ $tenant->approved_at->format('M d, Y \a\t h:i A') }}</p>
-                                <small class="text-muted">Tenant status changed to approved</small>
-                            </div>
-                        @endif
+            <div class="card-body">
+                <div class="d-flex flex-column gap-3">
 
-                        @foreach ($tenant->restaurants->take(3) as $restaurant)
-                            <div class="timeline-item">
-                                <h6 class="mb-2">Restaurant Added</h6>
-                                <p class="text-muted mb-1">{{ $restaurant->created_at->format('M d, Y \a\t h:i A') }}</p>
-                                <small class="text-muted">{{ $restaurant->restaurant_name }} was registered</small>
-                            </div>
-                        @endforeach
+                    <!-- Tenant Created -->
+                    <div class="p-3 rounded bg-light">
+                        <h6 class="fw-semibold mb-1">Tenant Created</h6>
+                        <p class="text-muted small mb-0">
+                            {{ $tenant->created_at->clone()->setTimezone('Asia/Kolkata')->format('M d, Y \a\t h:i A') }}
+
+                        </p>
+                        <small class="text-muted">Initial tenant registration</small>
                     </div>
+
+                    @if ($tenant->approved_at)
+                        <!-- Tenant Approved -->
+                        <div class="p-3 rounded bg-light">
+                            <h6 class="fw-semibold mb-1">Tenant Approved</h6>
+                            <p class="text-muted small mb-0">
+                                {{ $tenant->approved_at->clone()->setTimezone('Asia/Kolkata')->format('M d, Y \a\t h:i A') }}
+                            </p>
+                            <small class="text-muted">Status changed to approved</small>
+                        </div>
+                    @endif
+
+                    <!-- Restaurants Timeline -->
+                    @foreach ($tenant->restaurants->take(3) as $restaurant)
+                        <div class="p-3 rounded bg-light">
+                            <h6 class="fw-semibold mb-1">Restaurant Added</h6>
+                            <p class="text-muted small mb-0">
+                                {{ $restaurant->created_at->clone()->setTimezone('Asia/Kolkata')->format('M d, Y \a\t h:i A') }}
+                            </p>
+                            <small class="text-muted">
+                                {{ $restaurant->restaurant_name }} was registered
+                            </small>
+                        </div>
+                    @endforeach
+
                 </div>
             </div>
+        </div>
+
         </section>
     </div>
 @endsection

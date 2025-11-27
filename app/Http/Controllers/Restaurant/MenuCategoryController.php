@@ -122,12 +122,23 @@ class MenuCategoryController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|min:2|max:255',
             'description' => 'nullable|string|max:1000',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+        ], [
+            'name.required' => 'Category name is required.',
+            'name.min' => 'Category name must be at least 2 characters.',
+            'name.max' => 'Category name cannot exceed 255 characters.',
+            'description.max' => 'Description cannot exceed 1000 characters.',
+            'sort_order.integer' => 'Sort order must be an integer.',
+            'sort_order.min' => 'Sort order cannot be negative.',
+            'image.image' => 'The uploaded file must be an image.',
+            'image.mimes' => 'The image must be a file of type: jpeg, png, jpg, gif.',
+            'image.max' => 'The image must not exceed 2MB in size.',
+        ]
+        );
 
         $validated['is_active'] = $validated['is_active'] ?? false;
 
@@ -159,18 +170,20 @@ class MenuCategoryController extends Controller
     public function destroy(MenuCategory $category): RedirectResponse
     {
         $user = Auth::user();
+
         // Ensure user can only delete categories from their tenant
+        if ($category->tenant_id !== $user->tenant_id) {
+            abort(403, 'Access denied.');
+        }
+
+        // Check if category has menu items
+        $menuItemCount = $category->menuItems()->count();
+        if ($menuItemCount > 0) {
+            return redirect()->back()
+                ->with('error', "Cannot delete category '{$category->name}'. It has {$menuItemCount} menu item(s) linked to it. Please remove or reassign those menu items first.");
+        }
+
         try {
-            if ($category->tenant_id !== $user->tenant_id) {
-                abort(403, 'Access denied.');
-            }
-
-            // Check if category has menu items
-            if ($category->menuItems()->count() > 0) {
-                return redirect()->back()
-                    ->with('error', 'Cannot delete category that contains menu items.');
-            }
-
             // Delete image if exists
             if ($category->image_url) {
                 $path = str_replace('/storage/', '', parse_url($category->image_url, PHP_URL_PATH));
@@ -181,11 +194,11 @@ class MenuCategoryController extends Controller
 
             $category->delete();
 
-            // dd($category);
             return redirect()->route('restaurant.categories.index')
                 ->with('success', 'Category deleted successfully!');
         } catch (\Exception $e) {
-            dd($e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to delete category: '.$e->getMessage());
         }
     }
 

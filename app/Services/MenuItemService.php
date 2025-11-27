@@ -89,21 +89,6 @@ class MenuItemService
         $data['is_gluten_free'] = isset($data['is_gluten_free']) ? (bool) $data['is_gluten_free'] : false;
         $data['is_popular'] = isset($data['is_popular']) ? (bool) $data['is_popular'] : false;
 
-        // Handle datetime fields - convert time to datetime
-        if (isset($data['available_from']) && $data['available_from']) {
-            // If it's just a time (HH:MM), convert to today's date with that time
-            if (preg_match('/^\d{2}:\d{2}$/', $data['available_from'])) {
-                $data['available_from'] = date('Y-m-d').' '.$data['available_from'].':00';
-            }
-        }
-
-        if (isset($data['available_until']) && $data['available_until']) {
-            // If it's just a time (HH:MM), convert to today's date with that time
-            if (preg_match('/^\d{2}:\d{2}$/', $data['available_until'])) {
-                $data['available_until'] = date('Y-m-d').' '.$data['available_until'].':00';
-            }
-        }
-
         // Handle tags field - remove it entirely if causing constraint issues
         if (isset($data['tags'])) {
             unset($data['tags']);
@@ -134,32 +119,16 @@ class MenuItemService
             unset($data['image']);
         }
 
-        // Handle datetime fields - convert time to datetime
-        if (isset($data['available_from']) && $data['available_from']) {
-            // If it's just a time (HH:MM), convert to today's date with that time
-            if (preg_match('/^\d{2}:\d{2}$/', $data['available_from'])) {
-                $data['available_from'] = date('Y-m-d').' '.$data['available_from'].':00';
-            }
-        }
-
-        if (isset($data['available_until']) && $data['available_until']) {
-            // If it's just a time (HH:MM), convert to today's date with that time
-            if (preg_match('/^\d{2}:\d{2}$/', $data['available_until'])) {
-                $data['available_until'] = date('Y-m-d').' '.$data['available_until'].':00';
-            }
-        }
-
-        // Handle tags field - remove it entirely if causing constraint issues
-        if (isset($data['tags'])) {
-            unset($data['tags']);
-        }
-
-        // Set boolean fields properly (only those present in DB)
         $data['is_available'] = isset($data['is_available']) ? (bool) $data['is_available'] : false;
         $data['is_vegetarian'] = isset($data['is_vegetarian']) ? (bool) $data['is_vegetarian'] : false;
         $data['is_vegan'] = isset($data['is_vegan']) ? (bool) $data['is_vegan'] : false;
         $data['is_gluten_free'] = isset($data['is_gluten_free']) ? (bool) $data['is_gluten_free'] : false;
         $data['is_popular'] = isset($data['is_popular']) ? (bool) $data['is_popular'] : false;
+
+        // Handle tags field - remove it entirely if causing constraint issues
+        if (isset($data['tags'])) {
+            unset($data['tags']);
+        }
 
         $menuItem->update($data);
 

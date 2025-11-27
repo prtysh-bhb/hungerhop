@@ -89,12 +89,13 @@
                           </li>
                       @endif
 
+
                       @auth
-                          @if (auth()->user() && auth()->user()->role === 'super_admin')
-                              <li class="{{ request()->is('delivery/partners') ? 'active' : '' }}">
+                          @if (auth()->user()->role === 'super_admin')
+                              <li class="{{ request()->is('delivery/partners*') ? 'active' : '' }}">
                                   <a href="{{ route('partners.index') }}">
-                                      <i class="icon-Commit"><span class="path1"></span><span
-                                              class="path2"></span></i>Delivery Partners
+                                      <i class="icon-Commit"><span class="path1"></span><span class="path2"></span></i>
+                                      <span>Delivery Partners</span>
                                   </a>
                               </li>
                           @endif

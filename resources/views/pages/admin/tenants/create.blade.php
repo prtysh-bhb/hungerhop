@@ -249,20 +249,19 @@
                 <!-- Subscription Plan -->
                 <div class="form-section">
                     <h5>Subscription Plan</h5>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div class="plan-grid">
                         <label class="plan-card" for="plan_lite">
                             <input type="radio" id="plan_lite" name="subscription_plan" value="LITE"
                                 {{ old('subscription_plan') == 'LITE' ? 'checked' : '' }}>
-                            <div style="text-align: center;">
-                                <div class="icon-circle bg-info text-white">
+                            <div class="plan-content">
+                                <div class="icon-circle bg-info">
                                     <i class="fa fa-star"></i>
                                 </div>
-                                <h6 style="margin: 0.5rem 0; color: #2d3748;">Lite Plan</h6>
-                                <p style="color: #6b7280; margin: 0.5rem 0; font-size: 0.9rem;">Basic features for small
-                                    businesses</p>
+                                <h6>Lite Plan</h6>
+                                <p>Basic features for small businesses</p>
                                 <div class="plan-price">₹1,200/month</div>
                                 <div class="plan-features">
-                                    <small style="color: #6b7280; line-height: 1.4;">
+                                    <small>
                                         Up to 5 Restaurants<br>
                                         1 Banner
                                     </small>
@@ -273,16 +272,15 @@
                         <label class="plan-card" for="plan_plus">
                             <input type="radio" id="plan_plus" name="subscription_plan" value="PLUS"
                                 {{ old('subscription_plan') == 'PLUS' ? 'checked' : '' }}>
-                            <div style="text-align: center;">
-                                <div class="icon-circle bg-warning text-white">
+                            <div class="plan-content">
+                                <div class="icon-circle bg-warning">
                                     <i class="fa fa-star"></i>
                                 </div>
-                                <h6 style="margin: 0.5rem 0; color: #2d3748;">Plus Plan</h6>
-                                <p style="color: #6b7280; margin: 0.5rem 0; font-size: 0.9rem;">Advanced features for
-                                    growing businesses</p>
+                                <h6>Plus Plan</h6>
+                                <p>Advanced features for growing businesses</p>
                                 <div class="plan-price">₹2,000/month</div>
                                 <div class="plan-features">
-                                    <small style="color: #6b7280; line-height: 1.4;">
+                                    <small>
                                         Up to 20 Restaurants<br>
                                         3 Banners
                                     </small>
@@ -293,16 +291,15 @@
                         <label class="plan-card" for="plan_pro">
                             <input type="radio" id="plan_pro" name="subscription_plan" value="PRO_MAX"
                                 {{ old('subscription_plan') == 'PRO_MAX' ? 'checked' : '' }}>
-                            <div style="text-align: center;">
-                                <div class="icon-circle bg-success text-white">
+                            <div class="plan-content">
+                                <div class="icon-circle bg-success">
                                     <i class="fa fa-crown"></i>
                                 </div>
-                                <h6 style="margin: 0.5rem 0; color: #2d3748;">Pro Max Plan</h6>
-                                <p style="color: #6b7280; margin: 0.5rem 0; font-size: 0.9rem;">Premium features for
-                                    enterprise</p>
+                                <h6>Pro Max Plan</h6>
+                                <p>Premium features for enterprise</p>
                                 <div class="plan-price">₹2,500/month</div>
                                 <div class="plan-features">
-                                    <small style="color: #6b7280; line-height: 1.4;">
+                                    <small>
                                         Up to 30 Restaurants<br>
                                         10 Banners
                                     </small>
@@ -311,14 +308,90 @@
                         </label>
                     </div>
 
-                    <div id="plan-limit-warning" class="alert alert-warning" style="display: none; margin-top: 1rem;">
-                        <strong>Plan Limitations:</strong>
+                    <!-- Plan Limit Warning -->
+                    <div id="plan-limit-warning" class="alert alert-info mt-3" style="display: none;">
+                        <i class="fa fa-info-circle me-2"></i>
                         <span id="plan-limit-text"></span>
                     </div>
                 </div>
 
+                <style>
+                    .plan-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr 1fr;
+                        gap: 1rem;
+                    }
+
+                    .plan-card {
+                        border: 2px solid #e2e8f0;
+                        border-radius: 8px;
+                        padding: 1.5rem;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        background: white;
+                    }
+
+                    .plan-card:hover {
+                        border-color: #cbd5e0;
+                        transform: translateY(-2px);
+                    }
+
+                    .plan-card.selected {
+                        border-color: #3b82f6;
+                        background-color: #f0f9ff;
+                        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+                    }
+
+                    .plan-content {
+                        text-align: center;
+                    }
+
+                    .icon-circle {
+                        width: 60px;
+                        height: 60px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin: 0 auto 1rem;
+                    }
+
+                    .plan-card h6 {
+                        margin: 0.5rem 0;
+                        color: #2d3748;
+                        font-weight: 600;
+                    }
+
+                    .plan-card p {
+                        color: #6b7280;
+                        margin: 0.5rem 0;
+                        font-size: 0.9rem;
+                    }
+
+                    .plan-price {
+                        font-size: 1.25rem;
+                        font-weight: bold;
+                        color: #1f2937;
+                        margin: 0.5rem 0;
+                    }
+
+                    .plan-features small {
+                        color: #6b7280;
+                        line-height: 1.4;
+                    }
+
+                    .plan-card input[type="radio"] {
+                        display: none;
+                    }
+
+                    @media (max-width: 768px) {
+                        .plan-grid {
+                            grid-template-columns: 1fr;
+                        }
+                    }
+                </style>
                 <!-- Business Configuration -->
-                <div class="form-section">
+                <div class="form-section pt-4">
                     <h5>Business Configuration</h5>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem;">
                         <div class="form-group">
@@ -490,31 +563,56 @@
                 validatePhone(this);
             });
 
-            // Handle plan selection
+            // Handle plan selection - both click on card and radio change
+            const planCards = document.querySelectorAll('.plan-card');
             const planInputs = document.querySelectorAll('input[name="subscription_plan"]');
+
+            // Function to update form values based on selected plan
+            function updatePlanValues(planValue) {
+                const limits = planLimits[planValue];
+
+                if (limits) {
+                    // Update fees and limits based on plan
+                    document.getElementById('monthly_base_fee').value = limits.baseFee;
+                    document.getElementById('per_restaurant_fee').value = limits.perRestaurantFee;
+                    document.getElementById('total_restaurants').value = limits.maxRestaurants;
+                    document.getElementById('banner_limit').value = limits.maxBanners;
+
+                    // Show plan limitations
+                    showPlanLimitations(planValue, limits);
+                }
+            }
+
+            // Function to select a plan card
+            function selectPlanCard(selectedCard, radio) {
+                // Remove selected class from all cards
+                planCards.forEach(card => card.classList.remove('selected'));
+
+                // Add selected class to clicked card
+                selectedCard.classList.add('selected');
+
+                // Ensure the radio is checked
+                radio.checked = true;
+
+                // Update form values
+                updatePlanValues(radio.value);
+            }
+
+            // Add click event to plan cards
+            planCards.forEach(card => {
+                const radio = card.querySelector('input[type="radio"]');
+
+                card.addEventListener('click', function() {
+                    selectPlanCard(card, radio);
+                });
+            });
+
+            // Also handle direct radio change events
             planInputs.forEach(input => {
                 input.addEventListener('change', function() {
-                    // Remove selected class from all cards
-                    document.querySelectorAll('.plan-card').forEach(card => {
-                        card.classList.remove('selected');
-                    });
-
-                    // Add selected class to current card
-                    this.closest('.plan-card').classList.add('selected');
-
-                    const plan = this.value;
-                    const limits = planLimits[plan];
-
-                    if (limits) {
-                        // Update fees and limits based on plan
-                        document.getElementById('monthly_base_fee').value = limits.baseFee;
-                        document.getElementById('per_restaurant_fee').value = limits
-                            .perRestaurantFee;
-                        document.getElementById('total_restaurants').value = limits.maxRestaurants;
-                        document.getElementById('banner_limit').value = limits.maxBanners;
-
-                        // Show plan limitations
-                        showPlanLimitations(plan, limits);
+                    if (this.checked) {
+                        const card = this.closest('.plan-card');
+                        selectPlanCard(card, this);
                     }
                 });
             });
@@ -527,18 +625,11 @@
                 document.getElementById('plan-limit-warning').style.display = 'block';
             }
 
-            // Set initial selected plan
+            // Set initial selected plan on page load
             const initialPlan = document.querySelector('input[name="subscription_plan"]:checked');
             if (initialPlan) {
-                initialPlan.closest('.plan-card').classList.add('selected');
-                const limits = planLimits[initialPlan.value];
-                if (limits) {
-                    showPlanLimitations(initialPlan.value, limits);
-                    document.getElementById('monthly_base_fee').value = limits.baseFee;
-                    document.getElementById('per_restaurant_fee').value = limits.perRestaurantFee;
-                    document.getElementById('total_restaurants').value = limits.maxRestaurants;
-                    document.getElementById('banner_limit').value = limits.maxBanners;
-                }
+                const initialCard = initialPlan.closest('.plan-card');
+                selectPlanCard(initialCard, initialPlan);
             }
 
             // Form submission validation

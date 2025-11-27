@@ -37,7 +37,7 @@
                         @endif
                     </p>
                     <div class="d-flex gap-2">
-                        <a href="{{ route('admin.tenant.payment.plans') }}" class="btn btn-warning btn-sm">
+                        <a href="{{ route('admin.tenant.payment.plans') }}" class="btn btn-sm" style="background-color: #634fd2; ">
                             <i class="fa fa-credit-card me-1"></i>
                             @if ($userPendingApproval)
                                 Activate Account

@@ -21,22 +21,23 @@ class StoreMenuItemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Basic required fields
-            'item_name' => 'required|string|max:255',
-            'base_price' => 'required|numeric|min:0|max:99999.99',
+            // Basic required fields - Name max 50 chars, letters/spaces only (no numbers)
+            'item_name' => ['required', 'string', 'max:50', 'regex:/^[a-zA-Z\s\-\']+$/'],
+            'base_price' => 'required|numeric|min:1|max:99999.99',
             'menu_category_id' => 'required|exists:menu_categories,id',
-            // Optional fields (only those present in DB)
-            'description' => 'nullable|string|max:1000',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+
+            // Optional fields with proper limits
+            'description' => 'nullable|string|max:255', // Single-line max 255
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Max 2MB
             'is_vegetarian' => 'nullable|boolean',
             'is_vegan' => 'nullable|boolean',
             'is_gluten_free' => 'nullable|boolean',
-            'ingredients' => 'nullable|string|max:1000',
-            'allergens' => 'nullable|string|max:500',
+            'ingredients' => 'nullable|string|max:500', // Multiline max 500
+            'allergens' => 'nullable|string|max:255', // Multiline max 255
             'preparation_time' => 'nullable|integer|min:1|max:240',
             'is_available' => 'nullable|boolean',
             'is_popular' => 'nullable|boolean',
-            'sort_order' => 'nullable|integer|min:0',
+            'sort_order' => 'nullable|integer|min:0|max:9999',
         ];
     }
 
@@ -47,22 +48,23 @@ class StoreMenuItemRequest extends FormRequest
     {
         return [
             'item_name.required' => 'Menu item name is required.',
-            'item_name.max' => 'Menu item name cannot exceed 255 characters.',
+            'item_name.max' => 'Menu item name cannot exceed 50 characters.',
+            'item_name.regex' => 'Menu item name can only contain letters, spaces, hyphens and apostrophes (no numbers).',
             'base_price.required' => 'Base price is required.',
             'base_price.numeric' => 'Base price must be a valid number.',
-            'base_price.min' => 'Base price cannot be negative.',
+            'base_price.min' => 'Base price cannot be negative or zero.',
             'base_price.max' => 'Base price cannot exceed 99,999.99.',
             'menu_category_id.required' => 'Category selection is required.',
             'menu_category_id.exists' => 'Selected category does not exist.',
+            'description.max' => 'Description cannot exceed 255 characters.',
             'image.image' => 'The uploaded file must be an image.',
-            'image.mimes' => 'Image must be in JPEG, PNG, JPG, or GIF format.',
+            'image.mimes' => 'Image must be in JPEG, PNG, JPG, GIF, or WebP format.',
             'image.max' => 'Image size cannot exceed 2MB.',
+            'ingredients.max' => 'Ingredients cannot exceed 500 characters.',
+            'allergens.max' => 'Allergens cannot exceed 255 characters.',
             'preparation_time.min' => 'Preparation time must be at least 1 minute.',
             'preparation_time.max' => 'Preparation time cannot exceed 240 minutes (4 hours).',
-            'available_until.after' => 'Available until time must be after available from time.',
-            'variations.json' => 'Variations must be in valid JSON format.',
-            'customizations.json' => 'Customizations must be in valid JSON format.',
-            'availability_schedule.json' => 'Availability schedule must be in valid JSON format.',
+            'sort_order.max' => 'Sort order cannot exceed 9999.',
         ];
     }
 
