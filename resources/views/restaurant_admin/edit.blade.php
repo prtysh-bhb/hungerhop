@@ -2,6 +2,29 @@
 
 @section('title', 'Edit Restaurant')
 
+@section('styles')
+    <style>
+        .is-invalid {
+            border-color: #dc3545 !important;
+            border-width: 2px !important;
+        }
+
+        .invalid-feedback {
+            display: block !important;
+            color: #dc3545;
+            font-size: 0.875em;
+            margin-top: 0.25rem;
+        }
+
+        .form-control.is-invalid,
+        .form-control-file.is-invalid,
+        .form-check-input.is-invalid {
+            background-color: #fff5f5;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+    </style>
+@endsection
+
 @section('content')
     <div class="container-fluid">
         <div class="row">
@@ -38,7 +61,7 @@
                         @endif
 
                         <form method="POST" action="{{ route('restaurant-admin.update', $restaurant->id) }}"
-                            enctype="multipart/form-data">
+                            enctype="multipart/form-data" novalidate>
                             @csrf
                             @method('PUT')
 
@@ -54,26 +77,26 @@
                                                 <label for="restaurant_name">Restaurant Name <span
                                                         class="text-danger">*</span></label>
                                                 <input type="text"
-                                                    class="form-control @error('restaurant_name') is-invalid @enderror"
+                                                    class="form-control {{ $errors->has('restaurant_name') ? 'is-invalid' : '' }}"
                                                     id="restaurant_name" name="restaurant_name"
                                                     value="{{ old('restaurant_name', $restaurant->restaurant_name) }}"
                                                     required>
-                                                @error('restaurant_name')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('restaurant_name'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('restaurant_name') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="slug">Slug <span class="text-danger">*</span></label>
                                                 <input type="text"
-                                                    class="form-control @error('slug') is-invalid @enderror" id="slug"
+                                                    class="form-control {{ $errors->has('slug') ? 'is-invalid' : '' }}" id="slug"
                                                     name="slug" value="{{ old('slug', $restaurant->slug) }}" required>
                                                 <small class="form-text text-muted">URL-friendly version of the restaurant
                                                     name</small>
-                                                @error('slug')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('slug'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('slug') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -83,29 +106,29 @@
                                             <div class="form-group">
                                                 <label for="email">Email <span class="text-danger">*</span></label>
                                                 <input type="email"
-                                                    class="form-control @error('email') is-invalid @enderror" id="email"
+                                                    class="form-control {{ $errors->has('email') ? 'is-invalid' : '' }}" id="email"
                                                     name="email" value="{{ old('email', $restaurant->email) }}"
                                                     minlength="7" maxlength="100"
                                                     pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" required>
                                                 <small class="text-muted">Valid email format required (7-100
                                                     characters)</small>
-                                                @error('email')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('email'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('email') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="phone">Phone <span class="text-danger">*</span></label>
                                                 <input type="tel"
-                                                    class="form-control @error('phone') is-invalid @enderror" id="phone"
+                                                    class="form-control {{ $errors->has('phone') ? 'is-invalid' : '' }}" id="phone"
                                                     name="phone" value="{{ old('phone', $restaurant->phone) }}"
                                                     minlength="10" maxlength="15" pattern="[1-9][0-9]{9,14}"
                                                     inputmode="numeric" required>
                                                 <small class="text-muted">10-15 digits only, cannot start with 0</small>
-                                                @error('phone')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('phone'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('phone') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -115,35 +138,35 @@
                                             <div class="form-group">
                                                 <label for="website_url">Website URL</label>
                                                 <input type="url"
-                                                    class="form-control @error('website_url') is-invalid @enderror"
+                                                    class="form-control {{ $errors->has('website_url') ? 'is-invalid' : '' }}"
                                                     id="website_url" name="website_url"
                                                     value="{{ old('website_url', $restaurant->website_url) }}">
-                                                @error('website_url')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('website_url'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('website_url') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="cuisine_type">Cuisine Type</label>
                                                 <input type="text"
-                                                    class="form-control @error('cuisine_type') is-invalid @enderror"
+                                                    class="form-control {{ $errors->has('cuisine_type') ? 'is-invalid' : '' }}"
                                                     id="cuisine_type" name="cuisine_type"
                                                     value="{{ old('cuisine_type', $restaurant->cuisine_type) }}">
-                                                @error('cuisine_type')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('cuisine_type'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('cuisine_type') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
 
                                     <div class="form-group">
                                         <label for="description">Description</label>
-                                        <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description"
+                                        <textarea class="form-control {{ $errors->has('description') ? 'is-invalid' : '' }}" id="description" name="description"
                                             rows="3">{{ old('description', $restaurant->description) }}</textarea>
-                                        @error('description')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        @if ($errors->has('description'))
+                                            <div class="invalid-feedback" style="display: block;">{{ $errors->first('description') }}</div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -238,15 +261,15 @@
                                                         <label for="contact_person">Franchise Owner Name <span
                                                                 class="text-danger">*</span></label>
                                                         <input type="text"
-                                                            class="form-control @error('contact_person') is-invalid @enderror"
+                                                            class="form-control {{ $errors->has('contact_person') ? 'is-invalid' : '' }}"
                                                             id="contact_person" name="contact_person"
                                                             value="{{ old('contact_person', $restaurant->tenant->contact_person ?? '') }}"
                                                             placeholder="Enter franchise owner name">
                                                         <small class="form-text text-muted">Main contact person for the
                                                             franchise</small>
-                                                        @error('contact_person')
-                                                            <div class="invalid-feedback">{{ $message }}</div>
-                                                        @enderror
+                                                        @if ($errors->has('contact_person'))
+                                                            <div class="invalid-feedback" style="display: block;">{{ $errors->first('contact_person') }}</div>
+                                                        @endif
                                                     </div>
                                                 </div>
 
@@ -255,15 +278,15 @@
                                                         <label for="tenant_email">Franchise Email <span
                                                                 class="text-danger">*</span></label>
                                                         <input type="email"
-                                                            class="form-control @error('tenant_email') is-invalid @enderror"
+                                                            class="form-control {{ $errors->has('tenant_email') ? 'is-invalid' : '' }}"
                                                             id="tenant_email" name="tenant_email"
                                                             value="{{ old('tenant_email', $restaurant->tenant->email ?? '') }}"
                                                             placeholder="franchise@example.com">
                                                         <small class="form-text text-muted">Main email for franchise
                                                             communications</small>
-                                                        @error('tenant_email')
-                                                            <div class="invalid-feedback">{{ $message }}</div>
-                                                        @enderror
+                                                        @if ($errors->has('tenant_email'))
+                                                            <div class="invalid-feedback" style="display: block;">{{ $errors->first('tenant_email') }}</div>
+                                                        @endif
                                                     </div>
                                                 </div>
 
@@ -272,15 +295,15 @@
                                                         <label for="tenant_phone">Franchise Phone <span
                                                                 class="text-danger">*</span></label>
                                                         <input type="text"
-                                                            class="form-control @error('tenant_phone') is-invalid @enderror"
+                                                            class="form-control {{ $errors->has('tenant_phone') ? 'is-invalid' : '' }}"
                                                             id="tenant_phone" name="tenant_phone"
                                                             value="{{ old('tenant_phone', $restaurant->tenant->phone ?? '') }}"
                                                             placeholder="+91-9876543210">
                                                         <small class="form-text text-muted">Main contact number for
                                                             franchise</small>
-                                                        @error('tenant_phone')
-                                                            <div class="invalid-feedback">{{ $message }}</div>
-                                                        @enderror
+                                                        @if ($errors->has('tenant_phone'))
+                                                            <div class="invalid-feedback" style="display: block;">{{ $errors->first('tenant_phone') }}</div>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </div>
@@ -296,7 +319,7 @@
                                                         <label for="tenant_id">Choose Franchise <span
                                                                 class="text-danger">*</span></label>
                                                         <select
-                                                            class="form-control @error('tenant_id') is-invalid @enderror"
+                                                            class="form-control {{ $errors->has('tenant_id') ? 'is-invalid' : '' }}"
                                                             id="tenant_id" name="tenant_id">
                                                             <option value="">Select Existing Franchise</option>
                                                             @if (isset($tenants) && $tenants->count() > 0)
@@ -311,9 +334,9 @@
                                                         </select>
                                                         <small class="form-text text-muted">Restaurant will be moved under
                                                             this franchise</small>
-                                                        @error('tenant_id')
-                                                            <div class="invalid-feedback">{{ $message }}</div>
-                                                        @enderror
+                                                        @if ($errors->has('tenant_id'))
+                                                            <div class="invalid-feedback" style="display: block;">{{ $errors->first('tenant_id') }}</div>
+                                                        @endif
                                                     </div>
                                                 </div>
 
@@ -342,15 +365,15 @@
                                                 <label for="contact_person_name">Contact Person Name <span
                                                         class="text-danger">*</span></label>
                                                 <input type="text"
-                                                    class="form-control @error('contact_person_name') is-invalid @enderror"
+                                                    class="form-control {{ $errors->has('contact_person_name') ? 'is-invalid' : '' }}"
                                                     id="contact_person_name" name="contact_person_name"
                                                     value="{{ old('contact_person_name', $restaurant->contact_person_name) }}"
                                                     placeholder="Enter full name of contact person" required>
                                                 <small class="form-text text-muted">This person will be the location admin
                                                     for this restaurant</small>
-                                                @error('contact_person_name')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('contact_person_name'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('contact_person_name') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -365,19 +388,19 @@
                                 <div class="card-body">
                                     <div class="form-group">
                                         <label for="address">Address <span class="text-danger">*</span></label>
-                                        <textarea class="form-control @error('address') is-invalid @enderror" id="address" name="address" rows="3"
+                                        <textarea class="form-control {{ $errors->has('address') ? 'is-invalid' : '' }}" id="address" name="address" rows="3"
                                             minlength="10" maxlength="500" required>{{ old('address', $restaurant->address) }}</textarea>
                                         <small class="text-muted">Minimum 10 characters, maximum 500 characters</small>
-                                        @error('address')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        @if ($errors->has('address'))
+                                            <div class="invalid-feedback" style="display: block;">{{ $errors->first('address') }}</div>
+                                        @endif
                                     </div>
 
                                     <div class="row">
                                         <div class="col-md-4">
                                             <div class="form-group">
                                                 <label for="state_id">State <span class="text-danger">*</span></label>
-                                                <select class="form-control @error('state_id') is-invalid @enderror"
+                                                <select class="form-control {{ $errors->has('state_id') ? 'is-invalid' : '' }}"
                                                     id="state_id" name="state_id" required>
                                                     <option value="">Select State</option>
                                                     @if (isset($states))
@@ -389,22 +412,22 @@
                                                         @endforeach
                                                     @endif
                                                 </select>
-                                                @error('state_id')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('state_id'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('state_id') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                         <div class="col-md-4">
                                             <div class="form-group">
                                                 <label for="city_id">City <span class="text-danger">*</span></label>
-                                                <select class="form-control @error('city_id') is-invalid @enderror"
+                                                <select class="form-control {{ $errors->has('city_id') ? 'is-invalid' : '' }}"
                                                     id="city_id" name="city_id" required>
                                                     <option value="">Select City</option>
                                                     <!-- Cities will be loaded via AJAX based on selected state -->
                                                 </select>
-                                                @error('city_id')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('city_id'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('city_id') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                         <div class="col-md-4">
@@ -412,14 +435,14 @@
                                                 <label for="postal_code">Postal Code <span
                                                         class="text-danger">*</span></label>
                                                 <input type="text"
-                                                    class="form-control @error('postal_code') is-invalid @enderror"
+                                                    class="form-control {{ $errors->has('postal_code') ? 'is-invalid' : '' }}"
                                                     id="postal_code" name="postal_code"
                                                     value="{{ old('postal_code', $restaurant->postal_code) }}"
                                                     minlength="4" maxlength="10" pattern="[0-9A-Za-z\s\-]+" required>
                                                 <small class="text-muted">4-10 characters</small>
-                                                @error('postal_code')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('postal_code'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('postal_code') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -429,14 +452,14 @@
                                             <div class="form-group">
                                                 <label for="latitude">Latitude <span class="text-danger">*</span></label>
                                                 <input type="number" step="any"
-                                                    class="form-control @error('latitude') is-invalid @enderror"
+                                                    class="form-control {{ $errors->has('latitude') ? 'is-invalid' : '' }}"
                                                     id="latitude" name="latitude"
                                                     value="{{ old('latitude', $restaurant->latitude) }}" min="-90"
                                                     max="90" required>
                                                 <small class="text-muted">Between -90 and 90</small>
-                                                @error('latitude')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('latitude'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('latitude') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                         <div class="col-md-4">
@@ -444,14 +467,14 @@
                                                 <label for="longitude">Longitude <span
                                                         class="text-danger">*</span></label>
                                                 <input type="number" step="any"
-                                                    class="form-control @error('longitude') is-invalid @enderror"
+                                                    class="form-control {{ $errors->has('longitude') ? 'is-invalid' : '' }}"
                                                     id="longitude" name="longitude"
                                                     value="{{ old('longitude', $restaurant->longitude) }}" min="-180"
                                                     max="180" required>
                                                 <small class="text-muted">Between -180 and 180</small>
-                                                @error('longitude')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('longitude'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('longitude') }}</div>
+                                                @endif
                                             </div>
                                         </div>
 
@@ -471,14 +494,14 @@
                                                 <label for="minimum_order_amount">Minimum Order Amount ($) <span
                                                         class="text-danger">*</span></label>
                                                 <input type="number" step="0.01"
-                                                    class="form-control @error('minimum_order_amount') is-invalid @enderror"
+                                                    class="form-control {{ $errors->has('minimum_order_amount') ? 'is-invalid' : '' }}"
                                                     id="minimum_order_amount" name="minimum_order_amount"
                                                     value="{{ old('minimum_order_amount', $restaurant->minimum_order_amount) }}"
                                                     min="0" max="10000" required>
                                                 <small class="text-muted">0 to 10,000</small>
-                                                @error('minimum_order_amount')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('minimum_order_amount'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('minimum_order_amount') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                         <div class="col-md-4">
@@ -486,14 +509,14 @@
                                                 <label for="base_delivery_fee">Base Delivery Fee ($) <span
                                                         class="text-danger">*</span></label>
                                                 <input type="number" step="0.01"
-                                                    class="form-control @error('base_delivery_fee') is-invalid @enderror"
+                                                    class="form-control {{ $errors->has('base_delivery_fee') ? 'is-invalid' : '' }}"
                                                     id="base_delivery_fee" name="base_delivery_fee"
                                                     value="{{ old('base_delivery_fee', $restaurant->base_delivery_fee) }}"
                                                     min="0" max="1000" required>
                                                 <small class="text-muted">0 to 1,000</small>
-                                                @error('base_delivery_fee')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('base_delivery_fee'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('base_delivery_fee') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                         <div class="col-md-4">
@@ -501,14 +524,14 @@
                                                 <label for="delivery_radius_km">Delivery Radius (km) <span
                                                         class="text-danger">*</span></label>
                                                 <input type="number" step="0.1"
-                                                    class="form-control @error('delivery_radius_km') is-invalid @enderror"
+                                                    class="form-control {{ $errors->has('delivery_radius_km') ? 'is-invalid' : '' }}"
                                                     id="delivery_radius_km" name="delivery_radius_km"
                                                     value="{{ old('delivery_radius_km', $restaurant->delivery_radius_km) }}"
                                                     min="1" max="50" required>
                                                 <small class="text-muted">1 to 50 km</small>
-                                                @error('delivery_radius_km')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('delivery_radius_km'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('delivery_radius_km') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -519,15 +542,15 @@
                                                 <label for="restaurant_commission_percentage">Commission (%) <span
                                                         class="text-danger">*</span></label>
                                                 <input type="number" step="0.01" min="0" max="100"
-                                                    class="form-control @error('restaurant_commission_percentage') is-invalid @enderror"
+                                                    class="form-control {{ $errors->has('restaurant_commission_percentage') ? 'is-invalid' : '' }}"
                                                     id="restaurant_commission_percentage"
                                                     name="restaurant_commission_percentage"
                                                     value="{{ old('restaurant_commission_percentage', $restaurant->restaurant_commission_percentage) }}"
                                                     required>
                                                 <small class="text-muted">0 to 100%</small>
-                                                @error('restaurant_commission_percentage')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('restaurant_commission_percentage'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('restaurant_commission_percentage') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                         <div class="col-md-4">
@@ -535,14 +558,14 @@
                                                 <label for="tax_percentage">Tax Percentage (%) <span
                                                         class="text-danger">*</span></label>
                                                 <input type="number" step="0.01" min="0" max="50"
-                                                    class="form-control @error('tax_percentage') is-invalid @enderror"
+                                                    class="form-control {{ $errors->has('tax_percentage') ? 'is-invalid' : '' }}"
                                                     id="tax_percentage" name="tax_percentage"
                                                     value="{{ old('tax_percentage', $restaurant->tax_percentage) }}"
                                                     required>
                                                 <small class="text-muted">0 to 50%</small>
-                                                @error('tax_percentage')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('tax_percentage'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('tax_percentage') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                         <div class="col-md-4">
@@ -550,14 +573,14 @@
                                                 <label for="estimated_delivery_time">Est. Delivery Time (minutes) <span
                                                         class="text-danger">*</span></label>
                                                 <input type="number"
-                                                    class="form-control @error('estimated_delivery_time') is-invalid @enderror"
+                                                    class="form-control {{ $errors->has('estimated_delivery_time') ? 'is-invalid' : '' }}"
                                                     id="estimated_delivery_time" name="estimated_delivery_time"
                                                     value="{{ old('estimated_delivery_time', $restaurant->estimated_delivery_time) }}"
                                                     min="10" max="120" required>
                                                 <small class="text-muted">10 to 120 minutes</small>
-                                                @error('estimated_delivery_time')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('estimated_delivery_time'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('estimated_delivery_time') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -574,7 +597,7 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="status">Status <span class="text-danger">*</span></label>
-                                                <select class="form-control @error('status') is-invalid @enderror"
+                                                <select class="form-control {{ $errors->has('status') ? 'is-invalid' : '' }}"
                                                     id="status" name="status" required>
                                                     <option value="">Select Status</option>
                                                     <option value="pending"
@@ -590,9 +613,9 @@
                                                         {{ old('status', $restaurant->status) == 'suspended' ? 'selected' : '' }}>
                                                         Suspended</option>
                                                 </select>
-                                                @error('status')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('status'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('status') }}</div>
+                                                @endif
                                             </div>
                                         </div>
 
@@ -603,7 +626,7 @@
                                             <div class="form-group">
                                                 <label for="location_admin_id">Location Admin</label>
                                                 <select
-                                                    class="form-control @error('location_admin_id') is-invalid @enderror"
+                                                    class="form-control {{ $errors->has('location_admin_id') ? 'is-invalid' : '' }}"
                                                     id="location_admin_id" name="location_admin_id">
                                                     <option value="">No Location Admin</option>
                                                     @if (isset($locationAdmins))
@@ -616,9 +639,9 @@
                                                         @endforeach
                                                     @endif
                                                 </select>
-                                                @error('location_admin_id')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('location_admin_id'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('location_admin_id') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -627,38 +650,38 @@
                                         <div class="col-md-3">
                                             <div class="form-check">
                                                 <input type="checkbox"
-                                                    class="form-check-input @error('is_open') is-invalid @enderror"
+                                                    class="form-check-input {{ $errors->has('is_open') ? 'is-invalid' : '' }}"
                                                     id="is_open" name="is_open" value="1"
                                                     {{ old('is_open', $restaurant->is_open) ? 'checked' : '' }}>
                                                 <label class="form-check-label" for="is_open">Is Open</label>
-                                                @error('is_open')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('is_open'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('is_open') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                         <div class="col-md-3">
                                             <div class="form-check">
                                                 <input type="checkbox"
-                                                    class="form-check-input @error('accepts_orders') is-invalid @enderror"
+                                                    class="form-check-input {{ $errors->has('accepts_orders') ? 'is-invalid' : '' }}"
                                                     id="accepts_orders" name="accepts_orders" value="1"
                                                     {{ old('accepts_orders', $restaurant->accepts_orders) ? 'checked' : '' }}>
                                                 <label class="form-check-label" for="accepts_orders">Accepts
                                                     Orders</label>
-                                                @error('accepts_orders')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('accepts_orders'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('accepts_orders') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                         <div class="col-md-3">
                                             <div class="form-check">
                                                 <input type="checkbox"
-                                                    class="form-check-input @error('is_featured') is-invalid @enderror"
+                                                    class="form-check-input {{ $errors->has('is_featured') ? 'is-invalid' : '' }}"
                                                     id="is_featured" name="is_featured" value="1"
                                                     {{ old('is_featured', $restaurant->is_featured) ? 'checked' : '' }}>
                                                 <label class="form-check-label" for="is_featured">Is Featured</label>
-                                                @error('is_featured')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('is_featured'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('is_featured') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -684,13 +707,13 @@
                                                     </div>
                                                 @endif
                                                 <input type="file"
-                                                    class="form-control-file @error('image') is-invalid @enderror"
+                                                    class="form-control-file {{ $errors->has('image') ? 'is-invalid' : '' }}"
                                                     id="image" name="image" accept="image/*"><br>
                                                 <small class="form-text text-muted">Upload a new image to replace the
                                                     current one</small>
-                                                @error('image')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('image'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('image') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                         <div class="col-md-6">
@@ -705,13 +728,13 @@
                                                     </div>
                                                 @endif
                                                 <input type="file"
-                                                    class="form-control-file @error('cover_image') is-invalid @enderror"
+                                                    class="form-control-file {{ $errors->has('cover_image') ? 'is-invalid' : '' }}"
                                                     id="cover_image" name="cover_image" accept="image/*"><br>
                                                 <small class="form-text text-muted">Upload a new cover image to replace the
                                                     current one</small>
-                                                @error('cover_image')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('cover_image'))
+                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('cover_image') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -726,9 +749,9 @@
                                 <div class="card-body">
                                     <div class="form-group">
                                         <label for="business_hours">Business Hours</label>
-                                        @error('business_hours')
-                                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                                        @enderror
+                                        @if ($errors->has('business_hours'))
+                                            <div class="invalid-feedback d-block" style="display: block;">{{ $errors->first('business_hours') }}</div>
+                                        @endif
 
                                         <div class="card mt-2">
                                             <div class="card-body">
@@ -855,11 +878,11 @@
 
                                     <div class="form-group">
                                         <label for="special_instructions">Special Instructions</label>
-                                        <textarea class="form-control @error('special_instructions') is-invalid @enderror" id="special_instructions"
+                                        <textarea class="form-control {{ $errors->has('special_instructions') ? 'is-invalid' : '' }}" id="special_instructions"
                                             name="special_instructions" rows="3">{{ old('special_instructions', $restaurant->special_instructions) }}</textarea>
-                                        @error('special_instructions')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        @if ($errors->has('special_instructions'))
+                                            <div class="invalid-feedback" style="display: block;">{{ $errors->first('special_instructions') }}</div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -889,14 +912,23 @@
 @section('scripts')
     <script>
         $(document).ready(function() {
-            // Scroll to error alert if validation errors exist
+            // Scroll to first error field if validation errors exist
             @if ($errors->any())
-                const errorAlert = document.querySelector('.alert-danger');
-                if (errorAlert) {
-                    errorAlert.scrollIntoView({
+                const firstErrorField = document.querySelector('.is-invalid');
+                if (firstErrorField) {
+                    firstErrorField.scrollIntoView({
                         behavior: 'smooth',
                         block: 'center'
                     });
+                    firstErrorField.focus();
+                } else {
+                    const errorAlert = document.querySelector('.alert-danger');
+                    if (errorAlert) {
+                        errorAlert.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
+                    }
                 }
             @endif
 

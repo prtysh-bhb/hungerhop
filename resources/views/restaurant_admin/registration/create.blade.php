@@ -102,15 +102,36 @@
         }
 
         /* ====== FORM ERROR STYLES ====== */
-        .is-invalid {
+        .is-invalid,
+        input.is-invalid,
+        select.is-invalid,
+        textarea.is-invalid {
             border-color: #dc3545 !important;
+            border-width: 2px !important;
+            background-color: #fff8f8 !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
         }
 
         .invalid-feedback {
-            display: block;
-            color: #dc3545;
+            display: block !important;
+            width: 100%;
+            margin-top: .35rem;
+            padding: .25rem .5rem;
             font-size: .85rem;
-            margin-top: .2rem;
+            font-weight: 500;
+            color: #dc3545;
+            background-color: #fff5f5;
+            border-left: 3px solid #dc3545;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* Ensure error messages are always visible */
+        .form-group .invalid-feedback,
+        .col-md-4 .invalid-feedback,
+        .col-md-6 .invalid-feedback,
+        .col-md-12 .invalid-feedback,
+        .col-12 .invalid-feedback {
+            display: block !important;
         }
     </style>
 @endsection
@@ -156,23 +177,19 @@
                         @if (session('success'))
                             <div class="alert alert-success alert-dismissible fade show" role="alert">
                                 <i class="fa fa-check-circle"></i> {{ session('success') }}
-                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
                             </div>
                         @endif
 
                         @if (session('error'))
                             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                                 <i class="fa fa-exclamation-circle"></i> {{ session('error') }}
-                              
                             </div>
                         @endif
 
                         @if ($errors->any())
                             <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <h5 class="mb-2"><i class="fa fa-exclamation-triangle"></i> Please fix the following errors:</h5>
-                                <ul class="mb-0 pl-3">
+                                <i class="fa fa-exclamation-triangle"></i> <strong>Please fix the following errors:</strong>
+                                <ul class="mb-0 mt-2">
                                     @foreach ($errors->all() as $error)
                                         <li>{{ $error }}</li>
                                     @endforeach
@@ -181,7 +198,7 @@
                         @endif
 
                         <form action="{{ route('restaurant-admin.registration.store') }}" method="POST"
-                            enctype="multipart/form-data">
+                            enctype="multipart/form-data" id="restaurant-registration-form" novalidate>
                             @csrf
 
                             <!-- Hidden fields preserved -->
@@ -198,11 +215,15 @@
                                     <div class="form-group">
                                         <label for="restaurant_name">Restaurant Name <span
                                                 class="text-danger">*</span></label>
-                                        <input type="text" class="form-control @error('restaurant_name') is-invalid @enderror" id="restaurant_name"
-                                            name="restaurant_name" value="{{ old('restaurant_name') }}" required>
-                                        @error('restaurant_name')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        <input type="text"
+                                            class="form-control {{ $errors->has('restaurant_name') ? 'is-invalid' : '' }}"
+                                            id="restaurant_name" name="restaurant_name" value="{{ old('restaurant_name') }}"
+                                            placeholder="Enter restaurant name (3-50 characters)" minlength="3"
+                                            maxlength="50" required>
+                                        @if ($errors->has('restaurant_name'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('restaurant_name') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -210,35 +231,48 @@
                                     <div class="form-group">
                                         <label for="contact_person_name">Contact Person Name <span
                                                 class="text-danger">*</span></label>
-                                        <input type="text" class="form-control @error('contact_person_name') is-invalid @enderror" id="contact_person_name"
-                                            name="contact_person_name" value="{{ old('contact_person_name') }}"
-                                            placeholder="Enter full name of contact person" required>
-                                        @error('contact_person_name')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        <input type="text"
+                                            class="form-control {{ $errors->has('contact_person_name') ? 'is-invalid' : '' }}"
+                                            id="contact_person_name" name="contact_person_name"
+                                            value="{{ old('contact_person_name') }}"
+                                            placeholder="Enter full name (3-50 characters)" minlength="3" maxlength="50"
+                                            required>
+                                        @if ($errors->has('contact_person_name'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('contact_person_name') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
-                                    <!-- Contact details -->
+                                <!-- Contact details -->
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="email">Email <span class="text-danger">*</span></label>
-                                        <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email"
-                                            value="{{ old('email') }}" required>
-                                        @error('email')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        <input type="email"
+                                            class="form-control {{ $errors->has('email') ? 'is-invalid' : '' }}"
+                                            id="email" name="email" value="{{ old('email') }}"
+                                            placeholder="restaurant@example.com" minlength="7" maxlength="100" required>
+                                        @if ($errors->has('email'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('email') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="phone">Phone <span class="text-danger">*</span></label>
-                                        <input type="tel" class="form-control @error('phone') is-invalid @enderror" id="phone" name="phone"
-                                            value="{{ old('phone') }}" required>
-                                        @error('phone')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        <input type="tel"
+                                            class="form-control {{ $errors->has('phone') ? 'is-invalid' : '' }}"
+                                            id="phone" name="phone" value="{{ old('phone') }}"
+                                            placeholder="10-15 digits (cannot start with 0)" minlength="10"
+                                            maxlength="15" required>
+                                        <small class="text-muted">Enter 10-15 digit phone number (must not start with
+                                            0)</small>
+                                        @if ($errors->has('phone'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('phone') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -327,12 +361,15 @@
                                             <div class="form-group">
                                                 <label for="contact_person">Franchise Owner Name <span
                                                         class="text-danger">*</span></label>
-                                                <input type="text" class="form-control @error('contact_person') is-invalid @enderror" id="contact_person"
-                                                    name="contact_person" value="{{ old('contact_person') }}"
+                                                <input type="text"
+                                                    class="form-control {{ $errors->has('contact_person') ? 'is-invalid' : '' }}"
+                                                    id="contact_person" name="contact_person"
+                                                    value="{{ old('contact_person') }}"
                                                     placeholder="Enter franchise owner name">
-                                                @error('contact_person')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('contact_person'))
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('contact_person') }}</div>
+                                                @endif
                                             </div>
                                         </div>
 
@@ -340,12 +377,15 @@
                                             <div class="form-group">
                                                 <label for="tenant_email">Franchise Email <span
                                                         class="text-danger">*</span></label>
-                                                <input type="email" class="form-control @error('tenant_email') is-invalid @enderror" id="tenant_email"
-                                                    name="tenant_email" value="{{ old('tenant_email') }}"
+                                                <input type="email"
+                                                    class="form-control {{ $errors->has('tenant_email') ? 'is-invalid' : '' }}"
+                                                    id="tenant_email" name="tenant_email"
+                                                    value="{{ old('tenant_email') }}"
                                                     placeholder="franchise@example.com">
-                                                @error('tenant_email')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('tenant_email'))
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('tenant_email') }}</div>
+                                                @endif
                                             </div>
                                         </div>
 
@@ -353,11 +393,15 @@
                                             <div class="form-group">
                                                 <label for="tenant_phone">Franchise Phone <span
                                                         class="text-danger">*</span></label>
-                                                 <input type="tel" class="form-control @error('tenant_phone') is-invalid @enderror" id="tenant_phone"
-                                                    name="tenant_phone" value="{{ old('tenant_phone') }}" required>
-                                                @error('tenant_phone')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                <input type="tel"
+                                                    class="form-control {{ $errors->has('tenant_phone') ? 'is-invalid' : '' }}"
+                                                    id="tenant_phone" name="tenant_phone"
+                                                    value="{{ old('tenant_phone') }}"
+                                                    placeholder="10-15 digit phone number">
+                                                @if ($errors->has('tenant_phone'))
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('tenant_phone') }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -374,16 +418,19 @@
                                             <div class="form-group">
                                                 <label for="tenant_id">Choose Franchise <span
                                                         class="text-danger">*</span></label>
-                                                <select id="tenant_id" name="tenant_id" class="form-select @error('tenant_id') is-invalid @enderror">
+                                                <select id="tenant_id" name="tenant_id"
+                                                    class="form-select {{ $errors->has('tenant_id') ? 'is-invalid' : '' }}">
                                                     <option value="">Select Existing Franchise</option>
                                                     @foreach ($tenants as $t)
-                                                        <option value="{{ $t->id }}" {{ old('tenant_id') == $t->id ? 'selected' : '' }}>{{ $t->tenant_name }}
-                                                        </option>
+                                                        <option value="{{ $t->id }}"
+                                                            {{ old('tenant_id') == $t->id ? 'selected' : '' }}>
+                                                            {{ $t->tenant_name }}</option>
                                                     @endforeach
                                                 </select>
-                                                @error('tenant_id')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
+                                                @if ($errors->has('tenant_id'))
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('tenant_id') }}</div>
+                                                @endif
                                             </div>
                                         </div>
 
@@ -397,7 +444,7 @@
                                     </div>
                                 </div>
 
-                            
+
 
                                 <!-- Address Information -->
                                 <div class="col-12">
@@ -407,17 +454,20 @@
                                 <div class="col-md-12">
                                     <div class="form-group">
                                         <label for="address">Address <span class="text-danger">*</span></label>
-                                        <textarea class="form-control @error('address') is-invalid @enderror" id="address" name="address" rows="3" required>{{ old('address') }}</textarea>
-                                        @error('address')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        <textarea class="form-control {{ $errors->has('address') ? 'is-invalid' : '' }}" id="address" name="address"
+                                            rows="3" placeholder="Enter full address (min 10 characters)" required>{{ old('address') }}</textarea>
+                                        @if ($errors->has('address'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('address') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="state_id">State <span class="text-danger">*</span></label>
-                                        <select class="form-control @error('state_id') is-invalid @enderror" id="state_id" name="state_id" required>
+                                        <select class="form-control {{ $errors->has('state_id') ? 'is-invalid' : '' }}"
+                                            id="state_id" name="state_id" required>
                                             <option value="">Select State</option>
                                             @if (isset($states))
                                                 @foreach ($states as $state)
@@ -427,33 +477,39 @@
                                                 @endforeach
                                             @endif
                                         </select>
-                                        @error('state_id')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        @if ($errors->has('state_id'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('state_id') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="city_id">City <span class="text-danger">*</span></label>
-                                        <select class="form-control @error('city_id') is-invalid @enderror" id="city_id" name="city_id" required>
+                                        <select class="form-control {{ $errors->has('city_id') ? 'is-invalid' : '' }}"
+                                            id="city_id" name="city_id" required>
                                             <option value="">Select City</option>
                                             <!-- Cities loaded via AJAX -->
                                         </select>
-                                        @error('city_id')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        @if ($errors->has('city_id'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('city_id') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="postal_code">ZIP Code <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control @error('postal_code') is-invalid @enderror" id="postal_code" name="postal_code"
-                                            value="{{ old('postal_code') }}" required>
-                                        @error('postal_code')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        <input type="text"
+                                            class="form-control {{ $errors->has('postal_code') ? 'is-invalid' : '' }}"
+                                            id="postal_code" name="postal_code" value="{{ old('postal_code') }}"
+                                            placeholder="Enter ZIP/postal code" required>
+                                        @if ($errors->has('postal_code'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('postal_code') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -461,22 +517,28 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="latitude">Latitude <span class="text-danger">*</span></label>
-                                        <input type="number" step="any" class="form-control @error('latitude') is-invalid @enderror" id="latitude"
-                                            name="latitude" value="{{ old('latitude') }}" required>
-                                        @error('latitude')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        <input type="number" step="any"
+                                            class="form-control {{ $errors->has('latitude') ? 'is-invalid' : '' }}"
+                                            id="latitude" name="latitude" value="{{ old('latitude') }}"
+                                            placeholder="e.g., 28.6139" required>
+                                        @if ($errors->has('latitude'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('latitude') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="longitude">Longitude <span class="text-danger">*</span></label>
-                                        <input type="number" step="any" class="form-control @error('longitude') is-invalid @enderror" id="longitude"
-                                            name="longitude" value="{{ old('longitude') }}" required>
-                                        @error('longitude')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        <input type="number" step="any"
+                                            class="form-control {{ $errors->has('longitude') ? 'is-invalid' : '' }}"
+                                            id="longitude" name="longitude" value="{{ old('longitude') }}"
+                                            placeholder="e.g., 77.2090" required>
+                                        @if ($errors->has('longitude'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('longitude') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -647,12 +709,15 @@
                                     <div class="form-group">
                                         <label for="delivery_radius_km">Delivery Radius (KM) <span
                                                 class="text-danger">*</span></label>
-                                        <input type="number" class="form-control @error('delivery_radius_km') is-invalid @enderror" id="delivery_radius_km"
-                                            name="delivery_radius_km" value="{{ old('delivery_radius_km', 10) }}"
-                                            min="1" max="50" required>
-                                        @error('delivery_radius_km')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        <input type="number"
+                                            class="form-control {{ $errors->has('delivery_radius_km') ? 'is-invalid' : '' }}"
+                                            id="delivery_radius_km" name="delivery_radius_km"
+                                            value="{{ old('delivery_radius_km', 10) }}" min="1" max="50"
+                                            required>
+                                        @if ($errors->has('delivery_radius_km'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('delivery_radius_km') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -660,13 +725,15 @@
                                     <div class="form-group">
                                         <label for="minimum_order_amount">Minimum Order Amount <span
                                                 class="text-danger">*</span></label>
-                                        <input type="number" step="0.01" class="form-control @error('minimum_order_amount') is-invalid @enderror"
+                                        <input type="number" step="0.01"
+                                            class="form-control {{ $errors->has('minimum_order_amount') ? 'is-invalid' : '' }}"
                                             id="minimum_order_amount" name="minimum_order_amount"
                                             value="{{ old('minimum_order_amount', 0) }}" min="0" max="10000"
                                             required>
-                                        @error('minimum_order_amount')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        @if ($errors->has('minimum_order_amount'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('minimum_order_amount') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -674,12 +741,15 @@
                                     <div class="form-group">
                                         <label for="base_delivery_fee">Base Delivery Fee <span
                                                 class="text-danger">*</span></label>
-                                        <input type="number" step="0.01" class="form-control @error('base_delivery_fee') is-invalid @enderror" id="base_delivery_fee"
-                                            name="base_delivery_fee" value="{{ old('base_delivery_fee', 0) }}"
-                                            min="0" max="1000" required>
-                                        @error('base_delivery_fee')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        <input type="number" step="0.01"
+                                            class="form-control {{ $errors->has('base_delivery_fee') ? 'is-invalid' : '' }}"
+                                            id="base_delivery_fee" name="base_delivery_fee"
+                                            value="{{ old('base_delivery_fee', 0) }}" min="0" max="1000"
+                                            required>
+                                        @if ($errors->has('base_delivery_fee'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('base_delivery_fee') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -687,13 +757,15 @@
                                     <div class="form-group">
                                         <label for="restaurant_commission_percentage">Commission Percentage <span
                                                 class="text-danger">*</span></label>
-                                        <input type="number" step="0.01" class="form-control @error('restaurant_commission_percentage') is-invalid @enderror"
+                                        <input type="number" step="0.01"
+                                            class="form-control {{ $errors->has('restaurant_commission_percentage') ? 'is-invalid' : '' }}"
                                             id="restaurant_commission_percentage" name="restaurant_commission_percentage"
                                             value="{{ old('restaurant_commission_percentage', 80) }}" min="0"
                                             max="100" required>
-                                        @error('restaurant_commission_percentage')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        @if ($errors->has('restaurant_commission_percentage'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('restaurant_commission_percentage') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -701,13 +773,15 @@
                                     <div class="form-group">
                                         <label for="estimated_delivery_time">Estimated Delivery Time (minutes) <span
                                                 class="text-danger">*</span></label>
-                                        <input type="number" class="form-control @error('estimated_delivery_time') is-invalid @enderror" id="estimated_delivery_time"
-                                            name="estimated_delivery_time"
+                                        <input type="number"
+                                            class="form-control {{ $errors->has('estimated_delivery_time') ? 'is-invalid' : '' }}"
+                                            id="estimated_delivery_time" name="estimated_delivery_time"
                                             value="{{ old('estimated_delivery_time', 30) }}" min="10"
                                             max="120" required>
-                                        @error('estimated_delivery_time')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        @if ($errors->has('estimated_delivery_time'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('estimated_delivery_time') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -715,12 +789,15 @@
                                     <div class="form-group">
                                         <label for="tax_percentage">Tax Percentage <span
                                                 class="text-danger">*</span></label>
-                                        <input type="number" step="0.01" class="form-control @error('tax_percentage') is-invalid @enderror" id="tax_percentage"
-                                            name="tax_percentage" value="{{ old('tax_percentage', 0) }}" min="0"
-                                            max="50" required>
-                                        @error('tax_percentage')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        <input type="number" step="0.01"
+                                            class="form-control {{ $errors->has('tax_percentage') ? 'is-invalid' : '' }}"
+                                            id="tax_percentage" name="tax_percentage"
+                                            value="{{ old('tax_percentage', 0) }}" min="0" max="50"
+                                            required>
+                                        @if ($errors->has('tax_percentage'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('tax_percentage') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -743,37 +820,48 @@
                                         <div class="form-group">
                                             <label for="location_admin_name">Location Admin Name <span
                                                     class="text-danger">*</span></label>
-                                            <input type="text" class="form-control @error('location_admin_name') is-invalid @enderror" id="location_admin_name"
-                                                name="location_admin_name" value="{{ old('location_admin_name') }}"
+                                            <input type="text"
+                                                class="form-control {{ $errors->has('location_admin_name') ? 'is-invalid' : '' }}"
+                                                id="location_admin_name" name="location_admin_name"
+                                                value="{{ old('location_admin_name') }}"
                                                 placeholder="Enter location admin name">
-                                            @error('location_admin_name')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                            @if ($errors->has('location_admin_name'))
+                                                <div class="invalid-feedback" style="display: block;">
+                                                    {{ $errors->first('location_admin_name') }}</div>
+                                            @endif
                                         </div>
                                         <div class="form-group">
                                             <label for="location_admin_email">Location Admin Email <span
                                                     class="text-danger">*</span></label>
-                                            <input type="email" class="form-control @error('location_admin_email') is-invalid @enderror" id="location_admin_email"
-                                                name="location_admin_email" value="{{ old('location_admin_email') }}"
+                                            <input type="email"
+                                                class="form-control {{ $errors->has('location_admin_email') ? 'is-invalid' : '' }}"
+                                                id="location_admin_email" name="location_admin_email"
+                                                value="{{ old('location_admin_email') }}"
                                                 placeholder="admin@example.com">
-                                            @error('location_admin_email')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                            @if ($errors->has('location_admin_email'))
+                                                <div class="invalid-feedback" style="display: block;">
+                                                    {{ $errors->first('location_admin_email') }}</div>
+                                            @endif
                                         </div>
                                         <div class="form-group">
                                             <label for="location_admin_phone">Location Admin Phone <span
                                                     class="text-danger">*</span></label>
-                                            <input type="text" class="form-control @error('location_admin_phone') is-invalid @enderror" id="location_admin_phone"
-                                                name="location_admin_phone" value="{{ old('location_admin_phone') }}"
-                                                placeholder="+91-9876543210">
-                                            @error('location_admin_phone')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                            <input type="text"
+                                                class="form-control {{ $errors->has('location_admin_phone') ? 'is-invalid' : '' }}"
+                                                id="location_admin_phone" name="location_admin_phone"
+                                                value="{{ old('location_admin_phone') }}"
+                                                placeholder="10-15 digit phone number">
+                                            @if ($errors->has('location_admin_phone'))
+                                                <div class="invalid-feedback" style="display: block;">
+                                                    {{ $errors->first('location_admin_phone') }}</div>
+                                            @endif
                                         </div>
                                     </div>
                                     <!-- Existing franchise -->
                                     <div id="location-admin-dropdown">
-                                        <select class="form-control @error('location_admin_id') is-invalid @enderror" id="location_admin_id" name="location_admin_id">
+                                        <select
+                                            class="form-control {{ $errors->has('location_admin_id') ? 'is-invalid' : '' }}"
+                                            id="location_admin_id" name="location_admin_id">
                                             <option value="">Select Location Admin</option>
                                             @foreach ($locationAdmins as $admin)
                                                 <option value="{{ $admin->id }}"
@@ -783,9 +871,10 @@
                                                 </option>
                                             @endforeach
                                         </select>
-                                        @error('location_admin_id')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
+                                        @if ($errors->has('location_admin_id'))
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('location_admin_id') }}</div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -839,200 +928,259 @@
 @endsection
 
 @push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize business hours functionality
-    initializeBusinessHours();
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize business hours functionality
+            initializeBusinessHours();
 
-    // Handle franchise type selection for super admin
-    const newIndependentRadio = document.getElementById('new_independent');
-    const existingFranchiseRadio = document.getElementById('existing_franchise');
-    const tenantDetailsSection = document.getElementById('tenant-details-section');
-    const existingTenantSection = document.getElementById('existing-tenant-section');
-    const locationAdminFields = document.getElementById('location-admin-fields');
-    const locationAdminDropdown = document.getElementById('location-admin-dropdown');
+            // Handle franchise type selection for super admin
+            const newIndependentRadio = document.getElementById('new_independent');
+            const existingFranchiseRadio = document.getElementById('existing_franchise');
+            const tenantDetailsSection = document.getElementById('tenant-details-section');
+            const existingTenantSection = document.getElementById('existing-tenant-section');
+            const locationAdminFields = document.getElementById('location-admin-fields');
+            const locationAdminDropdown = document.getElementById('location-admin-dropdown');
 
-    function toggleSections() {
-        if (!tenantDetailsSection || !existingTenantSection) return;
+            function toggleSections() {
+                if (!tenantDetailsSection || !existingTenantSection) return;
 
-        if (newIndependentRadio && newIndependentRadio.checked) {
-            tenantDetailsSection.style.display = 'block';
-            existingTenantSection.style.display = 'none';
+                if (newIndependentRadio && newIndependentRadio.checked) {
+                    tenantDetailsSection.style.display = 'block';
+                    existingTenantSection.style.display = 'none';
 
-            if (locationAdminFields) locationAdminFields.style.display = 'block';
-            if (locationAdminDropdown) locationAdminDropdown.style.display = 'none';
+                    if (locationAdminFields) locationAdminFields.style.display = 'block';
+                    if (locationAdminDropdown) locationAdminDropdown.style.display = 'none';
 
-            // Set required fields for new franchise
-            setFieldRequired('contact_person', true);
-            setFieldRequired('tenant_email', true);
-            setFieldRequired('tenant_phone', true);
-            setFieldRequired('tenant_id', false);
+                    // Set required fields for new franchise
+                    setFieldRequired('contact_person', true);
+                    setFieldRequired('tenant_email', true);
+                    setFieldRequired('tenant_phone', true);
+                    setFieldRequired('tenant_id', false);
 
-            setFieldRequired('location_admin_name', true);
-            setFieldRequired('location_admin_email', true);
-            setFieldRequired('location_admin_phone', true);
-            setFieldRequired('location_admin_id', false);
+                    setFieldRequired('location_admin_name', true);
+                    setFieldRequired('location_admin_email', true);
+                    setFieldRequired('location_admin_phone', true);
+                    setFieldRequired('location_admin_id', false);
 
-        } else if (existingFranchiseRadio && existingFranchiseRadio.checked) {
-            tenantDetailsSection.style.display = 'none';
-            existingTenantSection.style.display = 'block';
+                } else if (existingFranchiseRadio && existingFranchiseRadio.checked) {
+                    tenantDetailsSection.style.display = 'none';
+                    existingTenantSection.style.display = 'block';
 
-            if (locationAdminFields) locationAdminFields.style.display = 'none';
-            if (locationAdminDropdown) locationAdminDropdown.style.display = 'block';
+                    if (locationAdminFields) locationAdminFields.style.display = 'none';
+                    if (locationAdminDropdown) locationAdminDropdown.style.display = 'block';
 
-            setFieldRequired('tenant_id', true);
-            setFieldRequired('contact_person', false);
-            setFieldRequired('tenant_email', false);
-            setFieldRequired('tenant_phone', false);
+                    setFieldRequired('tenant_id', true);
+                    setFieldRequired('contact_person', false);
+                    setFieldRequired('tenant_email', false);
+                    setFieldRequired('tenant_phone', false);
 
-            setFieldRequired('location_admin_id', true);
-            setFieldRequired('location_admin_name', false);
-            setFieldRequired('location_admin_email', false);
-            setFieldRequired('location_admin_phone', false);
+                    setFieldRequired('location_admin_id', true);
+                    setFieldRequired('location_admin_name', false);
+                    setFieldRequired('location_admin_email', false);
+                    setFieldRequired('location_admin_phone', false);
 
-        } else {
-            tenantDetailsSection.style.display = 'none';
-            existingTenantSection.style.display = 'none';
-            if (locationAdminFields) locationAdminFields.style.display = 'none';
-            if (locationAdminDropdown) locationAdminDropdown.style.display = 'block';
-        }
-    }
-
-    function setFieldRequired(fieldId, required) {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.required = required;
-        }
-    }
-
-    window.selectRestaurantType = function(type) {
-        if (type === 'new' && newIndependentRadio) newIndependentRadio.checked = true;
-        else if (type === 'existing' && existingFranchiseRadio) existingFranchiseRadio.checked = true;
-        toggleSections();
-    };
-
-    if (newIndependentRadio) newIndependentRadio.addEventListener('change', toggleSections);
-    if (existingFranchiseRadio) existingFranchiseRadio.addEventListener('change', toggleSections);
-
-    // Initialize sections on page load
-    setTimeout(toggleSections, 100);
-
-    // State/City AJAX loading
-    const stateSelect = document.getElementById('state_id');
-    const citySelect = document.getElementById('city_id');
-
-    if (stateSelect && citySelect) {
-        stateSelect.addEventListener('change', function() {
-            const stateId = this.value;
-            citySelect.innerHTML = '<option value="">Select City</option>';
-
-            if (stateId) {
-                fetch(`/admin/get-cities/${stateId}`)
-                    .then(response => response.json())
-                    .then(cities => {
-                        cities.forEach(city => {
-                            const option = document.createElement('option');
-                            option.value = city.id;
-                            option.textContent = city.name;
-                            citySelect.appendChild(option);
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error loading cities:', error);
-                        alert('Error loading cities. Please try again.');
-                    });
-            }
-        });
-    }
-});
-
-// Business Hours Management
-function initializeBusinessHours() {
-    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    days.forEach(day => {
-        toggleDayHours(day);
-    });
-}
-
-function toggleDayHours(day) {
-    const toggle = document.getElementById(`toggle-${day}`);
-    const openingInput = document.getElementById(`opening-${day}`);
-    const closingInput = document.getElementById(`closing-${day}`);
-    const row = document.getElementById(`row-${day}`);
-    if (!toggle || !openingInput || !closingInput || !row) return;
-
-    const openText = row.querySelector('.open-text');
-    const closedText = row.querySelector('.closed-text');
-
-    if (toggle.checked) {
-        openingInput.disabled = false;
-        closingInput.disabled = false;
-        openingInput.required = true;
-        closingInput.required = true;
-        row.style.opacity = '1';
-        if (openText) openText.style.display = 'inline';
-        if (closedText) closedText.style.display = 'none';
-    } else {
-        openingInput.disabled = true;
-        closingInput.disabled = true;
-        openingInput.required = false;
-        closingInput.required = false;
-        row.style.opacity = '.65';
-        if (openText) openText.style.display = 'none';
-        if (closedText) closedText.style.display = 'inline';
-    }
-}
-
-function copyToAll(sourceDay) {
-    const sourceToggle = document.getElementById(`toggle-${sourceDay}`);
-    const sourceOpening = document.getElementById(`opening-${sourceDay}`);
-    const sourceClosing = document.getElementById(`closing-${sourceDay}`);
-    if (!sourceToggle || !sourceOpening || !sourceClosing) return;
-
-    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-
-    if (confirm(`Copy ${sourceDay}'s hours to all other days?`)) {
-        days.forEach(day => {
-            if (day !== sourceDay) {
-                const toggle = document.getElementById(`toggle-${day}`);
-                const opening = document.getElementById(`opening-${day}`);
-                const closing = document.getElementById(`closing-${day}`);
-                if (toggle && opening && closing) {
-                    toggle.checked = sourceToggle.checked;
-                    opening.value = sourceOpening.value;
-                    closing.value = sourceClosing.value;
-                    toggleDayHours(day);
+                } else {
+                    tenantDetailsSection.style.display = 'none';
+                    existingTenantSection.style.display = 'none';
+                    if (locationAdminFields) locationAdminFields.style.display = 'none';
+                    if (locationAdminDropdown) locationAdminDropdown.style.display = 'block';
                 }
             }
-        });
-        alert('Hours copied to all days successfully!');
-    }
-}
 
-function openAllDays() {
-    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    days.forEach(day => {
-        const toggle = document.getElementById(`toggle-${day}`);
-        if (toggle) {
-            toggle.checked = true;
-            toggleDayHours(day);
-        }
-    });
-    alert('All days set to open!');
-}
+            function setFieldRequired(fieldId, required) {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.required = required;
+                }
+            }
 
-function closeAllDays() {
-    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    if (confirm('Close all days? This will mark the restaurant as closed every day.')) {
-        days.forEach(day => {
-            const toggle = document.getElementById(`toggle-${day}`);
-            if (toggle) {
-                toggle.checked = false;
-                toggleDayHours(day);
+            window.selectRestaurantType = function(type) {
+                if (type === 'new' && newIndependentRadio) newIndependentRadio.checked = true;
+                else if (type === 'existing' && existingFranchiseRadio) existingFranchiseRadio.checked = true;
+                toggleSections();
+            };
+
+            if (newIndependentRadio) newIndependentRadio.addEventListener('change', toggleSections);
+            if (existingFranchiseRadio) existingFranchiseRadio.addEventListener('change', toggleSections);
+
+            // Initialize sections on page load
+            setTimeout(toggleSections, 100);
+
+            // State/City AJAX loading
+            const stateSelect = document.getElementById('state_id');
+            const citySelect = document.getElementById('city_id');
+
+            if (stateSelect && citySelect) {
+                stateSelect.addEventListener('change', function() {
+                    const stateId = this.value;
+                    citySelect.innerHTML = '<option value="">Select City</option>';
+
+                    if (stateId) {
+                        fetch(`/admin/get-cities/${stateId}`)
+                            .then(response => response.json())
+                            .then(cities => {
+                                cities.forEach(city => {
+                                    const option = document.createElement('option');
+                                    option.value = city.id;
+                                    option.textContent = city.name;
+                                    citySelect.appendChild(option);
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Error loading cities:', error);
+                                alert('Error loading cities. Please try again.');
+                            });
+                    }
+                });
             }
         });
-        alert('All days set to closed!');
-    }
-}
-</script>
+
+        // Business Hours Management
+        function initializeBusinessHours() {
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            days.forEach(day => {
+                toggleDayHours(day);
+            });
+        }
+
+        function toggleDayHours(day) {
+            const toggle = document.getElementById(`toggle-${day}`);
+            const openingInput = document.getElementById(`opening-${day}`);
+            const closingInput = document.getElementById(`closing-${day}`);
+            const row = document.getElementById(`row-${day}`);
+            if (!toggle || !openingInput || !closingInput || !row) return;
+
+            const openText = row.querySelector('.open-text');
+            const closedText = row.querySelector('.closed-text');
+
+            if (toggle.checked) {
+                openingInput.disabled = false;
+                closingInput.disabled = false;
+                openingInput.required = true;
+                closingInput.required = true;
+                row.style.opacity = '1';
+                if (openText) openText.style.display = 'inline';
+                if (closedText) closedText.style.display = 'none';
+            } else {
+                openingInput.disabled = true;
+                closingInput.disabled = true;
+                openingInput.required = false;
+                closingInput.required = false;
+                row.style.opacity = '.65';
+                if (openText) openText.style.display = 'none';
+                if (closedText) closedText.style.display = 'inline';
+            }
+        }
+
+        function copyToAll(sourceDay) {
+            const sourceToggle = document.getElementById(`toggle-${sourceDay}`);
+            const sourceOpening = document.getElementById(`opening-${sourceDay}`);
+            const sourceClosing = document.getElementById(`closing-${sourceDay}`);
+            if (!sourceToggle || !sourceOpening || !sourceClosing) return;
+
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+            if (confirm(`Copy ${sourceDay}'s hours to all other days?`)) {
+                days.forEach(day => {
+                    if (day !== sourceDay) {
+                        const toggle = document.getElementById(`toggle-${day}`);
+                        const opening = document.getElementById(`opening-${day}`);
+                        const closing = document.getElementById(`closing-${day}`);
+                        if (toggle && opening && closing) {
+                            toggle.checked = sourceToggle.checked;
+                            opening.value = sourceOpening.value;
+                            closing.value = sourceClosing.value;
+                            toggleDayHours(day);
+                        }
+                    }
+                });
+                alert('Hours copied to all days successfully!');
+            }
+        }
+
+        function openAllDays() {
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            days.forEach(day => {
+                const toggle = document.getElementById(`toggle-${day}`);
+                if (toggle) {
+                    toggle.checked = true;
+                    toggleDayHours(day);
+                }
+            });
+            alert('All days set to open!');
+        }
+
+        function closeAllDays() {
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            if (confirm('Close all days? This will mark the restaurant as closed every day.')) {
+                days.forEach(day => {
+                    const toggle = document.getElementById(`toggle-${day}`);
+                    if (toggle) {
+                        toggle.checked = false;
+                        toggleDayHours(day);
+                    }
+                });
+                alert('All days set to closed!');
+            }
+        }
+
+        // Clear inline validation error when user starts typing
+        document.querySelectorAll('.form-control, .form-select, textarea').forEach(el => {
+            el.addEventListener('input', function() {
+                this.classList.remove('is-invalid');
+                const feedback = this.parentElement.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.style.display = 'none';
+                }
+            });
+
+            el.addEventListener('change', function() {
+                this.classList.remove('is-invalid');
+                const feedback = this.parentElement.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.style.display = 'none';
+                }
+            });
+        });
+
+        // Scroll to first error field on page load if errors exist
+        document.addEventListener('DOMContentLoaded', function() {
+            // Find all invalid fields and make sure they're visible
+            const invalidFields = document.querySelectorAll('.is-invalid');
+
+            if (invalidFields.length > 0) {
+                console.log('Found ' + invalidFields.length + ' invalid fields');
+
+                // Make sure all error feedbacks are visible
+                invalidFields.forEach(field => {
+                    const feedback = field.parentElement.querySelector('.invalid-feedback');
+                    if (feedback) {
+                        feedback.style.display = 'block';
+                    }
+                });
+
+                // Scroll to first error
+                const firstError = invalidFields[0];
+                if (firstError) {
+                    setTimeout(() => {
+                        firstError.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
+                        firstError.focus();
+                    }, 100);
+                }
+            }
+
+            // Also check for error alert at top of page
+            const errorAlert = document.querySelector('.alert-danger');
+            if (errorAlert && invalidFields.length === 0) {
+                // Errors exist but no fields are marked - scroll to alert
+                errorAlert.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    </script>
 @endpush
