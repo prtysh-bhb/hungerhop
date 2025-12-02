@@ -55,7 +55,8 @@
                                             height="120">
                                     </div>
                                     <h5 class="mt-3 text-center">Customer ID</h5>
-                                    <p class="text-muted text-center">CUST{{ str_pad($customer->id, 6, '0', STR_PAD_LEFT) }}</p>
+                                    <p class="text-muted text-center">CUST{{ str_pad($customer->id, 6, '0', STR_PAD_LEFT) }}
+                                    </p>
 
                                     <div class="mt-3">
                                         <label class="form-label fw-600">Account Status</label>
@@ -292,11 +293,12 @@
 
             function validateEmail(input) {
                 const value = input.value.trim();
-                const emailPattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
+                const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
                 const isValid = emailPattern.test(value) && value.length >= 7 && value.length <= 100;
 
                 updateValidationUI(input, isValid,
-                    isValid ? '' : 'Please enter a valid email address (e.g., user@example.com)');
+                    isValid ? '' :
+                    'Please enter a valid email (e.g., user@gmail.com). Domain must start with a letter.');
 
                 return isValid;
             }

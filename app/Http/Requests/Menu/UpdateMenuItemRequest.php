@@ -21,8 +21,8 @@ class UpdateMenuItemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Basic required fields - Name max 50 chars, letters/spaces only (no numbers)
-            'item_name' => ['required', 'string', 'max:50', 'regex:/^[a-zA-Z\s\-\']+$/'],
+            // Basic required fields - Name max 50 chars, allows letters, numbers, spaces and special chars
+            'item_name' => ['required', 'string', 'max:50', 'regex:/^[a-zA-Z0-9\s&\'.\/\-]+$/'],
             'base_price' => 'required|numeric|min:0|max:99999.99',
             'menu_category_id' => 'required|exists:menu_categories,id',
             
@@ -49,7 +49,7 @@ class UpdateMenuItemRequest extends FormRequest
         return [
             'item_name.required' => 'Menu item name is required.',
             'item_name.max' => 'Menu item name cannot exceed 50 characters.',
-            'item_name.regex' => 'Menu item name can only contain letters, spaces, hyphens and apostrophes (no numbers).',
+            'item_name.regex' => 'Menu item name can only contain letters, numbers, spaces and special characters (&, \', ., /, -).',
             'base_price.required' => 'Base price is required.',
             'base_price.numeric' => 'Base price must be a valid number.',
             'base_price.min' => 'Base price cannot be negative.',

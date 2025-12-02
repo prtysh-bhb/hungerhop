@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\v1\CustomerRegistration;
 use App\Http\Controllers\API\v1\DeliveryBoyAssignController;
 use App\Http\Controllers\Api\v1\DeliveryPartner_login;
 use App\Http\Controllers\Api\v1\DeliveryPartnerController;
+use App\Http\Controllers\Api\v1\DeliveryPartnerLocationController;
 use App\Http\Controllers\Api\v1\DeliveryZoneController;
 use App\Http\Controllers\Api\v1\NearestRestaurantController;
 // Controllers
@@ -116,7 +117,17 @@ Route::prefix('v1')->group(function () {
             Route::post('/logout', [DeliveryPartner_login::class, 'logout']);
             Route::get('/assignments', [DeliveryPartnerController::class, 'myAssignments']);
             Route::post('/assignments', [DeliveryPartnerController::class, 'assignmentDetails']);
+
+            // Location tracking routes (should be called every 1 minute)
+            Route::post('/location/update', [DeliveryPartnerLocationController::class, 'updateLocation']);
+            Route::get('/location', [DeliveryPartnerLocationController::class, 'getLocation']);
+            Route::post('/location/batch', [DeliveryPartnerLocationController::class, 'batchUpdateLocation']);
+            Route::post('/toggle-online', [DeliveryPartnerLocationController::class, 'toggleOnlineStatus']);
+            Route::post('/toggle-availability', [DeliveryPartnerLocationController::class, 'toggleAvailability']);
         });
+
+        // Track delivery partner (for customers tracking their order)
+        Route::post('/track', [DeliveryPartnerLocationController::class, 'trackPartner'])->middleware('auth:api');
     });
 
     // ----------------------------------------------
@@ -126,6 +137,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/assign', [DeliveryBoyAssignController::class, 'assign']);
         Route::post('/accept', [DeliveryBoyAssignController::class, 'acceptAssignment']);
         Route::post('/reject', [DeliveryBoyAssignController::class, 'rejectAssignment']);
+        Route::post('/reassign', [DeliveryBoyAssignController::class, 'manualReassign']);
+        Route::post('/rejections', [DeliveryBoyAssignController::class, 'getOrderRejections']);
         Route::get('/find-nearest-partner', [DeliveryBoyAssignController::class, 'findNearestPartner']);
     });
 

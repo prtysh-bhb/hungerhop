@@ -350,12 +350,19 @@
                                         <a href="{{ route('restaurant-admin.list') }}" class="text-primary">clear
                                             filters</a>
                                     @else
-                                        Start by adding your first restaurant
+                                        @if (auth()->user()->role !== 'location_admin')
+                                            Start by adding your first restaurant
+                                        @else
+                                            No restaurant assigned to you yet
+                                        @endif
                                     @endif
                                 </p>
-                                <a href="{{ route('restaurant-admin.registration.create') }}" class="btn btn-primary">
-                                    <i class="fa fa-plus me-2"></i>Add Restaurant
-                                </a>
+                                @if (auth()->user()->role !== 'location_admin')
+                                    <a href="{{ route('restaurant-admin.registration.create') }}"
+                                        class="btn btn-primary">
+                                        <i class="fa fa-plus me-2"></i>Add Restaurant
+                                    </a>
+                                @endif
                             </div>
                         @endif
                     </div>

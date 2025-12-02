@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Restaurant;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use App\Models\Order;
 
 class NearestRestaurantController extends Controller
 {

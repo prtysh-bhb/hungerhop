@@ -43,6 +43,16 @@ class DeliveryAssignment extends Model
 
     public function partner()
     {
-        return $this->belongsTo(User::class, 'partner_id');
+        return $this->belongsTo(DeliveryPartner::class, 'partner_id');
+    }
+
+    public function tenant()
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+
+    public function assignedBy()
+    {
+        return $this->belongsTo(User::class, 'assigned_by');
     }
 }

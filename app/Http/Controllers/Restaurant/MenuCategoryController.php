@@ -63,12 +63,17 @@ class MenuCategoryController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => ['required', 'string', 'min:2', 'max:50', 'regex:/^[A-Za-z][A-Za-z\s&\'-]*$/'],
             'description' => 'nullable|string|max:1000',
             'menu_template_id' => 'nullable|integer|exists:menu_templates,id',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ], [
+            'name.required' => 'Category name is required.',
+            'name.min' => 'Category name must be at least 2 characters.',
+            'name.max' => 'Category name cannot exceed 50 characters.',
+            'name.regex' => 'Category name must start with a letter and can only contain letters, spaces, &, \' and -.',
         ]);
 
         $validated['tenant_id'] = $user->tenant_id;
@@ -122,7 +127,7 @@ class MenuCategoryController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|min:2|max:255',
+            'name' => ['required', 'string', 'min:2', 'max:50', 'regex:/^[A-Za-z][A-Za-z\s&\'-]*$/'],
             'description' => 'nullable|string|max:1000',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
@@ -130,7 +135,8 @@ class MenuCategoryController extends Controller
         ], [
             'name.required' => 'Category name is required.',
             'name.min' => 'Category name must be at least 2 characters.',
-            'name.max' => 'Category name cannot exceed 255 characters.',
+            'name.max' => 'Category name cannot exceed 50 characters.',
+            'name.regex' => 'Category name must start with a letter and can only contain letters, spaces, &, \' and -.',
             'description.max' => 'Description cannot exceed 1000 characters.',
             'sort_order.integer' => 'Sort order must be an integer.',
             'sort_order.min' => 'Sort order cannot be negative.',

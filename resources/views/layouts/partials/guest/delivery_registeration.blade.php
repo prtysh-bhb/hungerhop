@@ -474,7 +474,7 @@
                                                 <input type="file" name="document_file" id="document_file"
                                                     class="form-control @error('document_file') is-invalid @enderror"
                                                     required accept="image/*,application/pdf">
-                                                    <small class="text-muted">Max size: 2MB (jpg, jpeg, png)</small>
+                                                <small class="text-muted">Max size: 2MB (jpg, jpeg, png)</small>
                                                 @error('document_file')
                                                     <div class="error-message">{{ $message }}</div>
                                                 @else
@@ -603,9 +603,14 @@
                     }
                     clearError('email');
 
-                    // Real-time length validation
+                    // Real-time validation
+                    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/;
                     if (this.value.length > 0 && this.value.length < 7) {
                         showError('email', 'Email must be at least 7 characters long.');
+                    } else if (this.value.length >= 7 && this.value.includes('@') && !emailPattern.test(this
+                            .value)) {
+                        showError('email',
+                            'Invalid email format. Domain must start with a letter (e.g., user@gmail.com).');
                     } else if (this.value.length >= 7 && this.value.length <= 30) {
                         clearError('email');
                     }
@@ -715,12 +720,14 @@
                         isValid = false;
                     }
 
-                    // Email validation - must end with .com and be 7-30 characters
+                    // Email validation - must end with .com and be 7-30 characters, domain must start with letter
                     if (email.length < 7 || email.length > 30) {
                         showError('email', 'Email must be between 7 and 30 characters long.');
                         isValid = false;
-                    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.com$/.test(email)) {
-                        showError('email', 'Email must be valid and end with .com domain.');
+                    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/.test(email)) {
+                        showError('email',
+                            'Please enter a valid email (e.g., user@gmail.com). Domain must start with a letter.'
+                        );
                         isValid = false;
                     }
 

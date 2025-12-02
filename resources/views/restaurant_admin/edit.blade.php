@@ -82,7 +82,8 @@
                                                     value="{{ old('restaurant_name', $restaurant->restaurant_name) }}"
                                                     required>
                                                 @if ($errors->has('restaurant_name'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('restaurant_name') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('restaurant_name') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -90,12 +91,14 @@
                                             <div class="form-group">
                                                 <label for="slug">Slug <span class="text-danger">*</span></label>
                                                 <input type="text"
-                                                    class="form-control {{ $errors->has('slug') ? 'is-invalid' : '' }}" id="slug"
-                                                    name="slug" value="{{ old('slug', $restaurant->slug) }}" required>
+                                                    class="form-control {{ $errors->has('slug') ? 'is-invalid' : '' }}"
+                                                    id="slug" name="slug"
+                                                    value="{{ old('slug', $restaurant->slug) }}" required>
                                                 <small class="form-text text-muted">URL-friendly version of the restaurant
                                                     name</small>
                                                 @if ($errors->has('slug'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('slug') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('slug') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -106,14 +109,16 @@
                                             <div class="form-group">
                                                 <label for="email">Email <span class="text-danger">*</span></label>
                                                 <input type="email"
-                                                    class="form-control {{ $errors->has('email') ? 'is-invalid' : '' }}" id="email"
-                                                    name="email" value="{{ old('email', $restaurant->email) }}"
-                                                    minlength="7" maxlength="100"
+                                                    class="form-control {{ $errors->has('email') ? 'is-invalid' : '' }}"
+                                                    id="email" name="email"
+                                                    value="{{ old('email', $restaurant->email) }}" minlength="7"
+                                                    maxlength="100"
                                                     pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" required>
                                                 <small class="text-muted">Valid email format required (7-100
                                                     characters)</small>
                                                 @if ($errors->has('email'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('email') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('email') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -121,13 +126,14 @@
                                             <div class="form-group">
                                                 <label for="phone">Phone <span class="text-danger">*</span></label>
                                                 <input type="tel"
-                                                    class="form-control {{ $errors->has('phone') ? 'is-invalid' : '' }}" id="phone"
-                                                    name="phone" value="{{ old('phone', $restaurant->phone) }}"
-                                                    minlength="10" maxlength="15" pattern="[1-9][0-9]{9,14}"
-                                                    inputmode="numeric" required>
+                                                    class="form-control {{ $errors->has('phone') ? 'is-invalid' : '' }}"
+                                                    id="phone" name="phone"
+                                                    value="{{ old('phone', $restaurant->phone) }}" minlength="10"
+                                                    maxlength="15" pattern="[1-9][0-9]{9,14}" inputmode="numeric" required>
                                                 <small class="text-muted">10-15 digits only, cannot start with 0</small>
                                                 @if ($errors->has('phone'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('phone') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('phone') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -142,7 +148,8 @@
                                                     id="website_url" name="website_url"
                                                     value="{{ old('website_url', $restaurant->website_url) }}">
                                                 @if ($errors->has('website_url'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('website_url') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('website_url') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -154,7 +161,8 @@
                                                     id="cuisine_type" name="cuisine_type"
                                                     value="{{ old('cuisine_type', $restaurant->cuisine_type) }}">
                                                 @if ($errors->has('cuisine_type'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('cuisine_type') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('cuisine_type') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -162,10 +170,11 @@
 
                                     <div class="form-group">
                                         <label for="description">Description</label>
-                                        <textarea class="form-control {{ $errors->has('description') ? 'is-invalid' : '' }}" id="description" name="description"
-                                            rows="3">{{ old('description', $restaurant->description) }}</textarea>
+                                        <textarea class="form-control {{ $errors->has('description') ? 'is-invalid' : '' }}" id="description"
+                                            name="description" rows="3">{{ old('description', $restaurant->description) }}</textarea>
                                         @if ($errors->has('description'))
-                                            <div class="invalid-feedback" style="display: block;">{{ $errors->first('description') }}</div>
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('description') }}</div>
                                         @endif
                                     </div>
                                 </div>
@@ -268,7 +277,8 @@
                                                         <small class="form-text text-muted">Main contact person for the
                                                             franchise</small>
                                                         @if ($errors->has('contact_person'))
-                                                            <div class="invalid-feedback" style="display: block;">{{ $errors->first('contact_person') }}</div>
+                                                            <div class="invalid-feedback" style="display: block;">
+                                                                {{ $errors->first('contact_person') }}</div>
                                                         @endif
                                                     </div>
                                                 </div>
@@ -285,7 +295,8 @@
                                                         <small class="form-text text-muted">Main email for franchise
                                                             communications</small>
                                                         @if ($errors->has('tenant_email'))
-                                                            <div class="invalid-feedback" style="display: block;">{{ $errors->first('tenant_email') }}</div>
+                                                            <div class="invalid-feedback" style="display: block;">
+                                                                {{ $errors->first('tenant_email') }}</div>
                                                         @endif
                                                     </div>
                                                 </div>
@@ -302,7 +313,8 @@
                                                         <small class="form-text text-muted">Main contact number for
                                                             franchise</small>
                                                         @if ($errors->has('tenant_phone'))
-                                                            <div class="invalid-feedback" style="display: block;">{{ $errors->first('tenant_phone') }}</div>
+                                                            <div class="invalid-feedback" style="display: block;">
+                                                                {{ $errors->first('tenant_phone') }}</div>
                                                         @endif
                                                     </div>
                                                 </div>
@@ -335,7 +347,8 @@
                                                         <small class="form-text text-muted">Restaurant will be moved under
                                                             this franchise</small>
                                                         @if ($errors->has('tenant_id'))
-                                                            <div class="invalid-feedback" style="display: block;">{{ $errors->first('tenant_id') }}</div>
+                                                            <div class="invalid-feedback" style="display: block;">
+                                                                {{ $errors->first('tenant_id') }}</div>
                                                         @endif
                                                     </div>
                                                 </div>
@@ -372,7 +385,8 @@
                                                 <small class="form-text text-muted">This person will be the location admin
                                                     for this restaurant</small>
                                                 @if ($errors->has('contact_person_name'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('contact_person_name') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('contact_person_name') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -388,11 +402,12 @@
                                 <div class="card-body">
                                     <div class="form-group">
                                         <label for="address">Address <span class="text-danger">*</span></label>
-                                        <textarea class="form-control {{ $errors->has('address') ? 'is-invalid' : '' }}" id="address" name="address" rows="3"
-                                            minlength="10" maxlength="500" required>{{ old('address', $restaurant->address) }}</textarea>
+                                        <textarea class="form-control {{ $errors->has('address') ? 'is-invalid' : '' }}" id="address" name="address"
+                                            rows="3" minlength="10" maxlength="500" required>{{ old('address', $restaurant->address) }}</textarea>
                                         <small class="text-muted">Minimum 10 characters, maximum 500 characters</small>
                                         @if ($errors->has('address'))
-                                            <div class="invalid-feedback" style="display: block;">{{ $errors->first('address') }}</div>
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('address') }}</div>
                                         @endif
                                     </div>
 
@@ -400,7 +415,8 @@
                                         <div class="col-md-4">
                                             <div class="form-group">
                                                 <label for="state_id">State <span class="text-danger">*</span></label>
-                                                <select class="form-control {{ $errors->has('state_id') ? 'is-invalid' : '' }}"
+                                                <select
+                                                    class="form-control {{ $errors->has('state_id') ? 'is-invalid' : '' }}"
                                                     id="state_id" name="state_id" required>
                                                     <option value="">Select State</option>
                                                     @if (isset($states))
@@ -413,20 +429,23 @@
                                                     @endif
                                                 </select>
                                                 @if ($errors->has('state_id'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('state_id') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('state_id') }}</div>
                                                 @endif
                                             </div>
                                         </div>
                                         <div class="col-md-4">
                                             <div class="form-group">
                                                 <label for="city_id">City <span class="text-danger">*</span></label>
-                                                <select class="form-control {{ $errors->has('city_id') ? 'is-invalid' : '' }}"
+                                                <select
+                                                    class="form-control {{ $errors->has('city_id') ? 'is-invalid' : '' }}"
                                                     id="city_id" name="city_id" required>
                                                     <option value="">Select City</option>
                                                     <!-- Cities will be loaded via AJAX based on selected state -->
                                                 </select>
                                                 @if ($errors->has('city_id'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('city_id') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('city_id') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -441,7 +460,8 @@
                                                     minlength="4" maxlength="10" pattern="[0-9A-Za-z\s\-]+" required>
                                                 <small class="text-muted">4-10 characters</small>
                                                 @if ($errors->has('postal_code'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('postal_code') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('postal_code') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -458,7 +478,8 @@
                                                     max="90" required>
                                                 <small class="text-muted">Between -90 and 90</small>
                                                 @if ($errors->has('latitude'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('latitude') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('latitude') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -473,7 +494,8 @@
                                                     max="180" required>
                                                 <small class="text-muted">Between -180 and 180</small>
                                                 @if ($errors->has('longitude'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('longitude') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('longitude') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -500,7 +522,8 @@
                                                     min="0" max="10000" required>
                                                 <small class="text-muted">0 to 10,000</small>
                                                 @if ($errors->has('minimum_order_amount'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('minimum_order_amount') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('minimum_order_amount') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -515,7 +538,8 @@
                                                     min="0" max="1000" required>
                                                 <small class="text-muted">0 to 1,000</small>
                                                 @if ($errors->has('base_delivery_fee'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('base_delivery_fee') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('base_delivery_fee') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -530,7 +554,8 @@
                                                     min="1" max="50" required>
                                                 <small class="text-muted">1 to 50 km</small>
                                                 @if ($errors->has('delivery_radius_km'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('delivery_radius_km') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('delivery_radius_km') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -549,7 +574,8 @@
                                                     required>
                                                 <small class="text-muted">0 to 100%</small>
                                                 @if ($errors->has('restaurant_commission_percentage'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('restaurant_commission_percentage') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('restaurant_commission_percentage') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -564,7 +590,8 @@
                                                     required>
                                                 <small class="text-muted">0 to 50%</small>
                                                 @if ($errors->has('tax_percentage'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('tax_percentage') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('tax_percentage') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -579,7 +606,8 @@
                                                     min="10" max="120" required>
                                                 <small class="text-muted">10 to 120 minutes</small>
                                                 @if ($errors->has('estimated_delivery_time'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('estimated_delivery_time') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('estimated_delivery_time') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -597,7 +625,8 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="status">Status <span class="text-danger">*</span></label>
-                                                <select class="form-control {{ $errors->has('status') ? 'is-invalid' : '' }}"
+                                                <select
+                                                    class="form-control {{ $errors->has('status') ? 'is-invalid' : '' }}"
                                                     id="status" name="status" required>
                                                     <option value="">Select Status</option>
                                                     <option value="pending"
@@ -614,7 +643,8 @@
                                                         Suspended</option>
                                                 </select>
                                                 @if ($errors->has('status'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('status') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('status') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -640,7 +670,8 @@
                                                     @endif
                                                 </select>
                                                 @if ($errors->has('location_admin_id'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('location_admin_id') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('location_admin_id') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -655,7 +686,8 @@
                                                     {{ old('is_open', $restaurant->is_open) ? 'checked' : '' }}>
                                                 <label class="form-check-label" for="is_open">Is Open</label>
                                                 @if ($errors->has('is_open'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('is_open') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('is_open') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -668,7 +700,8 @@
                                                 <label class="form-check-label" for="accepts_orders">Accepts
                                                     Orders</label>
                                                 @if ($errors->has('accepts_orders'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('accepts_orders') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('accepts_orders') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -680,7 +713,8 @@
                                                     {{ old('is_featured', $restaurant->is_featured) ? 'checked' : '' }}>
                                                 <label class="form-check-label" for="is_featured">Is Featured</label>
                                                 @if ($errors->has('is_featured'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('is_featured') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('is_featured') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -712,7 +746,8 @@
                                                 <small class="form-text text-muted">Upload a new image to replace the
                                                     current one</small>
                                                 @if ($errors->has('image'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('image') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('image') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -733,7 +768,8 @@
                                                 <small class="form-text text-muted">Upload a new cover image to replace the
                                                     current one</small>
                                                 @if ($errors->has('cover_image'))
-                                                    <div class="invalid-feedback" style="display: block;">{{ $errors->first('cover_image') }}</div>
+                                                    <div class="invalid-feedback" style="display: block;">
+                                                        {{ $errors->first('cover_image') }}</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -750,7 +786,8 @@
                                     <div class="form-group">
                                         <label for="business_hours">Business Hours</label>
                                         @if ($errors->has('business_hours'))
-                                            <div class="invalid-feedback d-block" style="display: block;">{{ $errors->first('business_hours') }}</div>
+                                            <div class="invalid-feedback d-block" style="display: block;">
+                                                {{ $errors->first('business_hours') }}</div>
                                         @endif
 
                                         <div class="card mt-2">
@@ -878,10 +915,11 @@
 
                                     <div class="form-group">
                                         <label for="special_instructions">Special Instructions</label>
-                                        <textarea class="form-control {{ $errors->has('special_instructions') ? 'is-invalid' : '' }}" id="special_instructions"
-                                            name="special_instructions" rows="3">{{ old('special_instructions', $restaurant->special_instructions) }}</textarea>
+                                        <textarea class="form-control {{ $errors->has('special_instructions') ? 'is-invalid' : '' }}"
+                                            id="special_instructions" name="special_instructions" rows="3">{{ old('special_instructions', $restaurant->special_instructions) }}</textarea>
                                         @if ($errors->has('special_instructions'))
-                                            <div class="invalid-feedback" style="display: block;">{{ $errors->first('special_instructions') }}</div>
+                                            <div class="invalid-feedback" style="display: block;">
+                                                {{ $errors->first('special_instructions') }}</div>
                                         @endif
                                     </div>
                                 </div>
@@ -1139,6 +1177,41 @@
                 });
             }
 
+            // Email validation - domain must start with a letter
+            const emailInput = document.getElementById('email');
+            const tenantEmailInput = document.getElementById('tenant_email');
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
+
+            function validateEmailField(input) {
+                if (!input) return;
+
+                input.addEventListener('input', function() {
+                    // Limit to 100 characters
+                    if (this.value.length > 100) {
+                        this.value = this.value.slice(0, 100);
+                    }
+                    this.classList.remove('is-invalid');
+                    const feedback = this.parentElement.querySelector('.invalid-feedback');
+                    if (feedback) feedback.style.display = 'none';
+                });
+
+                input.addEventListener('blur', function() {
+                    const email = this.value.trim();
+                    if (email && !emailPattern.test(email)) {
+                        this.classList.add('is-invalid');
+                        const feedback = this.parentElement.querySelector('.invalid-feedback');
+                        if (feedback) {
+                            feedback.textContent =
+                                'Please enter a valid email (e.g., user@gmail.com). Domain must start with a letter.';
+                            feedback.style.display = 'block';
+                        }
+                    }
+                });
+            }
+
+            validateEmailField(emailInput);
+            validateEmailField(tenantEmailInput);
+
             // Postal code validation - alphanumeric, space, hyphen only
             const postalCodeInput = document.getElementById('postal_code');
             if (postalCodeInput) {
@@ -1183,6 +1256,7 @@
             // Form validation
             $('form').on('submit', function(e) {
                 let isValid = true;
+                let errorMessages = [];
 
                 // Check required fields
                 $('input[required], select[required]').each(function() {
@@ -1194,9 +1268,29 @@
                     }
                 });
 
+                // Validate email format
+                const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
+                const emailVal = $('#email').val();
+                if (emailVal && !emailPattern.test(emailVal)) {
+                    $('#email').addClass('is-invalid');
+                    isValid = false;
+                    errorMessages.push('Please enter a valid email. Domain must start with a letter.');
+                }
+
+                const tenantEmailVal = $('#tenant_email').val();
+                if (tenantEmailVal && !emailPattern.test(tenantEmailVal)) {
+                    $('#tenant_email').addClass('is-invalid');
+                    isValid = false;
+                    errorMessages.push('Franchise email must be valid. Domain must start with a letter.');
+                }
+
                 if (!isValid) {
                     e.preventDefault();
-                    alert('Please fill in all required fields.');
+                    if (errorMessages.length > 0) {
+                        alert(errorMessages.join('\n'));
+                    } else {
+                        alert('Please fill in all required fields.');
+                    }
                 }
             });
 

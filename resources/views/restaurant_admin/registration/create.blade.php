@@ -265,8 +265,8 @@
                                         <input type="tel"
                                             class="form-control {{ $errors->has('phone') ? 'is-invalid' : '' }}"
                                             id="phone" name="phone" value="{{ old('phone') }}"
-                                            placeholder="10-15 digits (cannot start with 0)" minlength="10"
-                                            maxlength="15" required>
+                                            placeholder="10-15 digits (cannot start with 0)" minlength="10" maxlength="15"
+                                            required>
                                         <small class="text-muted">Enter 10-15 digit phone number (must not start with
                                             0)</small>
                                         @if ($errors->has('phone'))
@@ -1179,6 +1179,87 @@
                 errorAlert.scrollIntoView({
                     behavior: 'smooth',
                     block: 'start'
+                });
+            }
+
+            // Email validation - domain must start with a letter
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
+
+            function setupEmailValidation(inputId) {
+                const input = document.getElementById(inputId);
+                if (!input) return;
+
+                input.addEventListener('input', function() {
+                    // Limit to 100 characters
+                    if (this.value.length > 100) {
+                        this.value = this.value.slice(0, 100);
+                    }
+                    this.classList.remove('is-invalid');
+                    const feedback = this.parentElement.querySelector('.invalid-feedback');
+                    if (feedback) feedback.style.display = 'none';
+                });
+
+                input.addEventListener('blur', function() {
+                    const email = this.value.trim();
+                    if (email && !emailPattern.test(email)) {
+                        this.classList.add('is-invalid');
+                        let feedback = this.parentElement.querySelector('.invalid-feedback');
+                        if (!feedback) {
+                            feedback = document.createElement('div');
+                            feedback.className = 'invalid-feedback';
+                            this.parentElement.appendChild(feedback);
+                        }
+                        feedback.textContent =
+                            'Please enter a valid email (e.g., user@gmail.com). Domain must start with a letter.';
+                        feedback.style.display = 'block';
+                    }
+                });
+            }
+
+            // Setup validation for all email fields
+            setupEmailValidation('email');
+            setupEmailValidation('tenant_email');
+            setupEmailValidation('location_admin_email');
+
+            // Form submission validation
+            const form = document.getElementById('restaurant-registration-form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    let isValid = true;
+
+                    // Validate all email fields
+                    ['email', 'tenant_email', 'location_admin_email'].forEach(function(fieldId) {
+                        const field = document.getElementById(fieldId);
+                        if (field && field.value.trim()) {
+                            if (!emailPattern.test(field.value.trim())) {
+                                field.classList.add('is-invalid');
+                                let feedback = field.parentElement.querySelector(
+                                    '.invalid-feedback');
+                                if (!feedback) {
+                                    feedback = document.createElement('div');
+                                    feedback.className = 'invalid-feedback';
+                                    field.parentElement.appendChild(feedback);
+                                }
+                                feedback.textContent =
+                                    'Please enter a valid email. Domain must start with a letter.';
+                                feedback.style.display = 'block';
+                                isValid = false;
+                            }
+                        }
+                    });
+
+                    if (!isValid) {
+                        e.preventDefault();
+                        // Scroll to first invalid field
+                        const firstInvalid = document.querySelector('.is-invalid');
+                        if (firstInvalid) {
+                            firstInvalid.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'center'
+                            });
+                            firstInvalid.focus();
+                        }
+                    }
                 });
             }
         });

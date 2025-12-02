@@ -71,11 +71,12 @@
                                                     class="text-danger">*</span></label>
                                             <input type="text" name="item_name" id="item_name"
                                                 class="form-control @error('item_name') is-invalid @enderror"
-                                                placeholder="Enter menu item name (letters only)"
+                                                placeholder="Enter menu item name"
                                                 value="{{ old('item_name', $menuItem->item_name ?? '') }}" required
-                                                maxlength="50" pattern="^[a-zA-Z\s\-']+$"
-                                                title="Only letters, spaces, hyphens and apostrophes allowed (no numbers)">
-                                            <small class="text-muted">Max 50 characters, letters only (no numbers)</small>
+                                                maxlength="50" pattern="^[a-zA-Z0-9\s&'./\-]+$"
+                                                title="Letters, numbers, spaces and special characters (&, ', ., /, -) allowed">
+                                            <small class="text-muted">Max 50 characters (letters, numbers, &, ', ., /, -
+                                                allowed)</small>
                                             @error('item_name')
                                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                                             @enderror
@@ -379,18 +380,25 @@
             // Call this function on page load to show server-side errors
             displayServerSideErrors();
 
-            // Menu Name validation - minimum 2 alphabets
+            // Menu Name validation - minimum 2 alphabets, allows numbers and special chars
             const itemNameInput = document.getElementById('item_name');
             if (itemNameInput) {
                 itemNameInput.addEventListener('input', function(e) {
                     const errorDiv = document.getElementById('item_name_error');
                     const value = this.value.trim();
+                    const validPattern = /^[a-zA-Z0-9\s&'./\-]+$/;
 
-                    // Check for numbers
-                    if (/\d/.test(value)) {
+                    // Check if empty
+                    if (value.length === 0) {
+                        this.classList.add('is-invalid');
+                        errorDiv.textContent = 'Menu name is required.';
+                        errorDiv.style.display = 'block';
+                    }
+                    // Check for invalid characters
+                    else if (!validPattern.test(value)) {
                         this.classList.add('is-invalid');
                         errorDiv.textContent =
-                            'Menu name cannot contain numbers. Only letters, spaces, hyphens and apostrophes allowed.';
+                            'Menu name can only contain letters, numbers, spaces and special characters (&, \', ., /, -).';
                         errorDiv.style.display = 'block';
                     }
                     // Check minimum length (at least 2 alphabets)
@@ -398,21 +406,17 @@
                         this.classList.add('is-invalid');
                         errorDiv.textContent = 'Menu name must contain at least 2 alphabets.';
                         errorDiv.style.display = 'block';
-                    }
-                    // Check if empty
-                    else if (value.length === 0) {
-                        this.classList.add('is-invalid');
-                        errorDiv.textContent = 'Menu name is required.';
-                        errorDiv.style.display = 'block';
                     } else {
                         this.classList.remove('is-invalid');
                         errorDiv.style.display = 'none';
                     }
                 });
 
-                // Prevent number input
+                // Allow only valid characters
                 itemNameInput.addEventListener('keypress', function(e) {
-                    if (/\d/.test(e.key)) {
+                    const char = e.key;
+                    const validChars = /^[a-zA-Z0-9\s&'./\-]$/;
+                    if (!validChars.test(char) && char !== 'Backspace' && char !== 'Delete') {
                         e.preventDefault();
                     }
                 });
@@ -606,8 +610,10 @@
                     const itemName = document.getElementById('item_name');
                     if (itemName && itemName.value.trim()) {
                         const value = itemName.value.trim();
-                        if (/\d/.test(value)) {
-                            fieldErrors.item_name = 'Menu name cannot contain numbers.';
+                        const validPattern = /^[a-zA-Z0-9\s&'./\-]+$/;
+                        if (!validPattern.test(value)) {
+                            fieldErrors.item_name =
+                                'Menu name can only contain letters, numbers, spaces and special characters (&, \', ., /, -).';
                             isValid = false;
                         } else if (value.replace(/[^a-zA-Z]/g, '').length < 2) {
                             fieldErrors.item_name = 'Menu name must contain at least 2 alphabets.';

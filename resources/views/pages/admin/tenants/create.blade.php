@@ -293,7 +293,7 @@
                                 {{ old('subscription_plan') == 'PRO_MAX' ? 'checked' : '' }}>
                             <div class="plan-content">
                                 <div class="icon-circle bg-success">
-                                    <i class="fa fa-crown"></i>
+                                    <i class="fa fa-star"></i>
                                 </div>
                                 <h6>Pro Max Plan</h6>
                                 <p>Premium features for enterprise</p>
@@ -511,11 +511,12 @@
 
             function validateEmail(input) {
                 const value = input.value.trim();
-                const emailPattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
+                const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
                 const isValid = emailPattern.test(value) && value.length >= 5 && value.length <= 100;
 
                 updateValidationUI(input, isValid,
-                    isValid ? '' : 'Please enter a valid email address (e.g., user@example.com)');
+                    isValid ? '' :
+                    'Please enter a valid email (e.g., user@gmail.com). Domain must start with a letter.');
 
                 return isValid;
             }

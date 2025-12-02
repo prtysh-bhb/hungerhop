@@ -514,7 +514,9 @@
                 }
             });
 
-            // Real-time validation for email (.com domain and length)
+            // Real-time validation for email - domain must start with a letter
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
+
             $('#email').on('input', function() {
                 // Limit to 30 characters
                 if (this.value.length > 30) {
@@ -530,10 +532,12 @@
             });
 
             $('#email').on('blur', function() {
-                const email = this.value;
+                const email = this.value.trim();
                 if (email && email.length >= 7 && email.length <= 30) {
-                    if (!email.endsWith('.com')) {
-                        showError(this, 'Email must end with .com domain');
+                    if (!emailPattern.test(email)) {
+                        showError(this,
+                            'Please enter a valid email (e.g., user@gmail.com). Domain must start with a letter.'
+                            );
                     } else {
                         clearError(this);
                     }
