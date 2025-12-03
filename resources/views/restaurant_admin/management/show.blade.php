@@ -14,7 +14,7 @@
                                 class="btn btn-warning btn-sm">
                                 <i class="fa fa-edit"></i> Edit Restaurant
                             </a>
-                            <a href="{{ route('restaurant-admin.management.index') }}" class="btn btn-primary btn-sm">
+                            <a href="{{ route('restaurant-admin.index') }}" class="btn btn-primary btn-sm">
                                 <i class="fa fa-list"></i> Back to Management
                             </a>
                         </div>

@@ -114,7 +114,7 @@
                     <div class="box-header with-border">
                         <h4 class="box-title">Quick Actions</h4>
                     </div>
-                    <div class="box-body">
+                    <div class="box-body text-center">
                         <div class="row">
                             <div class="col-md-3 col-sm-6">
                                 <a href="{{ route('restaurant-admin.registration.create') }}"

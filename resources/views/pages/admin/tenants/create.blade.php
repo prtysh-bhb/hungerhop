@@ -500,128 +500,158 @@
             // Validation functions
             function validateName(input) {
                 const value = input.value.trim();
-                const namePattern = /^[A-Za-z\s]+$/;
-                const isValid = namePattern.test(value) && value.length >= 2 && value.length <= 100;
+                // Only allow letters (A-Z, a-z) and spaces - no numbers or special characters
+                const namePattern = /^[A-Za-z][A-Za-z\s]*$/;
+                // Check if value contains any numbers or special characters
+                const hasInvalidChars = /[0-9!@#$%^&*()_+=\[\]{}|;:'",.<>?/\\`~-]/.test(value);
+            const isValid = namePattern.test(value) && !hasInvalidChars && value.length >= 2 && value.length <=
+                100;
 
-                updateValidationUI(input, isValid,
-                    isValid ? '' : 'Name should contain only letters and spaces (2-100 characters)');
-
-                return isValid;
-            }
-
-            function validateEmail(input) {
-                const value = input.value.trim();
-                const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
-                const isValid = emailPattern.test(value) && value.length >= 5 && value.length <= 100;
-
-                updateValidationUI(input, isValid,
-                    isValid ? '' :
-                    'Please enter a valid email (e.g., user@gmail.com). Domain must start with a letter.');
-
-                return isValid;
-            }
-
-            function validatePhone(input) {
-                const value = input.value.trim();
-                const phonePattern = /^[0-9]{10,15}$/;
-                const isValid = phonePattern.test(value);
-
-                updateValidationUI(input, isValid,
-                    isValid ? '' : 'Phone number must contain only numbers (10-15 digits)');
-
-                return isValid;
-            }
-
-            function updateValidationUI(input, isValid, errorMessage) {
-                const errorElement = input.parentElement.querySelector('.invalid-feedback');
-
-                if (isValid) {
-                    input.classList.remove('is-invalid');
-                    errorElement.style.display = 'none';
+            let errorMessage = '';
+            if (!isValid) {
+                if (hasInvalidChars) {
+                    errorMessage = 'Name cannot contain numbers or special characters';
+                } else if (value.length < 2) {
+                    errorMessage = 'Name must be at least 2 characters long';
+                } else if (value.length > 100) {
+                    errorMessage = 'Name cannot exceed 100 characters';
                 } else {
-                    input.classList.add('is-invalid');
-                    errorElement.textContent = errorMessage;
-                    errorElement.style.display = 'block';
+                    errorMessage = 'Name should contain only letters and spaces';
                 }
             }
 
-            // Real-time validation for input fields
-            document.getElementById('tenant_name').addEventListener('input', function() {
-                validateName(this);
-            });
+            updateValidationUI(input, isValid, errorMessage);
 
-            document.getElementById('contact_person').addEventListener('input', function() {
-                validateName(this);
-            });
+            return isValid;
+        }
 
-            document.getElementById('email').addEventListener('input', function() {
-                validateEmail(this);
-            });
+        function validateEmail(input) {
+            const value = input.value.trim();
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
+            const isValid = emailPattern.test(value) && value.length >= 5 && value.length <= 100;
 
-            document.getElementById('phone').addEventListener('input', function() {
-                // Remove any non-numeric characters
-                this.value = this.value.replace(/[^0-9]/g, '');
-                validatePhone(this);
-            });
+            updateValidationUI(input, isValid,
+                isValid ? '' :
+                'Please enter a valid email (e.g., user@gmail.com). Domain must start with a letter.');
 
-            // Handle plan selection - both click on card and radio change
-            const planCards = document.querySelectorAll('.plan-card');
-            const planInputs = document.querySelectorAll('input[name="subscription_plan"]');
+            return isValid;
+        }
 
-            // Function to update form values based on selected plan
-            function updatePlanValues(planValue) {
-                const limits = planLimits[planValue];
+        function validatePhone(input) {
+            const value = input.value.trim();
+            const phonePattern = /^[0-9]{10,15}$/;
+            // Check if all digits are zeros
+            const isAllZeros = /^0+$/.test(value);
+            // Check if phone starts with valid digit (not all zeros)
+            const hasValidDigits = /[1-9]/.test(value);
+            const isValid = phonePattern.test(value) && !isAllZeros && hasValidDigits;
 
-                if (limits) {
-                    // Update fees and limits based on plan
-                    document.getElementById('monthly_base_fee').value = limits.baseFee;
-                    document.getElementById('per_restaurant_fee').value = limits.perRestaurantFee;
-                    document.getElementById('total_restaurants').value = limits.maxRestaurants;
-                    document.getElementById('banner_limit').value = limits.maxBanners;
-
-                    // Show plan limitations
-                    showPlanLimitations(planValue, limits);
+            let errorMessage = '';
+            if (!isValid) {
+                if (isAllZeros) {
+                    errorMessage = 'Phone number cannot be all zeros';
+                } else if (!hasValidDigits) {
+                    errorMessage = 'Phone number must contain at least one non-zero digit';
+                } else {
+                    errorMessage = 'Phone number must contain only numbers (10-15 digits)';
                 }
             }
 
-            // Function to select a plan card
-            function selectPlanCard(selectedCard, radio) {
-                // Remove selected class from all cards
-                planCards.forEach(card => card.classList.remove('selected'));
+            updateValidationUI(input, isValid, errorMessage);
 
-                // Add selected class to clicked card
-                selectedCard.classList.add('selected');
+            return isValid;
+        }
 
-                // Ensure the radio is checked
-                radio.checked = true;
+        function updateValidationUI(input, isValid, errorMessage) {
+            const errorElement = input.parentElement.querySelector('.invalid-feedback');
 
-                // Update form values
-                updatePlanValues(radio.value);
+            if (isValid) {
+                input.classList.remove('is-invalid');
+                errorElement.style.display = 'none';
+            } else {
+                input.classList.add('is-invalid');
+                errorElement.textContent = errorMessage;
+                errorElement.style.display = 'block';
             }
+        }
 
-            // Add click event to plan cards
-            planCards.forEach(card => {
-                const radio = card.querySelector('input[type="radio"]');
+        // Real-time validation for input fields
+        document.getElementById('tenant_name').addEventListener('input', function() {
+            validateName(this);
+        });
 
-                card.addEventListener('click', function() {
-                    selectPlanCard(card, radio);
-                });
+        document.getElementById('contact_person').addEventListener('input', function() {
+            validateName(this);
+        });
+
+        document.getElementById('email').addEventListener('input', function() {
+            validateEmail(this);
+        });
+
+        document.getElementById('phone').addEventListener('input', function() {
+            // Remove any non-numeric characters
+            this.value = this.value.replace(/[^0-9]/g, '');
+            validatePhone(this);
+        });
+
+        // Handle plan selection - both click on card and radio change
+        const planCards = document.querySelectorAll('.plan-card');
+        const planInputs = document.querySelectorAll('input[name="subscription_plan"]');
+
+        // Function to update form values based on selected plan
+        function updatePlanValues(planValue) {
+            const limits = planLimits[planValue];
+
+            if (limits) {
+                // Update fees and limits based on plan
+                document.getElementById('monthly_base_fee').value = limits.baseFee;
+                document.getElementById('per_restaurant_fee').value = limits.perRestaurantFee;
+                document.getElementById('total_restaurants').value = limits.maxRestaurants;
+                document.getElementById('banner_limit').value = limits.maxBanners;
+
+                // Show plan limitations
+                showPlanLimitations(planValue, limits);
+            }
+        }
+
+        // Function to select a plan card
+        function selectPlanCard(selectedCard, radio) {
+            // Remove selected class from all cards
+            planCards.forEach(card => card.classList.remove('selected'));
+
+            // Add selected class to clicked card
+            selectedCard.classList.add('selected');
+
+            // Ensure the radio is checked
+            radio.checked = true;
+
+            // Update form values
+            updatePlanValues(radio.value);
+        }
+
+        // Add click event to plan cards
+        planCards.forEach(card => {
+            const radio = card.querySelector('input[type="radio"]');
+
+            card.addEventListener('click', function() {
+                selectPlanCard(card, radio);
             });
+        });
 
-            // Also handle direct radio change events
-            planInputs.forEach(input => {
-                input.addEventListener('change', function() {
-                    if (this.checked) {
-                        const card = this.closest('.plan-card');
-                        selectPlanCard(card, this);
-                    }
-                });
+        // Also handle direct radio change events
+        planInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                if (this.checked) {
+                    const card = this.closest('.plan-card');
+                    selectPlanCard(card, this);
+                }
             });
+        });
 
-            // Function to show plan limitations
-            function showPlanLimitations(plan, limits) {
-                const warningText =
-                    `${limits.name} allows up to ${limits.maxRestaurants} restaurants and ${limits.maxBanners} banner(s). Monthly fee: ₹${limits.baseFee}`;
+        // Function to show plan limitations
+        function showPlanLimitations(plan, limits) {
+            const warningText =
+                `${limits.name} allows up to ${limits.maxRestaurants} restaurants and ${limits.maxBanners} banner(s). Monthly fee: ₹${limits.baseFee}`;
                 document.getElementById('plan-limit-text').textContent = warningText;
                 document.getElementById('plan-limit-warning').style.display = 'block';
             }

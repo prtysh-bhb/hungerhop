@@ -111,8 +111,20 @@ class TenantController extends Controller
         $validated = $request->validate([
             'tenant_name' => 'required|string|max:255',
             'contact_person' => 'required|string|max:255',
-            'email' => 'required|email|unique:tenants,email|unique:users,email',
-            'phone' => 'required|string|max:20|unique:users,phone',
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                'unique:tenants,email',
+                'unique:users,email',
+            ],
+            'phone' => [
+                'required',
+                'string',
+                'max:20',
+                'regex:/^(?!0+$)\d+$/', // prevent all zeros + only digits
+                'unique:users,phone',
+            ],
             'subscription_plan' => 'required|in:'.implode(',', Tenant::PLANS),
             'total_restaurants' => 'required|integer|min:1|max:1000',
             'monthly_base_fee' => 'required|numeric|min:0',
@@ -121,12 +133,59 @@ class TenantController extends Controller
             'subscription_start_date' => 'nullable|date',
             'next_billing_date' => 'nullable|date|after:subscription_start_date',
             'status' => 'nullable|in:'.implode(',', Tenant::STATUSES),
-        ]);
+            ], [
+            'tenant_name.required' => 'Tenant name is required.',
+            'tenant_name.max' => 'Tenant name may not be greater than 255 characters.',
+
+            'contact_person.required' => 'Contact person name is required.',
+            'contact_person.max' => 'Contact person name may not be greater than 255 characters.',
+
+            'email.required' => 'Email address is required.',
+            'email.email' => 'Please provide a valid email address.',
+            'email.max' => 'Email may not be greater than 255 characters.',
+            'email.unique' => 'The email has already been taken in tenants or users.',
+
+            'phone.required' => 'Phone number is required.',
+            'phone.string' => 'Phone number must be a valid string.',
+            'phone.max' => 'The phone number may not be greater than 20 characters.',
+            'phone.regex' => 'Phone number cannot be all zeros and must contain only digits.',
+            'phone.unique' => 'The phone number has already been registered.',
+
+            'subscription_plan.required' => 'Subscription plan is required.',
+            'subscription_plan.in' => 'Invalid subscription plan selected.',
+
+            'total_restaurants.required' => 'Total restaurants field is required.',
+            'total_restaurants.integer' => 'Total restaurants must be an integer.',
+            'total_restaurants.min' => 'Total restaurants must be at least 1.',
+            'total_restaurants.max' => 'Total restaurants may not exceed 1000.',
+
+            'monthly_base_fee.required' => 'Monthly base fee is required.',
+            'monthly_base_fee.numeric' => 'Monthly base fee must be a numeric value.',
+            'monthly_base_fee.min' => 'Monthly base fee must be at least 0.',
+
+            'per_restaurant_fee.required' => 'Per restaurant fee is required.',
+            'per_restaurant_fee.numeric' => 'Per restaurant fee must be a numeric value.',
+            'per_restaurant_fee.min' => 'Per restaurant fee must be at least 0.',
+
+            'banner_limit.required' => 'Banner limit is required.',
+            'banner_limit.integer' => 'Banner limit must be an integer.',
+            'banner_limit.min' => 'Banner limit must be at least 1.',
+            'banner_limit.max' => 'Banner limit may not exceed 100.',
+
+            'subscription_start_date.date' => 'Subscription start date must be a valid date.',
+
+            'next_billing_date.date' => 'Next billing date must be a valid date.',
+            'next_billing_date.after' => 'Next billing date must be after subscription start date.',
+
+            'status.in' => 'Invalid status selected.',
+            ]);
+
 
         // Set default status if not provided
         if (empty($validated['status'])) {
             $validated['status'] = 'pending';
         }
+        
 
         // Remove subscription date fields - these will be filled when payment is completed
         unset($validated['subscription_start_date']);

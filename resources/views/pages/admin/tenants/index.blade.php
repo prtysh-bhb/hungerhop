@@ -145,11 +145,11 @@
             </div>
 
             <!-- Filters -->
-            <div class="row">
+            <div class="box p-10 ">
                 <div class="col-12">
                     <div class="filter-section">
                         <form method="GET" action="{{ route('admin.tenants.index') }}">
-                            <div class="row">
+                            <div class="row gap-0.5">
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="search">Search</label>

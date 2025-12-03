@@ -950,198 +950,156 @@
 @section('scripts')
     <script>
         $(document).ready(function() {
-            // Scroll to first error field if validation errors exist
-            @if ($errors->any())
-                const firstErrorField = document.querySelector('.is-invalid');
-                if (firstErrorField) {
-                    firstErrorField.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center'
-                    });
-                    firstErrorField.focus();
-                } else {
-                    const errorAlert = document.querySelector('.alert-danger');
-                    if (errorAlert) {
-                        errorAlert.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'center'
-                        });
+            // ============================================
+            // PREVENT FORM SUBMISSION ON ENTER KEY
+            // ============================================
+            $('form').on('keypress', function(e) {
+                if (e.which === 13 && e.target.tagName !== 'TEXTAREA') {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            // Also prevent on keydown for better coverage
+            $('input').on('keydown', function(e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    // Move to next input field instead
+                    const inputs = $('input:visible, select:visible, textarea:visible');
+                    const currentIndex = inputs.index(this);
+                    if (currentIndex < inputs.length - 1) {
+                        inputs.eq(currentIndex + 1).focus();
                     }
+                    return false;
                 }
-            @endif
-
-            // Prepare business hours JSON before form submission
-            $('form').submit(function() {
-                const open = $('input[name="business_hours[open]"]').val();
-                const close = $('input[name="business_hours[close]"]').val();
-
-                const businessHours = {
-                    open: open,
-                    close: close
-                };
-
-                $('#business_hours_json').val(JSON.stringify(businessHours));
             });
 
-            // Auto-generate slug from restaurant name
-            $('#restaurant_name').on('input', function() {
-                let name = $(this).val();
-                let slug = name.toLowerCase()
-                    .replace(/[^a-z0-9 -]/g, '') // Remove invalid chars
-                    .replace(/\s+/g, '-') // Replace spaces with -
-                    .replace(/-+/g, '-') // Replace multiple - with single -
-                    .trim('-'); // Trim - from start and end
-                $('#slug').val(slug);
-            });
-
-            // Restaurant Type Selection Logic
-            const noChangeRadio = document.getElementById('no_change');
-            const newIndependentRadio = document.getElementById('new_independent');
-            const existingFranchiseRadio = document.getElementById('existing_franchise');
-            const tenantDetailsSection = document.getElementById('tenant-details-section');
-            const existingTenantSection = document.getElementById('existing-tenant-section');
-
-            function toggleSections() {
-                if (!tenantDetailsSection || !existingTenantSection) {
-                    return;
+            // ============================================
+            // VALIDATION HELPER FUNCTIONS
+            // ============================================
+            function showError(input, message) {
+                const $input = $(input);
+                $input.addClass('is-invalid');
+                let $feedback = $input.parent().find('.invalid-feedback');
+                if ($feedback.length === 0) {
+                    $feedback = $('<div class="invalid-feedback"></div>');
+                    $input.after($feedback);
                 }
-
-                if (newIndependentRadio && newIndependentRadio.checked) {
-                    tenantDetailsSection.style.display = 'block';
-                    existingTenantSection.style.display = 'none';
-
-                    // Make tenant fields optional for updates
-                    const contactPerson = document.getElementById('contact_person');
-                    const tenantEmail = document.getElementById('tenant_email');
-                    const tenantPhone = document.getElementById('tenant_phone');
-                    const tenantId = document.getElementById('tenant_id');
-
-                    if (contactPerson) contactPerson.required = false;
-                    if (tenantEmail) tenantEmail.required = false;
-                    if (tenantPhone) tenantPhone.required = false;
-                    if (tenantId) tenantId.required = false;
-
-                } else if (existingFranchiseRadio && existingFranchiseRadio.checked) {
-                    tenantDetailsSection.style.display = 'none';
-                    existingTenantSection.style.display = 'block';
-
-                    // Make tenant selection required
-                    const contactPerson = document.getElementById('contact_person');
-                    const tenantEmail = document.getElementById('tenant_email');
-                    const tenantPhone = document.getElementById('tenant_phone');
-                    const tenantId = document.getElementById('tenant_id');
-
-                    if (tenantId) tenantId.required = true;
-                    if (contactPerson) contactPerson.required = false;
-                    if (tenantEmail) tenantEmail.required = false;
-                    if (tenantPhone) tenantPhone.required = false;
-                } else {
-                    // No change selected - hide both sections
-                    tenantDetailsSection.style.display = 'none';
-                    existingTenantSection.style.display = 'none';
-
-                    // Make all tenant fields optional
-                    const contactPerson = document.getElementById('contact_person');
-                    const tenantEmail = document.getElementById('tenant_email');
-                    const tenantPhone = document.getElementById('tenant_phone');
-                    const tenantId = document.getElementById('tenant_id');
-
-                    if (contactPerson) contactPerson.required = false;
-                    if (tenantEmail) tenantEmail.required = false;
-                    if (tenantPhone) tenantPhone.required = false;
-                    if (tenantId) tenantId.required = false;
-                }
+                $feedback.text(message).show();
             }
 
-            // Function for card click selection
-            window.selectRestaurantType = function(type) {
-                if (type === 'no_change' && noChangeRadio) {
-                    noChangeRadio.checked = true;
-                } else if (type === 'new' && newIndependentRadio) {
-                    newIndependentRadio.checked = true;
-                } else if (type === 'existing' && existingFranchiseRadio) {
-                    existingFranchiseRadio.checked = true;
-                }
-                toggleSections();
-            };
-
-            // Event listeners for radio buttons
-            if (noChangeRadio) {
-                noChangeRadio.addEventListener('change', toggleSections);
-            }
-            if (newIndependentRadio) {
-                newIndependentRadio.addEventListener('change', toggleSections);
-            }
-            if (existingFranchiseRadio) {
-                existingFranchiseRadio.addEventListener('change', toggleSections);
+            function clearError(input) {
+                const $input = $(input);
+                $input.removeClass('is-invalid');
+                $input.parent().find('.invalid-feedback').hide();
             }
 
-            // Initialize on page load
-            setTimeout(toggleSections, 100);
+            // ============================================
+            // RESTAURANT NAME VALIDATION
+            // ============================================
+            const restaurantNameInput = document.getElementById('restaurant_name');
+            if (restaurantNameInput) {
+                // Pattern: Only letters, numbers, &, ., ,, ', -, and spaces. No consecutive spaces.
+                const restaurantNamePattern = /^(?!.*\s{2,})([A-Za-z0-9&.,'\- ]+)$/;
 
-            // State/City AJAX loading
-            const stateSelect = document.getElementById('state_id');
-            const citySelect = document.getElementById('city_id');
-            const currentCityId = '{{ old('city_id', $restaurant->city) }}';
-
-            if (stateSelect && citySelect) {
-                // Load cities when state changes
-                stateSelect.addEventListener('change', function() {
-                    const stateId = this.value;
-                    citySelect.innerHTML = '<option value="">Select City</option>';
-
-                    if (stateId) {
-                        fetch(`/admin/get-cities/${stateId}`)
-                            .then(response => response.json())
-                            .then(cities => {
-                                cities.forEach(city => {
-                                    const option = document.createElement('option');
-                                    option.value = city.id;
-                                    option.textContent = city.name;
-                                    citySelect.appendChild(option);
-                                });
-
-                                // Restore selected city if editing
-                                if (currentCityId) {
-                                    citySelect.value = currentCityId;
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error loading cities:', error);
-                                alert('Error loading cities. Please try again.');
-                            });
+                restaurantNameInput.addEventListener('input', function() {
+                    clearError(this);
+                    // Limit to 50 characters
+                    if (this.value.length > 50) {
+                        this.value = this.value.slice(0, 50);
                     }
                 });
 
-                // Load cities on page load if state is already selected
-                if (stateSelect.value) {
-                    const stateId = stateSelect.value;
-                    fetch(`/admin/get-cities/${stateId}`)
-                        .then(response => response.json())
-                        .then(cities => {
-                            citySelect.innerHTML = '<option value="">Select City</option>';
-                            cities.forEach(city => {
-                                const option = document.createElement('option');
-                                option.value = city.id;
-                                option.textContent = city.name;
-                                if (currentCityId == city.id) {
-                                    option.selected = true;
-                                }
-                                citySelect.appendChild(option);
-                            });
-                        })
-                        .catch(error => {
-                            console.error('Error loading cities:', error);
-                        });
-                }
+                restaurantNameInput.addEventListener('blur', function() {
+                    const value = this.value.trim();
+                    if (!value) {
+                        showError(this, 'Restaurant name is required.');
+                    } else if (value.length < 3) {
+                        showError(this, 'Restaurant name must be at least 3 characters.');
+                    } else if (value.length > 50) {
+                        showError(this, 'Restaurant name cannot exceed 50 characters.');
+                    } else if (!restaurantNamePattern.test(value)) {
+                        showError(this,
+                            'Restaurant name contains invalid characters. Only letters, numbers, &, ., \', -, and spaces allowed.'
+                        );
+                    } else {
+                        clearError(this);
+                    }
+                });
             }
 
-            // Phone number validation - only allow numeric input
+            // ============================================
+            // CONTACT PERSON NAME VALIDATION
+            // ============================================
+            const contactPersonNameInput = document.getElementById('contact_person_name');
+            if (contactPersonNameInput) {
+                // Pattern: Only letters, &, ., ', -, and spaces. No consecutive spaces.
+                const contactPersonPattern = /^(?!.*\s{2,})([A-Za-z&.'\- ]+)$/;
+
+                contactPersonNameInput.addEventListener('input', function() {
+                    clearError(this);
+                    // Remove numbers and invalid special characters
+                    this.value = this.value.replace(/[0-9!@#$%^*()_+=\[\]{}|;:",<>?/\\`~]/g, '');
+                if (this.value.length > 100) {
+                    this.value = this.value.slice(0, 100);
+                }
+            });
+
+            contactPersonNameInput.addEventListener('blur', function() {
+                const value = this.value.trim();
+                if (!value) {
+                    showError(this, 'Contact person name is required.');
+                } else if (value.length < 3) {
+                    showError(this, 'Contact person name must be at least 3 characters.');
+                } else if (value.length > 100) {
+                    showError(this, 'Contact person name cannot exceed 100 characters.');
+                } else if (!contactPersonPattern.test(value)) {
+                    showError(this,
+                        'Contact person name can only contain letters and basic punctuation.');
+                } else {
+                    clearError(this);
+                }
+            });
+        }
+
+        // ============================================
+        // CUISINE TYPE VALIDATION
+        // ============================================
+        const cuisineTypeInput = document.getElementById('cuisine_type');
+        if (cuisineTypeInput) {
+            // Pattern: Only letters, &, ., ,, ', -, and spaces
+            const cuisinePattern = /^[A-Za-z&.',\- ]+$/;
+
+            cuisineTypeInput.addEventListener('input', function() {
+                clearError(this);
+                // Remove numbers and invalid special characters
+                this.value = this.value.replace(/[0-9!@#$%^*()_+=\[\]{}|;:"<>?/\\`~]/g, '');
+                    if (this.value.length > 100) {
+                        this.value = this.value.slice(0, 100);
+                    }
+                });
+
+                cuisineTypeInput.addEventListener('blur', function() {
+                    const value = this.value.trim();
+                    if (value && !cuisinePattern.test(value)) {
+                        showError(this,
+                            'Cuisine type can only contain letters, commas, and basic punctuation.');
+                    } else {
+                        clearError(this);
+                    }
+                });
+            }
+
+            // ============================================
+            // PHONE NUMBER VALIDATION
+            // ============================================
             const phoneInput = document.getElementById('phone');
             if (phoneInput) {
                 phoneInput.addEventListener('input', function() {
+                    clearError(this);
                     const cursorPosition = this.selectionStart;
                     const oldLength = this.value.length;
+                    // Remove non-numeric characters
                     this.value = this.value.replace(/[^0-9]/g, '');
                     const newLength = this.value.length;
 
@@ -1150,6 +1108,7 @@
                         this.setSelectionRange(cursorPosition - diff, cursorPosition - diff);
                     }
 
+                    // Limit to 15 digits
                     if (this.value.length > 15) {
                         this.value = this.value.slice(0, 15);
                     }
@@ -1163,59 +1122,108 @@
                     }
                 });
 
+                phoneInput.addEventListener('blur', function() {
+                    const value = this.value.trim();
+                    const isAllZeros = /^0+$/.test(value);
+                    const startsWithZero = /^0/.test(value);
+                    const hasNonZero = /[1-9]/.test(value);
+
+                    if (!value) {
+                        showError(this, 'Phone number is required.');
+                    } else if (value.length < 10) {
+                        showError(this, 'Phone number must be at least 10 digits.');
+                    } else if (value.length > 15) {
+                        showError(this, 'Phone number cannot exceed 15 digits.');
+                    } else if (isAllZeros) {
+                        showError(this, 'Phone number cannot be all zeros.');
+                    } else if (startsWithZero) {
+                        showError(this, 'Phone number cannot start with 0.');
+                    } else if (!hasNonZero) {
+                        showError(this, 'Phone number must contain at least one non-zero digit.');
+                    } else {
+                        clearError(this);
+                    }
+                });
+
                 phoneInput.addEventListener('paste', function(e) {
                     e.preventDefault();
                     const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-                    const numericOnly = pastedText.replace(/[^0-9]/g, '');
+                    const numericOnly = pastedText.replace(/[^0-9]/g, '').slice(0, 15);
                     if (numericOnly) {
-                        const currentValue = this.value;
-                        const cursorPosition = this.selectionStart;
-                        this.value = currentValue.substring(0, cursorPosition) + numericOnly + currentValue
-                            .substring(this.selectionEnd);
+                        this.value = numericOnly;
                         this.dispatchEvent(new Event('input'));
                     }
                 });
             }
 
-            // Email validation - domain must start with a letter
-            const emailInput = document.getElementById('email');
-            const tenantEmailInput = document.getElementById('tenant_email');
+            // ============================================
+            // EMAIL VALIDATION
+            // ============================================
             const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
 
-            function validateEmailField(input) {
+            function setupEmailValidation(inputId) {
+                const input = document.getElementById(inputId);
                 if (!input) return;
 
                 input.addEventListener('input', function() {
-                    // Limit to 100 characters
+                    clearError(this);
                     if (this.value.length > 100) {
                         this.value = this.value.slice(0, 100);
                     }
-                    this.classList.remove('is-invalid');
-                    const feedback = this.parentElement.querySelector('.invalid-feedback');
-                    if (feedback) feedback.style.display = 'none';
                 });
 
                 input.addEventListener('blur', function() {
-                    const email = this.value.trim();
-                    if (email && !emailPattern.test(email)) {
-                        this.classList.add('is-invalid');
-                        const feedback = this.parentElement.querySelector('.invalid-feedback');
-                        if (feedback) {
-                            feedback.textContent =
-                                'Please enter a valid email (e.g., user@gmail.com). Domain must start with a letter.';
-                            feedback.style.display = 'block';
-                        }
+                    const value = this.value.trim();
+                    if (this.hasAttribute('required') && !value) {
+                        showError(this, 'Email is required.');
+                    } else if (value && value.length < 7) {
+                        showError(this, 'Email must be at least 7 characters.');
+                    } else if (value && !emailPattern.test(value)) {
+                        showError(this, 'Please enter a valid email. Domain must start with a letter.');
+                    } else {
+                        clearError(this);
                     }
                 });
             }
 
-            validateEmailField(emailInput);
-            validateEmailField(tenantEmailInput);
+            setupEmailValidation('email');
+            setupEmailValidation('tenant_email');
 
-            // Postal code validation - alphanumeric, space, hyphen only
+            // ============================================
+            // ADDRESS VALIDATION
+            // ============================================
+            const addressInput = document.getElementById('address');
+            if (addressInput) {
+                addressInput.addEventListener('input', function() {
+                    clearError(this);
+                    if (this.value.length > 500) {
+                        this.value = this.value.slice(0, 500);
+                    }
+                });
+
+                addressInput.addEventListener('blur', function() {
+                    const value = this.value.trim();
+                    if (!value) {
+                        showError(this, 'Address is required.');
+                    } else if (value.length < 10) {
+                        showError(this, 'Address must be at least 10 characters.');
+                    } else if (value.length > 500) {
+                        showError(this, 'Address cannot exceed 500 characters.');
+                    } else {
+                        clearError(this);
+                    }
+                });
+            }
+
+            // ============================================
+            // POSTAL CODE VALIDATION
+            // ============================================
             const postalCodeInput = document.getElementById('postal_code');
             if (postalCodeInput) {
+                const postalCodePattern = /^[0-9A-Za-z\s\-]+$/;
+
                 postalCodeInput.addEventListener('input', function() {
+                    clearError(this);
                     const cursorPosition = this.selectionStart;
                     const oldLength = this.value.length;
                     this.value = this.value.replace(/[^0-9A-Za-z\s\-]/g, '');
@@ -1231,6 +1239,22 @@
                     }
                 });
 
+                postalCodeInput.addEventListener('blur', function() {
+                    const value = this.value.trim();
+                    if (!value) {
+                        showError(this, 'Postal code is required.');
+                    } else if (value.length < 4) {
+                        showError(this, 'Postal code must be at least 4 characters.');
+                    } else if (value.length > 10) {
+                        showError(this, 'Postal code cannot exceed 10 characters.');
+                    } else if (!postalCodePattern.test(value)) {
+                        showError(this,
+                            'Postal code can only contain letters, numbers, spaces, and hyphens.');
+                    } else {
+                        clearError(this);
+                    }
+                });
+
                 postalCodeInput.addEventListener('keypress', function(e) {
                     const char = String.fromCharCode(e.which);
                     if (!/[0-9A-Za-z\s\-]/.test(char)) {
@@ -1242,131 +1266,711 @@
                 postalCodeInput.addEventListener('paste', function(e) {
                     e.preventDefault();
                     const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-                    const validChars = pastedText.replace(/[^0-9A-Za-z\s\-]/g, '');
+                    const validChars = pastedText.replace(/[^0-9A-Za-z\s\-]/g, '').slice(0, 10);
                     if (validChars) {
-                        const currentValue = this.value;
-                        const cursorPosition = this.selectionStart;
-                        this.value = currentValue.substring(0, cursorPosition) + validChars + currentValue
-                            .substring(this.selectionEnd);
+                        this.value = validChars;
                         this.dispatchEvent(new Event('input'));
                     }
                 });
             }
 
-            // Form validation
-            $('form').on('submit', function(e) {
-                let isValid = true;
-                let errorMessages = [];
+            // ============================================
+            // LATITUDE VALIDATION
+            // ============================================
+            const latitudeInput = document.getElementById('latitude');
+            if (latitudeInput) {
+                latitudeInput.addEventListener('input', function() {
+                    clearError(this);
+                });
 
-                // Check required fields
-                $('input[required], select[required]').each(function() {
-                    if (!$(this).val()) {
-                        $(this).addClass('is-invalid');
-                        isValid = false;
+                latitudeInput.addEventListener('blur', function() {
+                    const value = parseFloat(this.value);
+                    if (this.value === '' || isNaN(value)) {
+                        showError(this, 'Latitude is required and must be a number.');
+                    } else if (value < -90 || value > 90) {
+                        showError(this, 'Latitude must be between -90 and 90.');
                     } else {
-                        $(this).removeClass('is-invalid');
+                        clearError(this);
+                    }
+                });
+            }
+
+            // ============================================
+            // LONGITUDE VALIDATION
+            // ============================================
+            const longitudeInput = document.getElementById('longitude');
+            if (longitudeInput) {
+                longitudeInput.addEventListener('input', function() {
+                    clearError(this);
+                });
+
+                longitudeInput.addEventListener('blur', function() {
+                    const value = parseFloat(this.value);
+                    if (this.value === '' || isNaN(value)) {
+                        showError(this, 'Longitude is required and must be a number.');
+                    } else if (value < -180 || value > 180) {
+                        showError(this, 'Longitude must be between -180 and 180.');
+                    } else {
+                        clearError(this);
+                    }
+                });
+            }
+
+            // ============================================
+            // NUMERIC FIELD VALIDATION HELPER
+            // ============================================
+            function setupNumericValidation(inputId, fieldName, min, max, isRequired = true) {
+                const input = document.getElementById(inputId);
+                if (!input) return;
+
+                input.addEventListener('input', function() {
+                    clearError(this);
+                });
+
+                input.addEventListener('blur', function() {
+                    const value = parseFloat(this.value);
+                    if (isRequired && (this.value === '' || isNaN(value))) {
+                        showError(this, `${fieldName} is required.`);
+                    } else if (!isNaN(value)) {
+                        if (value < min) {
+                            showError(this, `${fieldName} must be at least ${min}.`);
+                        } else if (value > max) {
+                            showError(this, `${fieldName} cannot exceed ${max}.`);
+                        } else {
+                            clearError(this);
+                        }
+                    }
+                });
+            }
+
+            // Setup numeric validations
+            setupNumericValidation('delivery_radius_km', 'Delivery radius', 1, 50);
+            setupNumericValidation('minimum_order_amount', 'Minimum order amount', 0, 10000);
+            setupNumericValidation('base_delivery_fee', 'Base delivery fee', 0, 1000);
+            setupNumericValidation('estimated_delivery_time', 'Estimated delivery time', 10, 120);
+            setupNumericValidation('tax_percentage', 'Tax percentage', 0, 50);
+            setupNumericValidation('restaurant_commission_percentage', 'Commission percentage', 0, 100);
+
+            // ============================================
+            // DESCRIPTION VALIDATION
+            // ============================================
+            const descriptionInput = document.getElementById('description');
+            if (descriptionInput) {
+                descriptionInput.addEventListener('input', function() {
+                    clearError(this);
+                    if (this.value.length > 2000) {
+                        this.value = this.value.slice(0, 2000);
                     }
                 });
 
-                // Validate email format
-                const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
-                const emailVal = $('#email').val();
-                if (emailVal && !emailPattern.test(emailVal)) {
-                    $('#email').addClass('is-invalid');
-                    isValid = false;
-                    errorMessages.push('Please enter a valid email. Domain must start with a letter.');
-                }
-
-                const tenantEmailVal = $('#tenant_email').val();
-                if (tenantEmailVal && !emailPattern.test(tenantEmailVal)) {
-                    $('#tenant_email').addClass('is-invalid');
-                    isValid = false;
-                    errorMessages.push('Franchise email must be valid. Domain must start with a letter.');
-                }
-
-                if (!isValid) {
-                    e.preventDefault();
-                    if (errorMessages.length > 0) {
-                        alert(errorMessages.join('\n'));
+                descriptionInput.addEventListener('blur', function() {
+                    if (this.value.length > 2000) {
+                        showError(this, 'Description cannot exceed 2000 characters.');
                     } else {
-                        alert('Please fill in all required fields.');
+                        clearError(this);
                     }
-                }
-            });
+                });
+            }
 
-            // Remove invalid class on input
-            $('input, select, textarea').on('input change', function() {
-                $(this).removeClass('is-invalid');
-            });
+            // ============================================
+            // SPECIAL INSTRUCTIONS VALIDATION
+            // ============================================
+            const specialInstructionsInput = document.getElementById('special_instructions');
+            if (specialInstructionsInput) {
+                specialInstructionsInput.addEventListener('input', function() {
+                    clearError(this);
+                    if (this.value.length > 1000) {
+                        this.value = this.value.slice(0, 1000);
+                    }
+                });
 
-            // Business Hours Management Functions
-            window.toggleDayHours = function(day) {
-                const toggle = document.getElementById(`toggle-${day}`);
-                const openingInput = document.getElementById(`opening-${day}`);
-                const closingInput = document.getElementById(`closing-${day}`);
-                const row = document.getElementById(`row-${day}`);
-                const openText = row.querySelector('.open-text');
-                const closedText = row.querySelector('.closed-text');
+                specialInstructionsInput.addEventListener('blur', function() {
+                    if (this.value.length > 1000) {
+                        showError(this, 'Special instructions cannot exceed 1000 characters.');
+                    } else {
+                        clearError(this);
+                    }
+                });
+            }
 
-                if (toggle.checked) {
-                    // Day is open
-                    openingInput.disabled = false;
-                    closingInput.disabled = false;
-                    openingInput.required = true;
-                    closingInput.required = true;
-                    row.style.opacity = '1';
-                    openText.style.display = 'inline';
-                    closedText.style.display = 'none';
-                } else {
-                    // Day is closed
-                    openingInput.disabled = true;
-                    closingInput.disabled = true;
-                    openingInput.required = false;
-                    closingInput.required = false;
-                    row.style.opacity = '0.6';
-                    openText.style.display = 'none';
-                    closedText.style.display = 'inline';
-                }
-            };
+            // ============================================
+            // WEBSITE URL VALIDATION
+            // ============================================
+            const websiteInput = document.getElementById('website_url');
+            if (websiteInput) {
+                websiteInput.addEventListener('input', function() {
+                    clearError(this);
+                    if (this.value.length > 255) {
+                        this.value = this.value.slice(0, 255);
+                    }
+                });
 
-            window.copyToAll = function(sourceDay) {
-                const sourceToggle = document.getElementById(`toggle-${sourceDay}`);
-                const sourceOpening = document.getElementById(`opening-${sourceDay}`);
-                const sourceClosing = document.getElementById(`closing-${sourceDay}`);
-
-                const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-
-                if (confirm(`Copy ${sourceDay}'s hours to all other days?`)) {
-                    days.forEach(day => {
-                        if (day !== sourceDay) {
-                            const toggle = document.getElementById(`toggle-${day}`);
-                            const opening = document.getElementById(`opening-${day}`);
-                            const closing = document.getElementById(`closing-${day}`);
-
-                            toggle.checked = sourceToggle.checked;
-                            opening.value = sourceOpening.value;
-                            closing.value = sourceClosing.value;
-
-                            toggleDayHours(day);
+                websiteInput.addEventListener('blur', function() {
+                    const value = this.value.trim();
+                    if (value) {
+                        // Check if it's a valid URL
+                        try {
+                            new URL(value);
+                            clearError(this);
+                        } catch {
+                            showError(this, 'Please enter a valid URL (e.g., https://example.com).');
                         }
+                    } else {
+                        clearError(this);
+                    }
+                });
+            }
+
+            // ============================================
+            // TENANT PHONE VALIDATION
+            // ============================================
+            const tenantPhoneInput = document.getElementById('tenant_phone');
+            if (tenantPhoneInput) {
+                tenantPhoneInput.addEventListener('input', function() {
+                    clearError(this);
+                    // Remove non-numeric characters
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                    if (this.value.length > 20) {
+                        this.value = this.value.slice(0, 20);
+                    }
+                });
+
+                tenantPhoneInput.addEventListener('blur', function() {
+                    const value = this.value.trim();
+                    if (value) {
+                        const isAllZeros = /^0+$/.test(value);
+                        if (value.length < 7) {
+                            showError(this, 'Tenant phone must be at least 7 digits.');
+                        } else if (value.length > 20) {
+                            showError(this, 'Tenant phone cannot exceed 20 digits.');
+                        } else if (isAllZeros) {
+                            showError(this, 'Tenant phone cannot be all zeros.');
+                        } else {
+                            clearError(this);
+                        }
+                    }
+                });
+            }
+
+            // ============================================
+            // FRANCHISE CONTACT PERSON VALIDATION
+            // ============================================
+            const franchiseContactInput = document.getElementById('contact_person');
+            if (franchiseContactInput) {
+                const contactPattern = /^[A-Za-z&.'\- ]+$/;
+
+                franchiseContactInput.addEventListener('input', function() {
+                    clearError(this);
+                    // Remove numbers and invalid special characters
+                    this.value = this.value.replace(/[0-9!@#$%^*()_+=\[\]{}|;:",<>?/\\`~]/g, '');
+                if (this.value.length > 255) {
+                    this.value = this.value.slice(0, 255);
+                }
+            });
+
+            franchiseContactInput.addEventListener('blur', function() {
+                const value = this.value.trim();
+                if (value && !contactPattern.test(value)) {
+                    showError(this,
+                        'Contact person name can only contain letters and basic punctuation.');
+                } else {
+                    clearError(this);
+                }
+            });
+        }
+
+        // ============================================
+        // SELECT FIELDS VALIDATION
+        // ============================================
+        function setupSelectValidation(selectId, fieldName) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+
+            select.addEventListener('change', function() {
+                if (this.hasAttribute('required') && !this.value) {
+                    showError(this, `Please select a ${fieldName}.`);
+                } else {
+                    clearError(this);
+                }
+            });
+        }
+
+        setupSelectValidation('state_id', 'state');
+        setupSelectValidation('city_id', 'city');
+        setupSelectValidation('status', 'status');
+
+        // ============================================
+        // SCROLL TO FIRST ERROR
+        // ============================================
+        @if ($errors->any())
+            const firstErrorField = document.querySelector('.is-invalid');
+            if (firstErrorField) {
+                firstErrorField.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+                firstErrorField.focus();
+            } else {
+                const errorAlert = document.querySelector('.alert-danger');
+                if (errorAlert) {
+                    errorAlert.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
                     });
                 }
-            };
+            }
+        @endif
 
-            window.openAllDays = function() {
-                const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        // ============================================
+        // FORM SUBMISSION VALIDATION
+        // ============================================
+        $('form').on('submit', function(e) {
+            let isValid = true;
+            let errorMessages = [];
+            let firstInvalidField = null;
+
+            // Restaurant Name validation
+            const restaurantName = $('#restaurant_name').val().trim();
+            const restaurantNamePattern = /^(?!.*\s{2,})([A-Za-z0-9&.,'\- ]+)$/;
+            if (!restaurantName) {
+                showError('#restaurant_name', 'Restaurant name is required.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#restaurant_name');
+            } else if (restaurantName.length < 3 || restaurantName.length > 50) {
+                showError('#restaurant_name', 'Restaurant name must be 3-50 characters.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#restaurant_name');
+            } else if (!restaurantNamePattern.test(restaurantName)) {
+                showError('#restaurant_name', 'Restaurant name contains invalid characters.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#restaurant_name');
+            }
+
+            // Contact Person Name validation
+            const contactPersonName = $('#contact_person_name').val().trim();
+            const contactPersonPattern = /^(?!.*\s{2,})([A-Za-z&.'\- ]+)$/;
+            if (!contactPersonName) {
+                showError('#contact_person_name', 'Contact person name is required.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#contact_person_name');
+            } else if (contactPersonName.length < 3 || contactPersonName.length > 100) {
+                showError('#contact_person_name', 'Contact person name must be 3-100 characters.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#contact_person_name');
+            } else if (!contactPersonPattern.test(contactPersonName)) {
+                showError('#contact_person_name', 'Contact person name can only contain letters.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#contact_person_name');
+            }
+
+            // Email validation
+            const email = $('#email').val().trim();
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
+            if (!email) {
+                showError('#email', 'Email is required.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#email');
+            } else if (!emailPattern.test(email)) {
+                showError('#email', 'Please enter a valid email. Domain must start with a letter.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#email');
+            }
+
+            // Phone validation
+            const phone = $('#phone').val().trim();
+            const phonePattern = /^[1-9][0-9]{9,14}$/;
+            if (!phone) {
+                showError('#phone', 'Phone number is required.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#phone');
+            } else if (!phonePattern.test(phone)) {
+                showError('#phone',
+                    'Phone must be 10-15 digits and cannot start with 0 or be all zeros.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#phone');
+            }
+
+            // Address validation
+            const address = $('#address').val().trim();
+            if (!address) {
+                showError('#address', 'Address is required.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#address');
+            } else if (address.length < 10 || address.length > 500) {
+                showError('#address', 'Address must be 10-500 characters.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#address');
+            }
+
+            // State validation
+            if (!$('#state_id').val()) {
+                showError('#state_id', 'Please select a state.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#state_id');
+            }
+
+            // City validation
+            if (!$('#city_id').val()) {
+                showError('#city_id', 'Please select a city.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#city_id');
+            }
+
+            // Postal Code validation
+            const postalCode = $('#postal_code').val().trim();
+            const postalCodePattern = /^[0-9A-Za-z\s\-]+$/;
+            if (!postalCode) {
+                showError('#postal_code', 'Postal code is required.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#postal_code');
+            } else if (postalCode.length < 4 || postalCode.length > 10) {
+                showError('#postal_code', 'Postal code must be 4-10 characters.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#postal_code');
+            } else if (!postalCodePattern.test(postalCode)) {
+                showError('#postal_code', 'Postal code contains invalid characters.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#postal_code');
+            }
+
+            // Latitude validation
+            const latitude = parseFloat($('#latitude').val());
+            if (isNaN(latitude)) {
+                showError('#latitude', 'Latitude is required.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#latitude');
+            } else if (latitude < -90 || latitude > 90) {
+                showError('#latitude', 'Latitude must be between -90 and 90.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#latitude');
+            }
+
+            // Longitude validation
+            const longitude = parseFloat($('#longitude').val());
+            if (isNaN(longitude)) {
+                showError('#longitude', 'Longitude is required.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#longitude');
+            } else if (longitude < -180 || longitude > 180) {
+                showError('#longitude', 'Longitude must be between -180 and 180.');
+                isValid = false;
+                if (!firstInvalidField) firstInvalidField = $('#longitude');
+            }
+
+            // Numeric field validations
+            const numericValidations = [{
+                    id: '#delivery_radius_km',
+                    name: 'Delivery radius',
+                    min: 1,
+                    max: 50
+                },
+                {
+                    id: '#minimum_order_amount',
+                    name: 'Minimum order amount',
+                    min: 0,
+                    max: 10000
+                },
+                {
+                    id: '#base_delivery_fee',
+                    name: 'Base delivery fee',
+                    min: 0,
+                    max: 1000
+                },
+                {
+                    id: '#estimated_delivery_time',
+                    name: 'Estimated delivery time',
+                    min: 10,
+                    max: 120
+                },
+                {
+                    id: '#tax_percentage',
+                    name: 'Tax percentage',
+                    min: 0,
+                    max: 50
+                },
+                {
+                    id: '#restaurant_commission_percentage',
+                    name: 'Commission',
+                    min: 0,
+                    max: 100
+                }
+            ];
+
+            numericValidations.forEach(function(field) {
+                const value = parseFloat($(field.id).val());
+                if (isNaN(value)) {
+                    showError(field.id, `${field.name} is required.`);
+                    isValid = false;
+                    if (!firstInvalidField) firstInvalidField = $(field.id);
+                } else if (value < field.min || value > field.max) {
+                    showError(field.id,
+                        `${field.name} must be between ${field.min} and ${field.max}.`);
+                    isValid = false;
+                    if (!firstInvalidField) firstInvalidField = $(field.id);
+                }
+            });
+
+            // Tenant email validation (if visible)
+            const tenantEmail = $('#tenant_email').val();
+            if (tenantEmail && tenantEmail.trim()) {
+                if (!emailPattern.test(tenantEmail.trim())) {
+                    showError('#tenant_email', 'Please enter a valid franchise email.');
+                    isValid = false;
+                    if (!firstInvalidField) firstInvalidField = $('#tenant_email');
+                }
+            }
+
+            // Tenant phone validation (if visible)
+            const tenantPhone = $('#tenant_phone').val();
+            if (tenantPhone && tenantPhone.trim()) {
+                const tenantPhonePattern = /^(?!0+$)([0-9]{7,20})$/;
+                if (!tenantPhonePattern.test(tenantPhone.trim())) {
+                    showError('#tenant_phone',
+                        'Tenant phone must be 7-20 digits and cannot be all zeros.');
+                    isValid = false;
+                    if (!firstInvalidField) firstInvalidField = $('#tenant_phone');
+                }
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+                if (firstInvalidField) {
+                    firstInvalidField[0].scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                    setTimeout(function() {
+                        firstInvalidField.focus();
+                    }, 500);
+                }
+                return false;
+            }
+
+            // Prepare business hours JSON before form submission
+            const open = $('input[name="business_hours[open]"]').val();
+            const close = $('input[name="business_hours[close]"]').val();
+            const businessHours = {
+                open: open,
+                close: close
+            };
+            $('#business_hours_json').val(JSON.stringify(businessHours));
+        });
+
+        // Auto-generate slug from restaurant name
+        $('#restaurant_name').on('input', function() {
+            let name = $(this).val();
+            let slug = name.toLowerCase()
+                .replace(/[^a-z0-9 -]/g, '') // Remove invalid chars
+                .replace(/\s+/g, '-') // Replace spaces with -
+                .replace(/-+/g, '-') // Replace multiple - with single -
+                .trim('-'); // Trim - from start and end
+            $('#slug').val(slug);
+        });
+
+        // ============================================
+        // RESTAURANT TYPE SELECTION LOGIC
+        // ============================================
+        const noChangeRadio = document.getElementById('no_change');
+        const newIndependentRadio = document.getElementById('new_independent');
+        const existingFranchiseRadio = document.getElementById('existing_franchise');
+        const tenantDetailsSection = document.getElementById('tenant-details-section');
+        const existingTenantSection = document.getElementById('existing-tenant-section');
+
+        function toggleSections() {
+            if (!tenantDetailsSection || !existingTenantSection) {
+                return;
+            }
+
+            if (newIndependentRadio && newIndependentRadio.checked) {
+                tenantDetailsSection.style.display = 'block';
+                existingTenantSection.style.display = 'none';
+
+                const contactPerson = document.getElementById('contact_person');
+                const tenantEmail = document.getElementById('tenant_email');
+                const tenantPhone = document.getElementById('tenant_phone');
+                const tenantId = document.getElementById('tenant_id');
+
+                if (contactPerson) contactPerson.required = false;
+                if (tenantEmail) tenantEmail.required = false;
+                if (tenantPhone) tenantPhone.required = false;
+                if (tenantId) tenantId.required = false;
+
+            } else if (existingFranchiseRadio && existingFranchiseRadio.checked) {
+                tenantDetailsSection.style.display = 'none';
+                existingTenantSection.style.display = 'block';
+
+                const contactPerson = document.getElementById('contact_person');
+                const tenantEmail = document.getElementById('tenant_email');
+                const tenantPhone = document.getElementById('tenant_phone');
+                const tenantId = document.getElementById('tenant_id');
+
+                if (tenantId) tenantId.required = true;
+                if (contactPerson) contactPerson.required = false;
+                if (tenantEmail) tenantEmail.required = false;
+                if (tenantPhone) tenantPhone.required = false;
+            } else {
+                tenantDetailsSection.style.display = 'none';
+                existingTenantSection.style.display = 'none';
+
+                const contactPerson = document.getElementById('contact_person');
+                const tenantEmail = document.getElementById('tenant_email');
+                const tenantPhone = document.getElementById('tenant_phone');
+                const tenantId = document.getElementById('tenant_id');
+
+                if (contactPerson) contactPerson.required = false;
+                if (tenantEmail) tenantEmail.required = false;
+                if (tenantPhone) tenantPhone.required = false;
+                if (tenantId) tenantId.required = false;
+            }
+        }
+
+        window.selectRestaurantType = function(type) {
+            if (type === 'no_change' && noChangeRadio) {
+                noChangeRadio.checked = true;
+            } else if (type === 'new' && newIndependentRadio) {
+                newIndependentRadio.checked = true;
+            } else if (type === 'existing' && existingFranchiseRadio) {
+                existingFranchiseRadio.checked = true;
+            }
+            toggleSections();
+        };
+
+        if (noChangeRadio) {
+            noChangeRadio.addEventListener('change', toggleSections);
+        }
+        if (newIndependentRadio) {
+            newIndependentRadio.addEventListener('change', toggleSections);
+        }
+        if (existingFranchiseRadio) {
+            existingFranchiseRadio.addEventListener('change', toggleSections);
+        }
+
+        setTimeout(toggleSections, 100);
+
+        // ============================================
+        // STATE/CITY AJAX LOADING
+        // ============================================
+        const stateSelect = document.getElementById('state_id');
+        const citySelect = document.getElementById('city_id');
+        const currentCityId = '{{ old('city_id', $restaurant->city) }}';
+
+        if (stateSelect && citySelect) {
+            stateSelect.addEventListener('change', function() {
+                const stateId = this.value;
+                citySelect.innerHTML = '<option value="">Select City</option>';
+
+                if (stateId) {
+                    fetch(`/admin/get-cities/${stateId}`)
+                        .then(response => response.json())
+                        .then(cities => {
+                            cities.forEach(city => {
+                                const option = document.createElement('option');
+                                option.value = city.id;
+                                option.textContent = city.name;
+                                citySelect.appendChild(option);
+                            });
+
+                            if (currentCityId) {
+                                citySelect.value = currentCityId;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading cities:', error);
+                            alert('Error loading cities. Please try again.');
+                        });
+                }
+            });
+
+            if (stateSelect.value) {
+                const stateId = stateSelect.value;
+                fetch(`/admin/get-cities/${stateId}`)
+                    .then(response => response.json())
+                    .then(cities => {
+                        citySelect.innerHTML = '<option value="">Select City</option>';
+                        cities.forEach(city => {
+                            const option = document.createElement('option');
+                            option.value = city.id;
+                            option.textContent = city.name;
+                            if (currentCityId == city.id) {
+                                option.selected = true;
+                            }
+                            citySelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error loading cities:', error);
+                    });
+            }
+        }
+
+        // ============================================
+        // BUSINESS HOURS MANAGEMENT
+        // ============================================
+        window.toggleDayHours = function(day) {
+            const toggle = document.getElementById(`toggle-${day}`);
+            const openingInput = document.getElementById(`opening-${day}`);
+            const closingInput = document.getElementById(`closing-${day}`);
+            const row = document.getElementById(`row-${day}`);
+            const openText = row.querySelector('.open-text');
+            const closedText = row.querySelector('.closed-text');
+
+            if (toggle.checked) {
+                openingInput.disabled = false;
+                closingInput.disabled = false;
+                openingInput.required = true;
+                closingInput.required = true;
+                row.style.opacity = '1';
+                openText.style.display = 'inline';
+                closedText.style.display = 'none';
+            } else {
+                openingInput.disabled = true;
+                closingInput.disabled = true;
+                openingInput.required = false;
+                closingInput.required = false;
+                row.style.opacity = '0.6';
+                openText.style.display = 'none';
+                closedText.style.display = 'inline';
+            }
+        };
+
+        window.copyToAll = function(sourceDay) {
+            const sourceToggle = document.getElementById(`toggle-${sourceDay}`);
+            const sourceOpening = document.getElementById(`opening-${sourceDay}`);
+            const sourceClosing = document.getElementById(`closing-${sourceDay}`);
+
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+            if (confirm(`Copy ${sourceDay}'s hours to all other days?`)) {
+                days.forEach(day => {
+                    if (day !== sourceDay) {
+                        const toggle = document.getElementById(`toggle-${day}`);
+                        const opening = document.getElementById(`opening-${day}`);
+                        const closing = document.getElementById(`closing-${day}`);
+
+                        toggle.checked = sourceToggle.checked;
+                        opening.value = sourceOpening.value;
+                        closing.value = sourceClosing.value;
+
+                        toggleDayHours(day);
+                    }
+                });
+            }
+        };
+
+        window.openAllDays = function() {
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            days.forEach(day => {
+                const toggle = document.getElementById(`toggle-${day}`);
+                toggle.checked = true;
+                toggleDayHours(day);
+            });
+        };
+
+        window.closeAllDays = function() {
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            if (confirm('Close all days?')) {
                 days.forEach(day => {
                     const toggle = document.getElementById(`toggle-${day}`);
-                    toggle.checked = true;
-                    toggleDayHours(day);
-                });
-            };
-
-            window.closeAllDays = function() {
-                const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-                if (confirm('Close all days?')) {
-                    days.forEach(day => {
-                        const toggle = document.getElementById(`toggle-${day}`);
                         toggle.checked = false;
                         toggleDayHours(day);
                     });
@@ -1377,6 +1981,11 @@
             const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
             days.forEach(day => {
                 toggleDayHours(day);
+            });
+
+            // Remove invalid class on input change
+            $('input, select, textarea').on('input change', function() {
+                clearError(this);
             });
         });
     </script>

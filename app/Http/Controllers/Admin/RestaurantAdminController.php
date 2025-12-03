@@ -428,6 +428,14 @@ class RestaurantAdminController extends Controller
                     $locationAdminId = $data['location_admin_id'];
                 }
 
+                // Generate slug from restaurant name
+                $slug = Str::slug($data['restaurant_name']);
+                $counter = 1;
+                while (Restaurant::where('slug', $slug)->exists()) {
+                    $slug = Str::slug($data['restaurant_name']).'-'.$counter;
+                    $counter++;
+                }
+
                 // Create restaurant with business hours
                 $restaurantData = [
                     'tenant_id' => $tenantId,
@@ -435,7 +443,7 @@ class RestaurantAdminController extends Controller
                     'user_id' => auth()->id(),
                     'restaurant_name' => $data['restaurant_name'],
                     'contact_person_name' => $data['contact_person_name'],
-                    'slug' => Str::slug($data['restaurant_name']),
+                    'slug' => $slug,
                     'phone' => $data['phone'],
                     'email' => $data['email'],
                     'postal_code' => $data['postal_code'],
@@ -713,77 +721,160 @@ class RestaurantAdminController extends Controller
         $validated = $request->validate([
             'tenant_id' => 'nullable|exists:tenants,id',
             'location_admin_id' => 'nullable|exists:users,id',
-            'restaurant_name' => 'required|string|min:3|max:255',
-            'contact_person_name' => 'nullable|string|min:3|max:255',
-            'description' => 'nullable|string',
-            'cuisine_type' => 'nullable|string|max:100',
+            'slug' => [
+                'required',
+                'string',
+                'min:3',
+                'max:255',
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', // hyphen separated lowercase alphanumeric
+                Rule::unique('restaurants')->ignore($restaurant->id),
+            ],
+            'restaurant_name' => [
+                'required',
+                'string',
+                'min:3',
+                'max:255',
+                'regex:/^(?!.*\s{2,})([A-Za-z0-9&.,\' ]|-)+$/', // hyphen separated safely
+            ],
+
+            'contact_person_name' => [
+                'nullable',
+                'string',
+                'min:3',
+                'max:255',
+                'regex:/^(?!.*\s{2,})([A-Za-z&.\' ]|-)+$/',
+            ],
+
+            'description' => 'nullable|string|max:2000',
+
+            'cuisine_type' => [
+                'nullable',
+                'string',
+                'min:3',
+                'max:100',
+                'regex:/^[A-Za-z\s,\-]+$/',
+            ],
+
             'address' => 'required|string|min:10|max:500',
+
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
+
             'city_id' => 'required|integer|exists:cities,id',
             'state_id' => 'required|integer|exists:states,id',
+
             'postal_code' => [
                 'required',
                 'string',
                 'min:4',
                 'max:10',
-                'regex:/^[0-9A-Za-z\s\-]+$/',
+                'regex:/^[0-9A-Za-z\s\-]+$/', // correct usage
             ],
+
             'phone' => [
                 'required',
                 'string',
                 'min:10',
                 'max:15',
-                'regex:/^[1-9][0-9]{9,14}$/',
+                'regex:/^(?!0+$)\d{10,15}$/', // only digits, no leading zero rule included
             ],
-            'email' => ['required', 'email', 'min:7', 'max:100', Rule::unique('restaurants')->ignore($restaurant->id)],
+
+            'email' => [
+                'required',
+                'email',
+                'min:7',
+                'max:100',
+                Rule::unique('restaurants')->ignore($restaurant->id),
+            ],
+
             'website_url' => 'nullable|url|max:255',
+
             'delivery_radius_km' => 'required|numeric|min:1|max:50',
             'minimum_order_amount' => 'required|numeric|min:0|max:10000',
             'base_delivery_fee' => 'required|numeric|min:0|max:1000',
             'restaurant_commission_percentage' => 'required|numeric|between:0,100',
             'estimated_delivery_time' => 'required|integer|min:10|max:120',
             'tax_percentage' => 'required|numeric|between:0,50',
+
             'special_instructions' => 'nullable|string|max:1000',
+
             'business_hours' => 'nullable|array',
             'business_hours_json' => 'nullable|string',
+
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+
             'tenant_selection' => 'nullable|string|in:no_change,new,existing',
-            // Franchise owner details for 'new' type
-            'contact_person' => 'nullable|string|max:255',
+
+            'contact_person' => [
+                'nullable',
+                'string',
+                'max:255',
+                'regex:/^[A-Za-z&.\' ]|-+$/',
+            ],
+
             'tenant_email' => 'nullable|email|max:255',
-            'tenant_phone' => 'nullable|string|max:20',
+
+            'tenant_phone' => [
+                'nullable',
+                'string',
+                'max:20',
+                'regex:/^(?!0+$)\d{7,20}$/',
+            ],
         ], [
-            // Custom error messages
+            // ====== IDs / Selectors ======
+            'tenant_id.exists' => 'Invalid tenant selected.',
+            'location_admin_id.exists' => 'Invalid location admin selected.',
+            'city_id.required' => 'City is required.',
+            'city_id.exists' => 'Selected city is invalid.',
+            'state_id.required' => 'State is required.',
+            'state_id.exists' => 'Selected state is invalid.',
+            'tenant_selection.in' => 'Invalid tenant selection option.',
+
+            // ====== Names ======
             'restaurant_name.required' => 'Restaurant name is required.',
             'restaurant_name.min' => 'Restaurant name must be at least 3 characters.',
+            'restaurant_name.regex' => 'Restaurant name contains invalid characters.',
+            'contact_person_name.regex' => 'Contact person name contains invalid characters.',
+
+            // ====== Address ======
             'address.required' => 'Address is required.',
             'address.min' => 'Address must be at least 10 characters.',
             'address.max' => 'Address cannot exceed 500 characters.',
-            'state_id.required' => 'Please select a state.',
-            'state_id.exists' => 'Selected state is invalid.',
-            'city_id.required' => 'Please select a city.',
-            'city_id.exists' => 'Selected city is invalid.',
+
+            // ====== Postal Code ======
             'postal_code.required' => 'Postal code is required.',
-            'postal_code.min' => 'Postal code must be at least 4 characters.',
             'postal_code.regex' => 'Postal code can only contain letters, numbers, spaces, and hyphens.',
+
+            // ====== Phone ======
             'phone.required' => 'Phone number is required.',
-            'phone.min' => 'Phone number must be at least 10 digits.',
-            'phone.regex' => 'Phone number must be valid (10-15 digits, cannot start with 0).',
+            'phone.regex' => 'Phone must be 10-15 digits and cannot be all zeros.',
+            'tenant_phone.regex' => 'Tenant phone must be valid and cannot be all zeros.',
+
+            // ====== Email ======
             'email.required' => 'Email is required.',
             'email.email' => 'Please enter a valid email address.',
-            'email.unique' => 'This email is already registered.',
-            'latitude.between' => 'Latitude must be between -90 and 90.',
-            'longitude.between' => 'Longitude must be between -180 and 180.',
+            'email.unique' => 'This email is already registered in restaurants.',
+
+            // ====== Numeric Business Fields ======
             'delivery_radius_km.min' => 'Delivery radius must be at least 1 km.',
-            'delivery_radius_km.max' => 'Delivery radius cannot exceed 50 km.',
-            'minimum_order_amount.max' => 'Minimum order amount seems too high (max 10,000).',
-            'base_delivery_fee.max' => 'Delivery fee seems too high (max 1,000).',
+            'delivery_radius_km.max' => 'Delivery radius may not exceed 50 km.',
+            'minimum_order_amount.max' => 'Minimum order amount cannot exceed 10,000.',
+            'base_delivery_fee.max' => 'Delivery fee cannot exceed 1,000.',
+            'tax_percentage.between' => 'Tax percentage must be between 0 and 50%.',
+            'restaurant_commission_percentage.between' => 'Commission must be between 0 and 100%.',
             'estimated_delivery_time.min' => 'Delivery time must be at least 10 minutes.',
             'estimated_delivery_time.max' => 'Delivery time cannot exceed 120 minutes.',
-            'tax_percentage.between' => 'Tax percentage must be between 0 and 50%.',
-            'restaurant_commission_percentage.between' => 'Commission percentage must be between 0 and 100%.',
+
+            // ====== Coordinates ======
+            'latitude.between' => 'Latitude must be between -90 and 90.',
+            'longitude.between' => 'Longitude must be between -180 and 180.',
+
+            // ====== Images ======
+            'image.mimes' => 'Image must be JPEG, PNG, JPG, or GIF.',
+            'cover_image.mimes' => 'Cover image must be JPEG, PNG, JPG, or GIF.',
+            'image.max' => 'Image size should not exceed 2MB.',
+            'cover_image.max' => 'Cover image size should not exceed 2MB.',
         ]);
 
         // Handle tenant changes only for super admin
@@ -849,15 +940,14 @@ class RestaurantAdminController extends Controller
         }
 
         // Update slug if name changed
-        if ($restaurant->restaurant_name !== $validated['restaurant_name']) {
-            $slug = Str::slug($validated['restaurant_name']);
-            $counter = 1;
-            while (Restaurant::where('slug', $slug)->where('id', '!=', $restaurant->id)->exists()) {
-                $slug = Str::slug($validated['restaurant_name']).'-'.$counter;
-                $counter++;
-            }
-            $validated['slug'] = $slug;
+        // Always update slug from validated input
+        $slug = Str::slug($validated['slug']);
+        $counter = 1;
+        while (Restaurant::where('slug', $slug)->where('id', '!=', $restaurant->id)->exists()) {
+            $slug = Str::slug($validated['slug']).'-'.$counter;
+            $counter++;
         }
+        $validated['slug'] = $slug;
 
         // FIXED: Parse business hours if provided
         if (isset($validated['business_hours']) && is_array($validated['business_hours'])) {

@@ -3,6 +3,48 @@
 @section('title', 'Document Management')
 
 @section('content')
+<!-- Document Summary Cards -->
+<div class="container-fluid">
+    <div class="row mt-4 mb-4">
+        <div class="col-md-3 col-sm-6 col-xs-12 mb-3">
+            <div class="info-box shadow-sm border-left-primary">
+                <span class="info-box-icon bg-primary"><i class="fa fa-file-text-o"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Total Documents</span>
+                    <span class="info-box-number text-primary">{{ $stats['total'] ?? 0 }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 col-xs-12 mb-3">
+            <div class="info-box shadow-sm border-left-warning">
+                <span class="info-box-icon bg-warning"><i class="fa fa-clock-o"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Pending Review</span>
+                    <span class="info-box-number text-warning">{{ $stats['pending'] ?? 0 }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 col-xs-12 mb-3">
+            <div class="info-box shadow-sm border-left-success">
+                <span class="info-box-icon bg-success"><i class="fa fa-check"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Approved</span>
+                    <span class="info-box-number text-success">{{ $stats['approved'] ?? 0 }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 col-xs-12 mb-3">
+            <div class="info-box shadow-sm border-left-danger">
+                <span class="info-box-icon bg-danger"><i class="fa fa-exclamation-triangle"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Expiring Soon</span>
+                    <span class="info-box-number text-danger">{{ $stats['expiring'] ?? 0 }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
@@ -187,45 +229,7 @@
     </div>
 </div>
 
-<!-- Document Summary Cards -->
-<div class="row mt-4">
-    <div class="col-md-3">
-        <div class="info-box">
-            <span class="info-box-icon bg-blue"><i class="fa fa-file-text-o"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Total Documents</span>
-                <span class="info-box-number">{{ $stats['total'] ?? 0 }}</span>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="info-box">
-            <span class="info-box-icon bg-yellow"><i class="fa fa-clock-o"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Pending Review</span>
-                <span class="info-box-number">{{ $stats['pending'] ?? 0 }}</span>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="info-box">
-            <span class="info-box-icon bg-green"><i class="fa fa-check"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Approved</span>
-                <span class="info-box-number">{{ $stats['approved'] ?? 0 }}</span>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="info-box">
-            <span class="info-box-icon bg-red"><i class="fa fa-exclamation-triangle"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Expiring Soon</span>
-                <span class="info-box-number">{{ $stats['expiring'] ?? 0 }}</span>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">

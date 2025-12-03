@@ -642,16 +642,18 @@
                             <label for="subscription_end_date">End Date</label>
                             <input type="date" class="form-control" id="subscription_end_date"
                                 name="subscription_end_date"
-                                value="{{ old('subscription_end_date', $tenant->subscription_end_date?->format('Y-m-d')) }}">
+                                value="{{ old('subscription_end_date', $tenant->subscription_end_date?->format('Y-m-d')) }}"
+                                min="{{ date('Y-m-d') }}" max="{{ date('Y-m-d', strtotime('+10 years')) }}">
                             <div class="field-hint">Subscription expiry date</div>
+                            <div class="invalid-feedback" id="subscription_end_date_error"></div>
                         </div>
 
                         <div class="form-group">
                             <label for="next_billing_date">Next Billing Date</label>
                             <input type="date" class="form-control" id="next_billing_date" name="next_billing_date"
                                 value="{{ old('next_billing_date', $tenant->next_billing_date?->format('Y-m-d')) }}"
-                                min="{{ date('Y-m-d', strtotime('-50 years')) }}">
-                            <div class="field-hint">Cannot be older than 50 years</div>
+                                min="{{ date('Y-m-d') }}" max="{{ date('Y-m-d', strtotime('+2 years')) }}">
+                            <div class="field-hint">Must be between today and 2 years from now</div>
                             <div class="invalid-feedback" id="next_billing_date_error"></div>
                         </div>
                     </div>
@@ -723,229 +725,340 @@
             // Validation functions
             function validateName(input) {
                 const value = input.value.trim();
-                const namePattern = /^[A-Za-z\s]+$/;
-                const isValid = namePattern.test(value) && value.length >= 2 && value.length <= 100;
+                // Only allow letters (A-Z, a-z) and spaces - no numbers or special characters
+                const namePattern = /^[A-Za-z][A-Za-z\s]*$/;
+                // Check if value contains any numbers or special characters
+                const hasInvalidChars = /[0-9!@#$%^&*()_+=\[\]{}|;:'",.<>?/\\`~-]/.test(value);
+            const isValid = namePattern.test(value) && !hasInvalidChars && value.length >= 2 && value.length <=
+                100;
 
-                updateValidationUI(input, isValid,
-                    isValid ? '' : 'Name should contain only letters and spaces (2-100 characters)');
-
-                return isValid;
-            }
-
-            function validateEmail(input) {
-                const value = input.value.trim();
-                const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
-                const isValid = emailPattern.test(value) && value.length >= 5 && value.length <= 100;
-
-                updateValidationUI(input, isValid,
-                    isValid ? '' :
-                    'Please enter a valid email (e.g., user@gmail.com). Domain must start with a letter.');
-
-                return isValid;
-            }
-
-            function validatePhone(input) {
-                const value = input.value.trim();
-                const phonePattern = /^[0-9]{10,15}$/;
-                const isValid = phonePattern.test(value);
-
-                updateValidationUI(input, isValid,
-                    isValid ? '' : 'Phone number must contain only numbers (10-15 digits)');
-
-                return isValid;
-            }
-
-            function updateValidationUI(input, isValid, errorMessage) {
-                const errorElement = input.parentElement.querySelector('.invalid-feedback');
-
-                if (isValid) {
-                    input.classList.remove('is-invalid');
-                    if (errorElement) {
-                        errorElement.style.display = 'none';
-                    }
+            let errorMessage = '';
+            if (!isValid) {
+                if (hasInvalidChars) {
+                    errorMessage = 'Name cannot contain numbers or special characters';
+                } else if (value.length < 2) {
+                    errorMessage = 'Name must be at least 2 characters long';
+                } else if (value.length > 100) {
+                    errorMessage = 'Name cannot exceed 100 characters';
                 } else {
-                    input.classList.add('is-invalid');
-                    if (errorElement) {
-                        errorElement.textContent = errorMessage;
-                        errorElement.style.display = 'block';
-                    }
+                    errorMessage = 'Name should contain only letters and spaces';
                 }
             }
 
-            // Real-time validation for input fields
-            document.getElementById('tenant_name').addEventListener('input', function() {
-                validateName(this);
-            });
+            updateValidationUI(input, isValid, errorMessage);
 
-            document.getElementById('contact_person').addEventListener('input', function() {
-                validateName(this);
-            });
+            return isValid;
+        }
 
-            document.getElementById('email').addEventListener('input', function() {
-                validateEmail(this);
-            });
+        function validateEmail(input) {
+            const value = input.value.trim();
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
+            const isValid = emailPattern.test(value) && value.length >= 5 && value.length <= 100;
 
-            document.getElementById('phone').addEventListener('input', function() {
-                // Remove any non-numeric characters
-                this.value = this.value.replace(/[^0-9]/g, '');
-                validatePhone(this);
-            });
+            updateValidationUI(input, isValid,
+                isValid ? '' :
+                'Please enter a valid email (e.g., user@gmail.com). Domain must start with a letter.');
 
-            // Handle plan selection
-            const planCards = document.querySelectorAll('.plan-card');
-            const planInputs = document.querySelectorAll('input[name="subscription_plan"]');
+            return isValid;
+        }
 
-            // Function to update form values based on selected plan
-            function updatePlanValues(planValue) {
-                const limits = planLimits[planValue];
+        function validatePhone(input) {
+            const value = input.value.trim();
+            const phonePattern = /^[0-9]{10,15}$/;
+            // Check if all digits are zeros
+            const isAllZeros = /^0+$/.test(value);
+            // Check if phone has at least one non-zero digit
+            const hasValidDigits = /[1-9]/.test(value);
+            const isValid = phonePattern.test(value) && !isAllZeros && hasValidDigits;
 
-                if (limits) {
-                    // Update fees and limits based on plan
-                    document.getElementById('monthly_base_fee').value = limits.baseFee;
-                    document.getElementById('per_restaurant_fee').value = limits.perRestaurantFee;
-                    document.getElementById('total_restaurants').value = limits.maxRestaurants;
-                    document.getElementById('banner_limit').value = limits.maxBanners;
-
-                    // Show plan limitations
-                    showPlanLimitations(planValue, limits);
+            let errorMessage = '';
+            if (!isValid) {
+                if (isAllZeros) {
+                    errorMessage = 'Phone number cannot be all zeros';
+                } else if (!hasValidDigits) {
+                    errorMessage = 'Phone number must contain at least one non-zero digit';
+                } else {
+                    errorMessage = 'Phone number must contain only numbers (10-15 digits)';
                 }
             }
 
-            // Function to select a plan card
-            function selectPlanCard(selectedCard, radio) {
-                // Remove selected class from all cards
-                planCards.forEach(card => card.classList.remove('selected'));
+            updateValidationUI(input, isValid, errorMessage);
 
-                // Add selected class to clicked card
-                selectedCard.classList.add('selected');
+            return isValid;
+        }
 
-                // Ensure the radio is checked
-                if (radio) {
-                    radio.checked = true;
+        function updateValidationUI(input, isValid, errorMessage) {
+            const errorElement = input.parentElement.querySelector('.invalid-feedback');
+
+            if (isValid) {
+                input.classList.remove('is-invalid');
+                if (errorElement) {
+                    errorElement.style.display = 'none';
                 }
-
-                // Update form values
-                const planValue = selectedCard.dataset.plan;
-                updatePlanValues(planValue);
-            }
-
-            // Add click event to plan cards
-            planCards.forEach(card => {
-                card.addEventListener('click', function(e) {
-                    const radio = card.querySelector('input[type="radio"]');
-                    selectPlanCard(card, radio);
-                });
-            });
-
-            // Also handle direct radio change events
-            planInputs.forEach(input => {
-                input.addEventListener('change', function() {
-                    if (this.checked) {
-                        const card = this.closest('.plan-card');
-                        selectPlanCard(card, this);
-                    }
-                });
-            });
-
-            // Function to show plan limitations
-            function showPlanLimitations(plan, limits) {
-                const warningText =
-                    `${limits.name} allows up to ${limits.maxRestaurants} restaurants and ${limits.maxBanners} banner(s). Monthly base fee: ₹${limits.baseFee}`;
-                document.getElementById('plan-limit-text').textContent = warningText;
-                document.getElementById('plan-limit-warning').style.display = 'flex';
-            }
-
-            // Set initial selected plan on page load
-            const initialPlan = document.querySelector('input[name="subscription_plan"]:checked');
-            if (initialPlan) {
-                const initialCard = initialPlan.closest('.plan-card');
-                selectPlanCard(initialCard, initialPlan);
             } else {
-                // If no plan is selected, select the first one by default
-                const firstCard = document.querySelector('.plan-card');
-                if (firstCard) {
-                    selectPlanCard(firstCard, firstCard.querySelector('input[type="radio"]'));
+                input.classList.add('is-invalid');
+                if (errorElement) {
+                    errorElement.textContent = errorMessage;
+                    errorElement.style.display = 'block';
                 }
             }
+        }
 
-            // Subscription date validation
-            function validateStartDate(input) {
-                const value = input.value;
-                if (!value) return true; // Optional field
+        // Real-time validation for input fields
+        document.getElementById('tenant_name').addEventListener('input', function() {
+            validateName(this);
+        });
 
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const selectedDate = new Date(value);
-                const isValid = selectedDate <= today;
+        document.getElementById('contact_person').addEventListener('input', function() {
+            validateName(this);
+        });
 
-                updateValidationUI(input, isValid,
-                    isValid ? '' : 'Start date cannot be a future date');
+        document.getElementById('email').addEventListener('input', function() {
+            validateEmail(this);
+        });
 
-                return isValid;
+        document.getElementById('phone').addEventListener('input', function() {
+            // Remove any non-numeric characters
+            this.value = this.value.replace(/[^0-9]/g, '');
+            validatePhone(this);
+        });
+
+        // Handle plan selection
+        const planCards = document.querySelectorAll('.plan-card');
+        const planInputs = document.querySelectorAll('input[name="subscription_plan"]');
+
+        // Function to update form values based on selected plan
+        function updatePlanValues(planValue) {
+            const limits = planLimits[planValue];
+
+            if (limits) {
+                // Update fees and limits based on plan
+                document.getElementById('monthly_base_fee').value = limits.baseFee;
+                document.getElementById('per_restaurant_fee').value = limits.perRestaurantFee;
+                document.getElementById('total_restaurants').value = limits.maxRestaurants;
+                document.getElementById('banner_limit').value = limits.maxBanners;
+
+                // Show plan limitations
+                showPlanLimitations(planValue, limits);
+            }
+        }
+
+        // Function to select a plan card
+        function selectPlanCard(selectedCard, radio) {
+            // Remove selected class from all cards
+            planCards.forEach(card => card.classList.remove('selected'));
+
+            // Add selected class to clicked card
+            selectedCard.classList.add('selected');
+
+            // Ensure the radio is checked
+            if (radio) {
+                radio.checked = true;
             }
 
-            function validateNextBillingDate(input) {
-                const value = input.value;
-                if (!value) return true; // Optional field
+            // Update form values
+            const planValue = selectedCard.dataset.plan;
+            updatePlanValues(planValue);
+        }
 
-                const fiftyYearsAgo = new Date();
-                fiftyYearsAgo.setFullYear(fiftyYearsAgo.getFullYear() - 50);
-                const selectedDate = new Date(value);
-                const isValid = selectedDate >= fiftyYearsAgo;
+        // Add click event to plan cards
+        planCards.forEach(card => {
+            card.addEventListener('click', function(e) {
+                const radio = card.querySelector('input[type="radio"]');
+                selectPlanCard(card, radio);
+            });
+        });
 
-                updateValidationUI(input, isValid,
-                    isValid ? '' : 'Next billing date cannot be older than 50 years');
+        // Also handle direct radio change events
+        planInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                if (this.checked) {
+                    const card = this.closest('.plan-card');
+                    selectPlanCard(card, this);
+                }
+            });
+        });
 
-                return isValid;
+        // Function to show plan limitations
+        function showPlanLimitations(plan, limits) {
+            const warningText =
+                `${limits.name} allows up to ${limits.maxRestaurants} restaurants and ${limits.maxBanners} banner(s). Monthly base fee: ₹${limits.baseFee}`;
+            document.getElementById('plan-limit-text').textContent = warningText;
+            document.getElementById('plan-limit-warning').style.display = 'flex';
+        }
+
+        // Set initial selected plan on page load
+        const initialPlan = document.querySelector('input[name="subscription_plan"]:checked');
+        if (initialPlan) {
+            const initialCard = initialPlan.closest('.plan-card');
+            selectPlanCard(initialCard, initialPlan);
+        } else {
+            // If no plan is selected, select the first one by default
+            const firstCard = document.querySelector('.plan-card');
+            if (firstCard) {
+                selectPlanCard(firstCard, firstCard.querySelector('input[type="radio"]'));
+            }
+        }
+
+        // Subscription date validation
+        function validateDateYear(value) {
+            // Check if year is valid (between 2000 and current year + 10)
+            const year = parseInt(value.split('-')[0]);
+            const currentYear = new Date().getFullYear();
+            const minYear = 2000;
+            const maxYear = currentYear + 10;
+
+            if (isNaN(year) || year < minYear || year > maxYear) {
+                return {
+                    isValid: false,
+                    message: `Year must be between ${minYear} and ${maxYear}`
+                };
+            }
+            return {
+                isValid: true,
+                message: ''
+            };
+        }
+
+        function validateStartDate(input) {
+            const value = input.value;
+            if (!value) return true; // Optional field
+
+            // First validate the year
+            const yearValidation = validateDateYear(value);
+            if (!yearValidation.isValid) {
+                updateValidationUI(input, false, yearValidation.message);
+                return false;
             }
 
-            // Add date validation listeners
-            document.getElementById('subscription_start_date').addEventListener('change', function() {
-                validateStartDate(this);
-            });
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const selectedDate = new Date(value);
+            const isValid = selectedDate <= today;
 
-            document.getElementById('next_billing_date').addEventListener('change', function() {
-                validateNextBillingDate(this);
-            });
+            updateValidationUI(input, isValid,
+                isValid ? '' : 'Start date cannot be a future date');
 
-            // Form submission validation
-            document.getElementById('tenantForm').addEventListener('submit', function(e) {
-                // Validate all fields before submission
-                const isTenantNameValid = validateName(document.getElementById('tenant_name'));
-                const isContactPersonValid = validateName(document.getElementById('contact_person'));
-                const isEmailValid = validateEmail(document.getElementById('email'));
-                const isPhoneValid = validatePhone(document.getElementById('phone'));
-                const isStartDateValid = validateStartDate(document.getElementById(
-                    'subscription_start_date'));
-                const isNextBillingDateValid = validateNextBillingDate(document.getElementById(
-                    'next_billing_date'));
+            return isValid;
+        }
 
-                // Check if a plan is selected
-                const selectedPlan = document.querySelector('input[name="subscription_plan"]:checked');
-                if (!selectedPlan) {
-                    e.preventDefault();
-                    alert('Please select a subscription plan before submitting the form.');
+        function validateNextBillingDate(input) {
+            const value = input.value;
+            if (!value) return true; // Optional field
+
+            // First validate the year
+            const yearValidation = validateDateYear(value);
+            if (!yearValidation.isValid) {
+                updateValidationUI(input, false, yearValidation.message);
+                return false;
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const twoYearsFromNow = new Date();
+            twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2);
+            const selectedDate = new Date(value);
+
+            const isValidMin = selectedDate >= today;
+            const isValidMax = selectedDate <= twoYearsFromNow;
+            const isValid = isValidMin && isValidMax;
+
+            let errorMessage = '';
+            if (!isValidMin) {
+                errorMessage = 'Next billing date cannot be in the past';
+            } else if (!isValidMax) {
+                errorMessage = 'Next billing date cannot be more than 2 years from now';
+            }
+
+            updateValidationUI(input, isValid, errorMessage);
+
+            return isValid;
+        }
+
+        function validateEndDate(input) {
+            const value = input.value;
+            if (!value) return true; // Optional field
+
+            // First validate the year
+            const yearValidation = validateDateYear(value);
+            if (!yearValidation.isValid) {
+                updateValidationUI(input, false, yearValidation.message);
+                return false;
+            }
+
+            // End date should be after start date if start date exists
+            const startDateInput = document.getElementById('subscription_start_date');
+            if (startDateInput && startDateInput.value) {
+                const startDate = new Date(startDateInput.value);
+                const endDate = new Date(value);
+                if (endDate <= startDate) {
+                    updateValidationUI(input, false, 'End date must be after start date');
                     return false;
                 }
+            }
 
-                // Prevent form submission if any validation fails
-                if (!isTenantNameValid || !isContactPersonValid || !isEmailValid || !isPhoneValid || !
-                    isStartDateValid || !isNextBillingDateValid) {
-                    e.preventDefault();
-                    alert('Please fix the validation errors before submitting the form.');
-                    return false;
-                }
-            });
+            updateValidationUI(input, true, '');
+            return true;
+        }
 
-            // Reset form function
-            window.resetForm = function() {
-                if (confirm('Are you sure you want to reset all changes?')) {
-                    document.getElementById('tenantForm').reset();
+        // Add date validation listeners
+        document.getElementById('subscription_start_date').addEventListener('change', function() {
+            validateStartDate(this);
+            // Re-validate end date when start date changes
+            const endDateInput = document.getElementById('subscription_end_date');
+            if (endDateInput && endDateInput.value) {
+                validateEndDate(endDateInput);
+            }
+        });
 
-                    // Reset plan selection to original
-                    const currentPlan = '{{ $tenant->subscription_plan }}';
-                    const planRadio = document.querySelector(
-                        `input[name="subscription_plan"][value="${currentPlan}"]`);
+        document.getElementById('subscription_end_date').addEventListener('change', function() {
+            validateEndDate(this);
+        });
+
+        document.getElementById('next_billing_date').addEventListener('change', function() {
+            validateNextBillingDate(this);
+        });
+
+        // Form submission validation
+        document.getElementById('tenantForm').addEventListener('submit', function(e) {
+            // Validate all fields before submission
+            const isTenantNameValid = validateName(document.getElementById('tenant_name'));
+            const isContactPersonValid = validateName(document.getElementById('contact_person'));
+            const isEmailValid = validateEmail(document.getElementById('email'));
+            const isPhoneValid = validatePhone(document.getElementById('phone'));
+            const isStartDateValid = validateStartDate(document.getElementById(
+                'subscription_start_date'));
+            const isEndDateValid = validateEndDate(document.getElementById(
+                'subscription_end_date'));
+            const isNextBillingDateValid = validateNextBillingDate(document.getElementById(
+                'next_billing_date'));
+
+            // Check if a plan is selected
+            const selectedPlan = document.querySelector('input[name="subscription_plan"]:checked');
+            if (!selectedPlan) {
+                e.preventDefault();
+                alert('Please select a subscription plan before submitting the form.');
+                return false;
+            }
+
+            // Prevent form submission if any validation fails
+            if (!isTenantNameValid || !isContactPersonValid || !isEmailValid || !isPhoneValid || !
+                isStartDateValid || !isEndDateValid || !isNextBillingDateValid) {
+                e.preventDefault();
+                alert('Please fix the validation errors before submitting the form.');
+                return false;
+            }
+        });
+
+        // Reset form function
+        window.resetForm = function() {
+            if (confirm('Are you sure you want to reset all changes?')) {
+                document.getElementById('tenantForm').reset();
+
+                // Reset plan selection to original
+                const currentPlan = '{{ $tenant->subscription_plan }}';
+                const planRadio = document.querySelector(
+                    `input[name="subscription_plan"][value="${currentPlan}"]`);
                     if (planRadio) {
                         const card = planRadio.closest('.plan-card');
                         selectPlanCard(card, planRadio);

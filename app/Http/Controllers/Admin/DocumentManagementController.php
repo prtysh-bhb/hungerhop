@@ -185,7 +185,7 @@ class DocumentManagementController extends Controller
      */
     public function view($id)
     {
-        $document = RestaurantDocument::with(['restaurant', 'reviewer'])->findOrFail($id);
+        $document = RestaurantDocument::with(['restaurant.cityRelation', 'restaurant.stateRelation', 'reviewer'])->findOrFail($id);
 
         return view('restaurant_admin.documents.view', compact('document'));
     }

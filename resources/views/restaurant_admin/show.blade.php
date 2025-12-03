@@ -452,13 +452,14 @@
                                     @if ($restaurant->image_url)
                                         <div class="col-12">
                                             <label class="form-label text-muted small mb-2">Restaurant Image</label>
-                                            <img src="{{ $restaurant->image_url }}" alt="Restaurant Image" class="img-fluid rounded border">
+                                            <img src="{{ asset('storage/'.$restaurant->image_url) }}"  alt="Restaurant Image" class="img-fluid rounded border">
+                                            
                                         </div>
                                     @endif
                                     @if ($restaurant->cover_image_url)
                                         <div class="col-12">
                                             <label class="form-label text-muted small mb-2">Cover Image</label>
-                                            <img src="{{ $restaurant->cover_image_url }}" alt="Cover Image" class="img-fluid rounded border">
+                                            <img src="{{ asset('storage/'.$restaurant->cover_image_url) }}" alt="Cover Image" class="img-fluid rounded border">
                                         </div>
                                     @endif
                                 </div>
