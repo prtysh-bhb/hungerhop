@@ -105,14 +105,28 @@
                                                 </td>
                                                 <td>
                                                     @if ($document->document_path)
-                                                        <a href="{{ asset('storage/' . $document->document_path) }}"
-                                                            target="_blank" class="btn btn-sm btn-primary">
-                                                            <i class="fa fa-eye"></i> View
-                                                        </a>
-                                                        <a href="{{ asset('storage/' . $document->document_path) }}"
-                                                            download class="btn btn-sm btn-success">
-                                                            <i class="fa fa-download"></i> Download
-                                                        </a>
+                                                        @php
+                                                            $documentPath = storage_path(
+                                                                'app/public/' . $document->document_path,
+                                                            );
+                                                            $fileExists = file_exists($documentPath);
+                                                        @endphp
+                                                        @if ($fileExists)
+                                                            <a href="{{ asset('storage/' . $document->document_path) }}"
+                                                                target="_blank" class="btn btn-sm btn-primary">
+                                                                <i class="fa fa-eye"></i> View
+                                                            </a>
+                                                            <a href="{{ asset('storage/' . $document->document_path) }}"
+                                                                download class="btn btn-sm btn-success">
+                                                                <i class="fa fa-download"></i> Download
+                                                            </a>
+                                                        @else
+                                                            <span class="text-muted">
+                                                                <i class="fa fa-file-pdf-o"></i>
+                                                                {{ basename($document->document_path) }}
+                                                                <small class="text-warning">(Placeholder)</small>
+                                                            </span>
+                                                        @endif
                                                     @else
                                                         <span class="text-muted">No file</span>
                                                     @endif

@@ -101,7 +101,10 @@ Route::get('/delivery-partner/register', [DeliveryPartnerRegistrationController:
 // Route::post('/delivery-partner/document/upload', [DeliveryPartnerRegistrationController::class, 'uploadDocument'])->name('guest.delivery-partner.document.upload');
 Route::post('/delivery-partner/register', [DeliveryPartnerRegistrationController::class, 'register'])->name('guest.delivery-partner.register');
 
-Route::resource('/delivery/partners', DeliveryPartnerController::class);
+// Delivery Partner Management Routes (Protected by auth)
+Route::middleware(['auth'])->group(function () {
+    Route::resource('/delivery/partners', DeliveryPartnerController::class);
+});
 
 Route::post('/restaurant/registration/store', [RestaurantAdminController::class, 'storeRegistration'])->name('public.restaurant.registration.store');
 
@@ -253,7 +256,7 @@ Route::middleware(['auth', 'identify_tenant'])->group(function () {
         Route::put('/tenants/{tenant}', [TenantController::class, 'update'])->name('tenants.update');
         Route::delete('/tenants/{tenant}', [TenantController::class, 'destroy'])->name('tenants.destroy');
         Route::post('/tenants/{tenant}/status', [TenantController::class, 'updateStatus'])->name('tenants.updateStatus');
-        
+
         // Export routes
         Route::get('/tenants/export/excel', [TenantController::class, 'exportExcel'])->name('tenants.export.excel');
         Route::get('/tenants/export/pdf', [TenantController::class, 'exportPdf'])->name('tenants.export.pdf');
@@ -288,7 +291,7 @@ Route::middleware(['auth', 'identify_tenant'])->group(function () {
 
         // Status Update Route - All allowed roles (super_admin, tenant_admin, location_admin)
         Route::post('/{id}/update-status', [RestaurantAdminController::class, 'updateStatus'])->name('update-status');
-        
+
         // Pause/Resume Routes - All allowed roles (super_admin, tenant_admin, location_admin)
         Route::post('/{id}/toggle-pause', [RestaurantAdminController::class, 'togglePause'])->name('toggle-pause');
 

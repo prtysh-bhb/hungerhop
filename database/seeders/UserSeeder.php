@@ -22,13 +22,11 @@ class UserSeeder extends Seeder
                 'phone' => '9876543210',
                 'role' => 'super_admin',
                 'status' => 'active',
-                'password' => Hash::make('SuperAdmin@123'),
+                'password' => Hash::make('Admin@123'),
                 'email_verified_at' => now(),
             ]
         );
 
-        $this->command->info('Super Admin created successfully!');
-        $this->command->info('Email: superadmin@hungerhop.com');
-        $this->command->info('Password: SuperAdmin@123');
+        $this->command->info('✓ Super Admin created: superadmin@hungerhop.com / Admin@123');
     }
 }
