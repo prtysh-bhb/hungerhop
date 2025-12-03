@@ -87,10 +87,22 @@ class OrderSeeder extends Seeder
                 $restaurantAmount = round($subtotal * ($restaurant->restaurant_commission_percentage / 100), 2);
                 $platformFee = $subtotal - $restaurantAmount;
 
-                // Determine status based on order age
+                // Determine status - ensure good distribution including delivered orders
                 $daysSinceOrder = $now->diffInDays($orderDate);
-                if ($daysSinceOrder > 2) {
-                    $status = rand(0, 10) > 1 ? 'delivered' : 'cancelled';
+                
+                // Force some orders to be delivered/out_for_delivery for realistic data
+                $statusRoll = rand(1, 10);
+                if ($statusRoll <= 4) {
+                    // 40% delivered
+                    $status = 'delivered';
+                } elseif ($statusRoll == 5) {
+                    // 10% out for delivery
+                    $status = 'out_for_delivery';
+                } elseif ($statusRoll == 6) {
+                    // 10% cancelled
+                    $status = 'cancelled';
+                } elseif ($daysSinceOrder > 2) {
+                    $status = 'delivered';
                 } elseif ($daysSinceOrder > 1) {
                     $status = $orderStatuses[rand(4, 6)];
                 } else {

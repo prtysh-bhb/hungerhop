@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Traits\Auditable;
 use App\Traits\Searchable;
+use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -36,7 +37,8 @@ class CustomerProfile extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        // Use withoutGlobalScope to bypass TenantScope since customers may not have tenant_id
+        return $this->belongsTo(User::class)->withoutGlobalScope(TenantScope::class);
     }
 
     public function addresses()

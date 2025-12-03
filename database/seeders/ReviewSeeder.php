@@ -92,7 +92,7 @@ class ReviewSeeder extends Seeder
             Review::updateOrCreate(
                 [
                     'order_id' => $order->id,
-                    'reviewable_type' => Restaurant::class,
+                    'reviewable_type' => 'restaurant',
                     'reviewable_id' => $order->restaurant_id,
                 ],
                 [
@@ -136,11 +136,11 @@ class ReviewSeeder extends Seeder
         // Update restaurant average ratings
         $restaurants = Restaurant::all();
         foreach ($restaurants as $restaurant) {
-            $avgRating = Review::where('reviewable_type', Restaurant::class)
+            $avgRating = Review::where('reviewable_type', 'restaurant')
                 ->where('reviewable_id', $restaurant->id)
                 ->avg('rating');
             
-            $totalReviews = Review::where('reviewable_type', Restaurant::class)
+            $totalReviews = Review::where('reviewable_type', 'restaurant')
                 ->where('reviewable_id', $restaurant->id)
                 ->count();
 

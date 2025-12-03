@@ -211,15 +211,10 @@
                                 <tbody>
                                     @php
                                         $tz = new DateTimeZone('Asia/Kolkata');
-                                        $user = auth()->user();
-                                        // Show status changes if the order's tenant_id matches the logged-in user's tenant_id
-                                        // Restaurant staff can view orders from all restaurants within their tenant
-                                        $showStatuses = $order->tenant_id == $user->tenant_id;
-                                        $statuses = $showStatuses
-                                            ? \App\Models\OrderStatus::where('order_id', $order->id)
-                                                ->orderBy('created_at')
-                                                ->get()
-                                            : collect();
+                                        // Show all status changes for this order
+                                        $statuses = \App\Models\OrderStatus::where('order_id', $order->id)
+                                            ->orderBy('created_at')
+                                            ->get();
                                     @endphp
                                     @foreach ($statuses as $statusChange)
                                         <tr>

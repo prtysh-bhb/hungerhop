@@ -9,6 +9,7 @@ use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Restaurant;
+use App\Models\OrderStatus;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
@@ -142,6 +143,12 @@ class OrderController extends Controller
         \DB::beginTransaction();
         try {
             $order = Order::create($orderData);
+
+            // Create initial order status record
+            OrderStatus::create([
+                'order_id' => $order->id,
+                'status' => 'placed',
+            ]);
 
             foreach ($orderItems as $item) {
                 $menuItem = MenuItem::find($item['item_id']);
