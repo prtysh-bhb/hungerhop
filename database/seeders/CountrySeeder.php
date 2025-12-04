@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Country;
-use File;
 use Illuminate\Database\Seeder;
 
 class CountrySeeder extends Seeder
@@ -13,8 +12,15 @@ class CountrySeeder extends Seeder
      */
     public function run(): void
     {
-        $json = File::get(storage_path('app/private/json/countries.json'));
-        $countries = json_decode($json, true);
+        $countries = [
+            [
+                'id' => 1,
+                'name' => 'India',
+                'iso2' => 'IN',
+                'iso3' => 'IND',
+                'phone_code' => '+91',
+            ],
+        ];
 
         foreach ($countries as $country) {
             Country::updateOrCreate(
