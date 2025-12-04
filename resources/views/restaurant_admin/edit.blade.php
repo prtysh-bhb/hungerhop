@@ -1757,7 +1757,7 @@
         });
 
         // Auto-generate slug from restaurant name
-        $('#restaurant_name').on('input', function() {
+        $('#slug').on('input', function() {
             let name = $(this).val();
             let slug = name.toLowerCase()
                 .replace(/[^a-z0-9 -]/g, '') // Remove invalid chars

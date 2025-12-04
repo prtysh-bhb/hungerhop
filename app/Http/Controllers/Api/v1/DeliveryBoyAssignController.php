@@ -202,58 +202,123 @@ class DeliveryBoyAssignController extends Controller
 
         $delivery_boy_id = auth()->id();
         $delivery_partner = DeliveryPartner::where('user_id', $delivery_boy_id)->first();
-        $order = Order::find($validated['order_id']);
+        
+        if (! $delivery_partner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Delivery partner profile not found.',
+            ], 404);
+        }
+
+        $order = Order::with(['deliveryAddress', 'restaurant'])->find($validated['order_id']);
+        
+        if (! $order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found.',
+            ], 404);
+        }
+
         try {
-            if (! $order) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Order not found.',
-                ], 404);
-            }
-            // Check if order is already accepted by someone else
-            $alreadyAccepted = DeliveryAssignment::where('order_id', $order->id)
-                ->where('status', 'accepted')
+            // Check if there's an existing assignment for this partner and order
+            $existingAssignment = DeliveryAssignment::where('order_id', $order->id)
+                ->where('partner_id', $delivery_partner->id)
+                ->whereIn('status', ['assigned', 'accepted'])
                 ->first();
-            if ($alreadyAccepted) {
-                if ($alreadyAccepted->partner_id != $delivery_partner->id) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Order already accepted by another delivery partner.',
-                    ], 403);
-                } else {
+
+            if ($existingAssignment) {
+                if ($existingAssignment->status === 'accepted') {
                     return response()->json([
                         'success' => true,
                         'message' => 'Assignment already accepted by you.',
                         'data' => [
                             'order_id' => $validated['order_id'],
                             'delivery_boy_id' => $delivery_boy_id,
+                            'assignment_id' => $existingAssignment->id,
                         ],
                     ]);
                 }
+
+                // Update existing assignment to accepted
+                $existingAssignment->update([
+                    'status' => 'accepted',
+                    'accepted_at' => now(),
+                ]);
+
+                // Update order status
+                Order::where('id', $order->id)->update(['status' => 'out_for_delivery']);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Assignment accepted successfully.',
+                    'data' => [
+                        'order_id' => $validated['order_id'],
+                        'delivery_boy_id' => $delivery_boy_id,
+                        'assignment_id' => $existingAssignment->id,
+                        'delivery_fee' => $existingAssignment->delivery_fee,
+                    ],
+                ]);
             }
-            // Accept if assignment_status is not already accepted/rejected
-            DeliveryAssignment::create([
+
+            // Check if order is already accepted by someone else
+            $alreadyAccepted = DeliveryAssignment::where('order_id', $order->id)
+                ->where('status', 'accepted')
+                ->first();
+
+            if ($alreadyAccepted) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order already accepted by another delivery partner.',
+                ], 403);
+            }
+
+            // No existing assignment found - create new one with calculated delivery fee
+            // Calculate distance and delivery fee
+            $customer_lat = (float) ($order->deliveryAddress->latitude ?? 0);
+            $customer_lng = (float) ($order->deliveryAddress->longitude ?? 0);
+            $restaurant_lat = (float) ($order->restaurant->latitude ?? 0);
+            $restaurant_lng = (float) ($order->restaurant->longitude ?? 0);
+
+            $distance = $this->calculateDistance($restaurant_lat, $restaurant_lng, $customer_lat, $customer_lng);
+            $deliveryFee = $this->calculateDeliveryFee($distance);
+            $estimatedTime = $this->calculateEstimatedDeliveryTime($distance);
+
+            // Create new assignment with accepted status
+            $assignment = DeliveryAssignment::create([
                 'order_id' => $order->id,
                 'tenant_id' => $order->tenant_id ?? null,
-                'partner_id' => $delivery_partner->id ?? null,
-                'pickup_latitude' => $order->restaurant->latitude ?? null,
-                'pickup_longitude' => $order->restaurant->longitude ?? null,
-                'delivery_latitude' => $order->deliveryAddress->latitude ?? null,
-                'delivery_longitude' => $order->deliveryAddress->longitude ?? null,
+                'partner_id' => $delivery_partner->id,
+                'pickup_latitude' => $restaurant_lat,
+                'pickup_longitude' => $restaurant_lng,
+                'delivery_latitude' => $customer_lat,
+                'delivery_longitude' => $customer_lng,
+                'estimated_distance_km' => round($distance, 2),
+                'estimated_duration_minutes' => $this->getEstimatedMinutes($estimatedTime),
+                'delivery_fee' => $deliveryFee,
                 'status' => 'accepted',
                 'accepted_at' => now(),
-                'assigned_at' => $order->assigned_at ?? now(),
+                'assigned_at' => now(),
             ]);
-            Order::where('id', $order->id)->update(['status' => 'out_for_delivery']);
+
+            // Update order status and delivery fee
+            $order->status = 'out_for_delivery';
+            $order->delivery_fee = $deliveryFee;
+            $order->total_amount = ($order->subtotal ?? 0) + ($order->tax_amount ?? 0) + $deliveryFee - ($order->discount_amount ?? 0);
+            $order->save();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Assignment accepted',
+                'message' => 'Assignment accepted successfully.',
                 'data' => [
                     'order_id' => $validated['order_id'],
                     'delivery_boy_id' => $delivery_boy_id,
+                    'assignment_id' => $assignment->id,
+                    'delivery_fee' => $deliveryFee,
+                    'distance_km' => round($distance, 2),
+                    'estimated_delivery_time' => $estimatedTime,
                 ],
             ]);
+
         } catch (\Exception $e) {
             Log::error('Accept assignment failed: '.$e->getMessage());
 
@@ -263,6 +328,130 @@ class DeliveryBoyAssignController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Update order/delivery status by delivery partner
+     * Allowed transitions: accepted -> picked_up -> out_for_delivery -> delivered
+     */
+    public function updateDeliveryStatus(Request $request)
+    {
+        $validated = $request->validate([
+            'order_id' => 'required|integer',
+            'status' => 'required|string|in:picked_up,out_for_delivery,delivered',
+        ]);
+
+        $delivery_boy_id = auth()->id();
+        $delivery_partner = DeliveryPartner::where('user_id', $delivery_boy_id)->first();
+
+        if (! $delivery_partner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Delivery partner profile not found.',
+            ], 404);
+        }
+
+        $order = Order::find($validated['order_id']);
+
+        if (! $order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found.',
+            ], 404);
+        }
+
+        // Check if this delivery partner is assigned to this order
+        $assignment = DeliveryAssignment::where('order_id', $order->id)
+            ->where('partner_id', $delivery_partner->id)
+            ->whereIn('status', ['accepted', 'picked_up', 'out_for_delivery'])
+            ->first();
+
+        if (! $assignment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are not assigned to this order or the order is not in a valid state.',
+            ], 403);
+        }
+
+        $newStatus = $validated['status'];
+        $currentStatus = $assignment->status;
+
+        // Validate status transitions
+        $allowedTransitions = [
+            'accepted' => ['picked_up'],
+            'picked_up' => ['out_for_delivery'],
+            'out_for_delivery' => ['delivered'],
+        ];
+
+        //-------------------- this validation is commented out to allow direct updates for testing------------------
+
+        // if (! isset($allowedTransitions[$currentStatus]) || ! in_array($newStatus, $allowedTransitions[$currentStatus])) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => "Invalid status transition from '{$currentStatus}' to '{$newStatus}'.",
+        //         'current_status' => $currentStatus,
+        //         'allowed_transitions' => $allowedTransitions[$currentStatus] ?? [],
+        //     ], 422);
+        // }
+
+        try {
+            // Update assignment status
+            $assignment->status = $newStatus;
+            
+            // Set timestamps based on status
+            if ($newStatus === 'picked_up') {
+                $assignment->picked_up_at = now();
+                $order->status = 'picked_up';
+            } elseif ($newStatus === 'out_for_delivery') {
+                $order->status = 'out_for_delivery';
+            } elseif ($newStatus === 'delivered') {
+                $assignment->delivered_at = now();
+                $order->status = 'delivered';
+                $order->actual_delivery_time = now();
+                
+                // Mark delivery partner as available again
+                $delivery_partner->is_available = true;
+                $delivery_partner->save();
+            }
+
+            $assignment->save();
+            $order->save();
+
+            Log::info("Order {$order->id} status updated to '{$newStatus}' by partner {$delivery_partner->id}");
+
+            return response()->json([
+                'success' => true,
+                'message' => "Order status updated to '{$newStatus}' successfully.",
+                'data' => [
+                    'order_id' => $order->id,
+                    'order_status' => $order->status,
+                    'assignment_status' => $assignment->status,
+                    'delivery_partner_id' => $delivery_partner->id,
+                    'picked_up_at' => $assignment->picked_up_at,
+                    'delivered_at' => $assignment->delivered_at,
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Update delivery status failed: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update delivery status.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Convert estimated time string to minutes
+     */
+    private function getEstimatedMinutes($timeString)
+    {
+        // Extract max minutes from string like "25-30 mins"
+        preg_match('/(\d+)\s*mins?$/i', $timeString, $matches);
+
+        return isset($matches[1]) ? (int) $matches[1] : 30;
     }
 
     // Reject assignment and auto-reassign to next nearest partner

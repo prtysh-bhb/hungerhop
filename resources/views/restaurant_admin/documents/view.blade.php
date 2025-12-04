@@ -96,43 +96,43 @@
                                         <table class="table table-borderless">
                                             <tr>
                                                 <td><strong>Restaurant:</strong></td>
-                                                <td>{{ $document->restaurant->restaurant_name }}</td>
+                                                <td>{{ $document->restaurant?->restaurant_name }}</td>
                                             </tr>
                                             <tr>
                                                 <td><strong>Email:</strong></td>
-                                                <td>{{ $document->restaurant->email }}</td>
+                                                <td>{{ $document->restaurant?->email }}</td>
                                             </tr>
                                             <tr>
                                                 <td><strong>Phone:</strong></td>
-                                                <td>{{ $document->restaurant->phone }}</td>
+                                                <td>{{ $document->restaurant?->phone }}</td>
                                             </tr>
                                             <tr>
                                                 <td><strong>City:</strong></td>
                                                 <td>
-                                                    @if ($document->restaurant->cityRelation)
-                                                        {{ $document->restaurant->cityRelation->name }}
+                                                    @if ($document->restaurant?->cityRelation)
+                                                        {{ $document->restaurant?->cityRelation->name }}
                                                     @else
-                                                        {{ $document->restaurant->city }}
+                                                        {{ $document->restaurant?->city }}
                                                     @endif
-                                                    @if ($document->restaurant->stateRelation)
-                                                        , {{ $document->restaurant->stateRelation->name }}
-                                                    @elseif($document->restaurant->state)
-                                                        , {{ $document->restaurant->state }}
+                                                    @if ($document->restaurant?->stateRelation)
+                                                        , {{ $document->restaurant?->stateRelation->name }}
+                                                    @elseif($document->restaurant?->state)
+                                                        , {{ $document->restaurant?->state }}
                                                     @endif
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td><strong>Status:</strong></td>
                                                 <td>
-                                                    @if ($document->restaurant->status === 'approved')
+                                                    @if ($document->restaurant?->status === 'approved')
                                                         <span
-                                                            class="badge badge-success">{{ ucfirst($document->restaurant->status) }}</span>
-                                                    @elseif($document->restaurant->status === 'rejected')
+                                                            class="badge badge-success">{{ ucfirst($document->restaurant?->status) }}</span>
+                                                    @elseif($document->restaurant?->status === 'rejected')
                                                         <span
-                                                            class="badge badge-danger">{{ ucfirst($document->restaurant->status) }}</span>
+                                                            class="badge badge-danger">{{ ucfirst($document->restaurant?->status) }}</span>
                                                     @else
                                                         <span
-                                                            class="badge badge-warning">{{ ucfirst($document->restaurant->status) }}</span>
+                                                            class="badge badge-warning">{{ ucfirst($document->restaurant?->status) }}</span>
                                                     @endif
                                                 </td>
                                             </tr>

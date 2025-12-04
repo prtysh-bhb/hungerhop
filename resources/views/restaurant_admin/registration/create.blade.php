@@ -277,7 +277,6 @@
                                 </div>
 
                                 @if (auth()->user()->role === 'super_admin')
-                                    <div class="row mb-2 mt-1">
                                         <div class="col-12">
                                             <div class="card bg-primary text-white">
                                                 <div class="card-header py-2">
@@ -342,7 +341,6 @@
                                                 @enderror
                                             </div>
                                         </div>
-                                    </div>
                                 @endif
 
                                 {{-- Tenant Details Section (New Independent) --}}

@@ -23,49 +23,20 @@
 
     <section class="content">
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="card">
                     <div class="card-body text-center">
                         @php
                             $profileImageUrl = $partner->profile_image_url
                                 ? asset('storage/' . $partner->profile_image_url)
-                                : asset('images/default-profile.png');
+                                : asset('images/avatar.png');
                         @endphp
                         <img src="{{ $profileImageUrl }}" class="rounded-circle mb-3" width="120" height="120"
                             alt="Profile Image" style="object-fit: cover;"
-                            onerror="this.src='{{ asset('images/default-profile.png') }}'">
+                            onerror="this.src='{{ asset('images/avatar.png') }}'">
                         <!-- Debug: Image URL - {{ $profileImageUrl }} -->
                         <h4>{{ optional($partner->user)->first_name }} {{ optional($partner->user)->last_name }}</h4>
                         <p class="text-muted">{{ optional($partner->user)->email }}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-8">
-                <div class="card mb-3">
-                    <div class="card-header">
-                        <h5>Statistics</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-md-4">
-                                <h6>Total Deliveries</h6>
-                                <p class="display-6">
-                                    {{ $partner->total_deliveries ?? ($partner->assignments ? $partner->assignments->count() : 0) }}
-                                </p>
-                            </div>
-                            <div class="col-md-4">
-                                <h6>Average Rating</h6>
-                                <p class="display-6">
-                                    {{ number_format($partner->average_rating ?? ($partner->reviews ? $partner->reviews->avg('rating') : 0), 2) }}
-                                </p>
-                            </div>
-                            <div class="col-md-4">
-                                <h6>Total Reviews</h6>
-                                <p class="display-6">
-                                    {{ $partner->total_reviews ?? ($partner->reviews ? $partner->reviews->count() : 0) }}
-                                </p>
-                            </div>
-                        </div>
                     </div>
                 </div>
                 <div class="card">
@@ -143,6 +114,37 @@
                         @endif
                     </div>
                 </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5>Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-4">
+                                <h6>Total Deliveries</h6>
+                                <p class="display-6">
+                                    {{ $partner->total_deliveries ?? ($partner->assignments ? $partner->assignments->count() : 0) }}
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Average Rating</h6>
+                                <p class="display-6">
+                                    {{ number_format($partner->average_rating ?? ($partner->reviews ? $partner->reviews->avg('rating') : 0), 2) }}
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Total Reviews</h6>
+                                <p class="display-6">
+                                    {{ $partner->total_reviews ?? ($partner->reviews ? $partner->reviews->count() : 0) }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="card">
                     <div class="card-header">
                         <h5>Profile Details</h5>

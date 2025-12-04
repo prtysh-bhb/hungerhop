@@ -38,6 +38,7 @@ class CustomerRegistration extends Controller
                 'password' => 'required|string|min:6|confirmed',
                 'date_of_birth' => 'nullable|date|before:today',
                 'gender' => 'nullable|string|in:male,female,other',
+                'referral_code' => 'nullable|string|max:50',
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -70,6 +71,7 @@ class CustomerRegistration extends Controller
                 'profile_image_url' => null, // Can be updated later
                 'total_orders' => 0,
                 'total_spent' => 0.00,
+                'referral_code' => $validated['referral_code'] ?? null,
                 'loyalty_points' => 0, // Welcome bonus points
             ]);
 

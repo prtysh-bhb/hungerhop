@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\v1\Auth\DeliveryPartnerPasswordController;
 use App\Http\Controllers\Api\v1\Auth\PasswordController;
 use App\Http\Controllers\Api\v1\AuthController;
 use App\Http\Controllers\Api\v1\CustomerRegistration;
@@ -112,11 +113,23 @@ Route::prefix('v1')->group(function () {
         Route::post('/login', [DeliveryPartner_login::class, 'login']);
         Route::post('/register', [DeliveryPartner_login::class, 'register']); // Delivery partner registration
 
+        // // Password Reset Routes (Public - no auth required)
+        // Route::post('/forgot-password', [DeliveryPartnerPasswordController::class, 'forgotPassword']);
+        // Route::post('/verify-otp', [DeliveryPartnerPasswordController::class, 'verifyOtp']);
+        // Route::post('/reset-password', [DeliveryPartnerPasswordController::class, 'resetPassword']);
+
         // Protected routes
         Route::middleware('auth:api')->group(function () {
             Route::post('/logout', [DeliveryPartner_login::class, 'logout']);
+            Route::post('/change-password', [DeliveryPartnerPasswordController::class, 'changePassword']);
             Route::get('/assignments', [DeliveryPartnerController::class, 'myAssignments']);
             Route::post('/assignments', [DeliveryPartnerController::class, 'assignmentDetails']);
+
+            // Order filtering by status
+            Route::get('/orders/new', [DeliveryPartnerController::class, 'newOrders']);
+            Route::get('/orders/in-progress', [DeliveryPartnerController::class, 'inProgressOrders']);
+            Route::get('/orders/past', [DeliveryPartnerController::class, 'pastOrders']);
+            Route::get('/orders/summary', [DeliveryPartnerController::class, 'ordersSummary']);
 
             // Location tracking routes (should be called every 1 minute)
             Route::post('/location/update', [DeliveryPartnerLocationController::class, 'updateLocation']);
@@ -137,6 +150,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/assign', [DeliveryBoyAssignController::class, 'assign']);
         Route::post('/accept', [DeliveryBoyAssignController::class, 'acceptAssignment']);
         Route::post('/reject', [DeliveryBoyAssignController::class, 'rejectAssignment']);
+        Route::post('/update-status', [DeliveryBoyAssignController::class, 'updateDeliveryStatus']);
         Route::post('/reassign', [DeliveryBoyAssignController::class, 'manualReassign']);
         Route::post('/rejections', [DeliveryBoyAssignController::class, 'getOrderRejections']);
         Route::get('/find-nearest-partner', [DeliveryBoyAssignController::class, 'findNearestPartner']);

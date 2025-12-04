@@ -126,6 +126,17 @@ class DeliveryPartnerController extends Controller
 
         $partner->update($partnerData);
 
+        // When partner is approved, also approve all their pending documents
+        if (isset($partnerData['status']) && $partnerData['status'] === 'approved') {
+            $partner->documents()
+                ->where('status', '!=', 'approved')
+                ->update([
+                    'status' => 'approved',
+                    'reviewed_at' => now(),
+                    'reviewed_by' => auth()->id(),
+                ]);
+        }
+
         return redirect()->route('partners.index')->with('success', 'Delivery partner updated successfully.');
     }
 

@@ -357,7 +357,7 @@ class RestaurantAdminController extends Controller
                             'monthly_base_fee' => 0,
                             'per_restaurant_fee' => 0,
                             'banner_limit' => 5,
-                            'status' => Tenant::STATUS_APPROVED,
+                            'status' => Tenant::STATUS_PENDING,
                             'subscription_start_date' => now(),
                             'next_billing_date' => now()->addMonth(),
                         ]);

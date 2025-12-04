@@ -23,7 +23,7 @@ return new class extends Migration
             $table->decimal('delivery_longitude', 11, 8);
             $table->decimal('estimated_distance_km', 6, 2)->nullable();
             $table->integer('estimated_duration_minutes')->nullable();
-            $table->decimal('delivery_fee', 6, 2);
+            $table->decimal('delivery_fee', 6, 2)->nullable();
             $table->decimal('tip_amount', 6, 2)->default(0);
             $table->enum('status', ['assigned', 'accepted', 'rejected', 'picked_up', 'delivered', 'cancelled'])->default('assigned');
             $table->timestamp('assigned_at')->useCurrent();

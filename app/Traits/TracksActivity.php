@@ -24,9 +24,21 @@ trait TracksActivity
                     $fieldName = $model->getHumanFieldName($field);
 
                     if ($oldValue !== $newValue) {
+
+                        // Normalize values for logging
+                        if (is_array($oldValue) || is_object($oldValue)) {
+                            $oldValue = json_encode($oldValue, JSON_UNESCAPED_UNICODE);
+                        }
+
+                        if (is_array($newValue) || is_object($newValue)) {
+                            $newValue = json_encode($newValue, JSON_UNESCAPED_UNICODE);
+                        }
+
                         $description = $model->getDisplayName()." {$fieldName} changed from '{$oldValue}' to '{$newValue}'";
+
                         $model->logActivity('updated', $field, $oldValue, $description, $newValue);
                     }
+
                 }
             }
         });

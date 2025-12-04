@@ -1,20 +1,42 @@
  @php
+     // Calculate new plan total for display purposes
      $newPlanTotal = $planLimits['base_fee'] + $planLimits['max_restaurants'] * $planLimits['per_restaurant_fee'];
 
-     // Get current plan value (what was already paid)
-     $currentPlanLimits = $tenant->getPlanLimits($tenant->subscription_plan);
-     $alreadyPaid = 0;
+     // For upgrades, get the PREVIOUS plan from the last completed payment (not from tenant,
+     // since tenant's subscription_plan is already updated to the new plan)
+$alreadyPaid = 0;
+$previousPlanName = null;
+$previousPlanLimits = null;
 
-     if ($currentPlanLimits) {
-         $alreadyPaid =
-             $currentPlanLimits['base_fee'] +
-             $currentPlanLimits['max_restaurants'] * $currentPlanLimits['per_restaurant_fee'];
-     }
+if (isset($isUpgradePayment) && $isUpgradePayment) {
+    // Get the last completed payment to find what was actually paid for
+    $lastCompletedPayment = $tenant
+        ->subscriptionPayments()
+        ->where('status', 'completed')
+        ->orderBy('created_at', 'desc')
+        ->first();
 
-     // The actual amount to pay is in $subscriptionAmount (from pending payment)
-     // $amountToPay = $subscriptionAmount;
-     $subscriptionAmount = $newPlanTotal - $alreadyPaid;
+    if ($lastCompletedPayment) {
+        // Get the plan limits for the previously paid plan
+        $previousPlanLimits = $tenant->getPlanLimits($lastCompletedPayment->subscription_plan);
+        $previousPlanName = $lastCompletedPayment->subscription_plan;
+
+        if ($previousPlanLimits) {
+            $alreadyPaid =
+                $previousPlanLimits['base_fee'] +
+                $previousPlanLimits['max_restaurants'] * $previousPlanLimits['per_restaurant_fee'];
+        }
+    }
+}
+
+// The amount to pay comes from the controller:
+// - For upgrades: it's the pending payment amount (already calculated as difference)
+     // - For new subscriptions: it's the full plan amount
+     // Use $subscriptionAmount from controller, which is already correct
      $amountToPay = $subscriptionAmount;
+
+     // Ensure amount is never negative
+     $amountToPay = max(0, $amountToPay);
  @endphp
 
  @extends('layouts.admin')
@@ -93,7 +115,7 @@
                                      </div>
                                  @endif
                              </div>
-                             <div class="fs-24 fw-800 text-primary">₹{{ number_format((float) $subscriptionAmount) }}</div>
+                             <div class="fs-24 fw-800 text-primary">₹{{ number_format((float) $amountToPay) }}</div>
                          </div>
                      </div>
                  </div>
@@ -281,8 +303,7 @@
 
                              <div id="general-errors" class="text-danger mb-15" role="alert"></div>
                              <button type="submit" id="submit" class="btn btn-primary">
-                                 <span id="button-text">Pay ₹{{ number_format((float) $amountToPay) }}
-                                     Securely</span>
+                                 <span id="button-text">Pay ₹{{ number_format((float) $amountToPay) }} Securely</span>
                                  <span id="spinner" class="spinner-border spinner-border-sm align-middle ms-2 d-none"
                                      role="status" aria-hidden="true"></span>
                              </button>
@@ -335,11 +356,11 @@
 
                              @if ($alreadyPaid > 0)
                                  <div class="d-flex justify-content-between py-2 border-top pt-3">
-                                     <span><small>Current Plan ({{ $tenant->subscription_plan }})</small></span>
+                                     <span><small>Already Paid ({{ $previousPlanName ?? 'Previous Plan' }})</small></span>
                                      <span><small>₹{{ number_format($alreadyPaid) }}</small></span>
                                  </div>
                                  <div class="d-flex justify-content-between py-2 pb-3 border-bottom">
-                                     <span class="text-muted"><small>Calculation: New Plan - Current Plan</small></span>
+                                     <span class="text-muted"><small>Calculation: New Plan - Already Paid</small></span>
                                      <span class="text-muted"><small>₹{{ number_format($newPlanTotal) }} -
                                              ₹{{ number_format($alreadyPaid) }}</small></span>
                                  </div>
@@ -380,8 +401,7 @@
                                      💰 Total Amount
                                  @endif
                              </span>
-                             <span
-                                 class="fs-18 fw-800 text-primary">₹{{ number_format((float) $subscriptionAmount) }}</span>
+                             <span class="fs-18 fw-800 text-primary">₹{{ number_format((float) $amountToPay) }}</span>
                          </div>
                      </div>
                  </div>
@@ -524,7 +544,7 @@
              function resetButton() {
                  submitBtn.disabled = false;
                  spinner.classList.add('d-none');
-                 buttonText.textContent = 'Pay ₹{{ number_format((float) $subscriptionAmount) }} Securely';
+                 buttonText.textContent = 'Pay ₹{{ number_format((float) $amountToPay) }} Securely';
              }
 
              // Initialize Stripe Card Element
@@ -926,20 +946,20 @@
                  console.log('Stripe public key configured:', '{{ config('services.stripe.key') }}' ? 'Yes' :
                      'No');
                  console.log('CSRF token available:', '{{ csrf_token() }}' ? 'Yes' : 'No');
-                 console.log('Payment amount: ₹{{ $subscriptionAmount }}');
-                 console.log('Payment amount in paisa:', {{ (int) ($subscriptionAmount * 100) }});
+                 console.log('Payment amount: ₹{{ $amountToPay }}');
+                 console.log('Payment amount in paisa:', {{ (int) ($amountToPay * 100) }});
                  console.log('Tenant ID: {{ auth()->user()->tenant_id ?? 'N/A' }}');
                  console.log('User Name: {{ auth()->user()->first_name }} {{ auth()->user()->last_name }}');
                  console.log('User Email: {{ auth()->user()->email }}');
 
                  // Check if amount meets minimum requirement
-                 const amountInPaisa = {{ (int) ($subscriptionAmount * 100) }};
+                 const amountInPaisa = {{ (int) ($amountToPay * 100) }};
                  if (amountInPaisa < 50) {
                      console.error(
-                         '⚠️  AMOUNT TOO SMALL: ₹{{ $subscriptionAmount }} ({{ (int) ($subscriptionAmount * 100) }} paisa) is below Stripe minimum of ₹0.50 (50 paisa)'
+                         '⚠️  AMOUNT TOO SMALL: ₹{{ $amountToPay }} ({{ (int) ($amountToPay * 100) }} paisa) is below Stripe minimum of ₹0.50 (50 paisa)'
                      );
                      showError(
-                         'Payment amount (₹{{ $subscriptionAmount }}) is too small. Minimum amount is ₹0.50',
+                         'Payment amount (₹{{ $amountToPay }}) is too small. Minimum amount is ₹0.50',
                          'general');
                      submitBtn.disabled = true;
                  } else {

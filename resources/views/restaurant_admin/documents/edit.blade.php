@@ -48,7 +48,7 @@
                                                     <table class="table table-borderless">
                                                         <tr>
                                                             <td><strong>Restaurant:</strong></td>
-                                                            <td>{{ $document->restaurant->restaurant_name }}</td>
+                                                            <td>{{ $document->restaurant?->restaurant_name }}</td>
                                                         </tr>
                                                         <tr>
                                                             <td><strong>Current File:</strong></td>
