@@ -35,6 +35,20 @@ class DeliveryAssignment extends Model
         'deleted_at',
     ];
 
+    protected $casts = [
+        'assigned_at' => 'datetime',
+        'accepted_at' => 'datetime',
+        'picked_up_at' => 'datetime',
+        'delivered_at' => 'datetime',
+        'pickup_latitude' => 'decimal:8',
+        'pickup_longitude' => 'decimal:8',
+        'delivery_latitude' => 'decimal:8',
+        'delivery_longitude' => 'decimal:8',
+        'estimated_distance_km' => 'decimal:2',
+        'delivery_fee' => 'decimal:2',
+        'tip_amount' => 'decimal:2',
+    ];
+
     // Relationships (optional, for eager loading)
     public function order()
     {

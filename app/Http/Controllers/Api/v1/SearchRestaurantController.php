@@ -61,6 +61,7 @@ class SearchRestaurantController extends Controller
                 'phone' => $restaurant->phone,
                 'email' => $restaurant->email,
                 'image_url' => $restaurant->image_url,
+                'average_rating' => $restaurant->average_rating,
                 'minimum_order_amount' => $restaurant->minimum_order_amount,
                 'base_delivery_fee' => $restaurant->base_delivery_fee,
                 'estimated_delivery_time' => $restaurant->estimated_delivery_time,

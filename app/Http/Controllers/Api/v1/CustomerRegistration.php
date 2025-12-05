@@ -187,4 +187,60 @@ class CustomerRegistration extends Controller
             'data' => $address,
         ], 201);
     }
+
+    public function addressesList(Request $request)
+    {
+        $user = auth()->user();
+        if(!$user || $user->role !== 'customer'){
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only customers can view addresses.',
+            ], 403);
+        }
+        
+        $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
+        if (! $customerProfile) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Customer profile not found.',
+            ], 404);
+        }
+
+        $addresses = $customerProfile->addresses()->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $addresses,
+        ], 200);
+    }
+
+    public function deleteAddress(Request $request, $id)
+    {
+        $user = auth()->user();
+        if(!$user || $user->role !== 'customer'){
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only customers can delete addresses.',
+            ], 403);
+        }
+        $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
+        if (! $customerProfile) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Customer profile not found.',
+            ], 404);
+        }
+        $address = $customerProfile->addresses()->find($id);
+        if (! $address) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Address not found.',
+            ], 404);    
+        }
+        $address->delete();
+        return response()->json([
+            'success' => true,
+            'message' => 'Address deleted successfully.',
+        ], 200);
+    }
 }

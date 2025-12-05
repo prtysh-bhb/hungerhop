@@ -72,7 +72,14 @@ Route::prefix('v1')->group(function () {
     Route::prefix('customer')->group(function () {
         // Public customer registration
         Route::post('/register', [CustomerRegistration::class, 'register']);
+
+        // ----------------------------------------------
+        // Address Management (Customer)
+        // ----------------------------------------------
         Route::post('/add-address', [CustomerRegistration::class, 'addAddress'])->middleware('auth:api');
+        Route::get('/addresses', [CustomerRegistration::class, 'addressesList'])->middleware('auth:api');
+        // Route::put('/addresses/{id}', [CustomerRegistration::class, 'updateAddress'])->middleware('auth:api');
+        Route::delete('/addresses/{id}', [CustomerRegistration::class, 'deleteAddress'])->middleware('auth:api');
     });
 
     Route::prefix('auth')->group(function () {
@@ -93,7 +100,9 @@ Route::prefix('v1')->group(function () {
     Route::prefix('order')->middleware('auth:api')->group(function () {
         Route::post('/add', [OrderController::class, 'createOrder']);
         Route::post('/details', [OrderController::class, 'getOrderDetails']);
+        Route::get('/list', [OrderController::class, 'listOrders']);
     });
+   
 
     // ----------------------------------------------
     // Payments

@@ -89,38 +89,143 @@
                     <div class="box-header no-border">
                         <h4 class="box-title">Delivery Person</h4>
                     </div>
-                    <div class="box-body text-center">
+                    <div class="box-body">
                         @php
-                            $deliveryInfo = \App\Http\Controllers\Restaurant\OrderController::getDeliveryPartnerForOrder(
+                            // Direct query instead of using controller method
+                            $deliveryAssignment = \App\Models\DeliveryAssignment::where(
+                                'order_id',
                                 $order->id,
-                            );
+                            )->first();
+                            $deliveryInfo = null;
+
+                            if ($deliveryAssignment) {
+                                $deliveryPartner = \App\Models\DeliveryPartner::find($deliveryAssignment->partner_id);
+
+                                if ($deliveryPartner) {
+                                    // Use withoutGlobalScope to bypass TenantScope - delivery partners have NULL tenant_id
+                                    $user = \App\Models\User::withoutGlobalScope(\App\Scopes\TenantScope::class)->find(
+                                        $deliveryPartner->user_id,
+                                    );
+
+                                    if ($user) {
+                                        $deliveryInfo = [
+                                            'user' => $user,
+                                            'partner' => $deliveryPartner,
+                                            'assignment' => $deliveryAssignment,
+                                        ];
+                                    }
+                                }
+                            }
                         @endphp
+
                         @if ($deliveryInfo && $deliveryInfo['user'])
-                            <img src="{{ asset('images/avatar/3.jpg') }}"
-                                class="mb-20 avatar avatar-xxl b-2 border-primary" alt="">
-                            <div>
-                                <h4 class="mb-10 font-weight-500">{{ $deliveryInfo['user']->first_name }}
-                                    {{ $deliveryInfo['user']->last_name }}</h4>
-                                <span class="fs-14 font-w400">Joined since
-                                    {{ $deliveryInfo['user']->created_at ? $deliveryInfo['user']->created_at->format('F d, Y') : 'N/A' }}</span>
+                            <div class="text-center mb-20">
+                                <img src="{{ asset('images/avatar/3.jpg') }}"
+                                    class="mb-10 avatar avatar-xxl b-2 border-primary" alt="">
+                                <div>
+                                    <h4 class="mb-5 font-weight-500">{{ $deliveryInfo['user']->first_name }}
+                                        {{ $deliveryInfo['user']->last_name }}</h4>
+                                </div>
+                                <div class="user-social-acount mt-10">
+                                    <a href="tel:{{ $deliveryInfo['user']->phone }}"
+                                        class="btn btn-circle btn-primary-light"><i class="fa fa-phone"></i></a>
+                                    @if (
+                                        $deliveryInfo['partner'] &&
+                                            $deliveryInfo['partner']->current_latitude &&
+                                            $deliveryInfo['partner']->current_longitude)
+                                        <a href="https://maps.google.com/?q={{ $deliveryInfo['partner']->current_latitude }},{{ $deliveryInfo['partner']->current_longitude }}"
+                                            target="_blank" class="btn btn-circle btn-primary-light"><i
+                                                class="fa fa-map-marker"></i></a>
+                                    @else
+                                        <a href="javascript:void(0);" class="btn btn-circle btn-primary-light disabled"><i
+                                                class="fa fa-map-marker"></i></a>
+                                    @endif
+                                </div>
                             </div>
-                            <div class="user-social-acount mt-20">
-                                <a href="tel:{{ $deliveryInfo['user']->phone }}"
-                                    class="btn btn-circle btn-primary-light"><i class="fa fa-phone"></i></a>
-                                @if (
-                                    $deliveryInfo['partner'] &&
-                                        $deliveryInfo['partner']->current_latitude &&
-                                        $deliveryInfo['partner']->current_longitude)
-                                    <a href="https://maps.google.com/?q={{ $deliveryInfo['partner']->current_latitude }},{{ $deliveryInfo['partner']->current_longitude }}"
-                                        target="_blank" class="btn btn-circle btn-primary-light"><i
-                                            class="fa fa-map-marker"></i></a>
-                                @else
-                                    <a href="javascript:void(0);" class="btn btn-circle btn-primary-light disabled"><i
-                                            class="fa fa-map-marker"></i></a>
+
+                            <!-- Delivery Partner Details -->
+                            <table class="table table-borderless mb-0">
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-600">Phone:</td>
+                                        <td>{{ $deliveryInfo['user']->phone ?? 'N/A' }}</td>
+                                    </tr>
+                                    @if ($deliveryInfo['partner'])
+                                        <tr>
+                                            <td class="fw-600">Vehicle:</td>
+                                            <td>{{ ucfirst($deliveryInfo['partner']->vehicle_type ?? 'N/A') }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-600">Vehicle No:</td>
+                                            <td>{{ $deliveryInfo['partner']->vehicle_number ?? 'N/A' }}</td>
+                                        </tr>
+                                    @endif
+                                    @if ($deliveryInfo['assignment'])
+                                        <tr>
+                                            <td class="fw-600">Assignment Status:</td>
+                                            <td>
+                                                @php
+                                                    $statusColors = [
+                                                        'assigned' => 'warning',
+                                                        'accepted' => 'info',
+                                                        'picked_up' => 'primary',
+                                                        'delivered' => 'success',
+                                                        'rejected' => 'danger',
+                                                        'cancelled' => 'danger',
+                                                    ];
+                                                    $statusColor =
+                                                        $statusColors[$deliveryInfo['assignment']->status] ??
+                                                        'secondary';
+                                                @endphp
+                                                <span class="badge badge-{{ $statusColor }}">
+                                                    {{ ucfirst(str_replace('_', ' ', $deliveryInfo['assignment']->status)) }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-600">Assigned At:</td>
+                                            <td>{{ $deliveryInfo['assignment']->assigned_at ? $deliveryInfo['assignment']->assigned_at->format('M d, Y H:i') : 'N/A' }}
+                                            </td>
+                                        </tr>
+                                        @if ($deliveryInfo['assignment']->accepted_at)
+                                            <tr>
+                                                <td class="fw-600">Accepted At:</td>
+                                                <td>{{ $deliveryInfo['assignment']->accepted_at->format('M d, Y H:i') }}
+                                                </td>
+                                            </tr>
+                                        @endif
+                                        @if ($deliveryInfo['assignment']->picked_up_at)
+                                            <tr>
+                                                <td class="fw-600">Picked Up At:</td>
+                                                <td>{{ $deliveryInfo['assignment']->picked_up_at->format('M d, Y H:i') }}
+                                                </td>
+                                            </tr>
+                                        @endif
+                                        @if ($deliveryInfo['assignment']->delivered_at)
+                                            <tr>
+                                                <td class="fw-600">Delivered At:</td>
+                                                <td>{{ $deliveryInfo['assignment']->delivered_at->format('M d, Y H:i') }}
+                                                </td>
+                                            </tr>
+                                        @endif
+                                        @if ($deliveryInfo['assignment']->estimated_distance_km)
+                                            <tr>
+                                                <td class="fw-600">Distance:</td>
+                                                <td>{{ number_format((float) $deliveryInfo['assignment']->estimated_distance_km, 2) }}
+                                                    km</td>
+                                            </tr>
+                                        @endif
+                                    @endif
+                                </tbody>
+                            </table>
+                        @else
+                            <div class="text-center">
+                                <p class="text-muted">No delivery partner assigned yet.</p>
+                                @if (in_array($order->status, ['placed', 'accepted', 'preparing']))
+                                    <small class="text-info">Delivery partner will be assigned when order is ready for
+                                        pickup.</small>
                                 @endif
                             </div>
-                        @else
-                            <p>No delivery partner assigned.</p>
                         @endif
                     </div>
                 </div>

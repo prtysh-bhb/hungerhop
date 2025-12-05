@@ -321,7 +321,7 @@ Route::middleware(['auth', 'identify_tenant'])->group(function () {
 
         // Management Routes
         Route::prefix('management')->name('management.')->group(function () {
-            Route::get('/', [RestaurantManagementController::class, 'index'])->name('index');
+            // Route::get('/', [RestaurantManagementController::class, 'index'])->name('index');
             Route::get('/{id}', [RestaurantManagementController::class, 'show'])->name('show');
             Route::get('/{id}/edit', [RestaurantManagementController::class, 'edit'])->name('edit');
             Route::put('/{id}', [RestaurantManagementController::class, 'update'])->name('update');

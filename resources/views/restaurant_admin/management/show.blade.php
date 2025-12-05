@@ -27,7 +27,7 @@
                 @endif
             </div>
             <div class="btn-group">
-                <a href="{{ route('restaurant-admin.management.edit', $restaurant->id) }}" class="btn btn-warning">
+                <a href="{{ route('restaurant-admin.edit', $restaurant->id) }}" class="btn btn-warning">
                     <i class="fa fa-edit me-1" aria-hidden="true"></i> Edit Restaurant
                 </a>
                 <button type="button" class="btn btn-danger" onclick="deleteRestaurant()">

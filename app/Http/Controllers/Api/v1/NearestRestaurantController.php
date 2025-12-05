@@ -44,6 +44,10 @@ class NearestRestaurantController extends Controller
                         'id' => $item->id,
                         'name' => $item->item_name,
                         'price' => $item->base_price,
+                        'is_available' => $item->is_available,
+                        'is_veg' => $item->is_veg,
+                        'is_vaegan' => $item->is_vegan,
+                        
                         'description' => $item->description,
                     ];
                 }),

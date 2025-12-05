@@ -47,15 +47,28 @@ class OrderController extends Controller
             'status' => $order->status,
         ]);
 
-        // Auto-assign delivery partner when status changes to ready_for_pickup
+        // Auto-assign delivery partner when status changes to ready_for_pickup or ready_for_delivery
         $assignmentMessage = null;
-        if ($newStatus === 'ready_for_pickup' && $previousStatus !== 'ready_for_pickup') {
+        $shouldAssign = ($newStatus === 'ready_for_pickup' && $previousStatus !== 'ready_for_pickup') ||
+                        ($newStatus === 'ready_for_delivery' && $previousStatus !== 'ready_for_delivery');
+
+        if ($shouldAssign) {
             // Check if already assigned
-            $existingAssignment = DeliveryAssignment::where('order_id', $order->id)->first();
+            $existingAssignment = DeliveryAssignment::where('order_id', $order->id)
+                ->whereIn('status', ['assigned', 'accepted', 'picked_up'])
+                ->first();
             if (! $existingAssignment) {
                 $assignmentResult = $this->assignDeliveryPartner($order);
                 if ($assignmentResult['success']) {
                     $assignmentMessage = $assignmentResult['message'];
+                    // Update order status to assigned_to_delivery
+                    $order->status = 'assigned_to_delivery';
+                    $order->save();
+                    // Log the status change
+                    OrderStatus::create([
+                        'order_id' => $order->id,
+                        'status' => 'assigned_to_delivery',
+                    ]);
                 } else {
                     $assignmentMessage = 'Warning: '.$assignmentResult['message'];
                 }
@@ -324,7 +337,9 @@ class OrderController extends Controller
         if (! $deliveryPartner) {
             return null;
         }
-        $user = $deliveryPartner->user;
+        // Use withoutGlobalScope to bypass TenantScope - delivery partners have NULL tenant_id
+        $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->find($deliveryPartner->user_id);
         if (! $user) {
             return null;
         }

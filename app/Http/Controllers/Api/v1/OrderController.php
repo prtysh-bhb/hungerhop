@@ -51,7 +51,7 @@ class OrderController extends Controller
         $validator = \Validator::make($request->all(), [
             'order_number' => 'required|string|unique:orders,order_number',
             'delivery_address_id' => 'required|exists:customer_addresses,id',
-            'payment_method' => 'required|string',
+            'payment_method' => 'required|string|in:cod,wallet,upi,card',
             'special_instructions' => 'nullable|string',
             'order_items' => 'required|array|min:1',
             'order_items.*.item_id' => 'required|exists:menu_items,id',
@@ -168,10 +168,18 @@ class OrderController extends Controller
             // Note: For COD orders, we still create a payment record with 'wallet' gateway as placeholder
             // Valid payment_gateway values: razorpay, stripe, paytm, phonepe, wallet
             $paymentGateway = match ($order->payment_method) {
-                'cod' => 'wallet', // COD uses wallet as placeholder gateway
-                'upi' => 'phonepe',
-                'card' => 'stripe',
-                default => 'stripe',
+                'cod' => 'none', // No gateway for Cash on Delivery
+                'wallet' => 'wallet',
+                'upi' => 'phonepe', // Or 'paytm' depending what you use
+                'card' => 'stripe', // Or 'razorpay' if card is via Razorpay
+                default => 'none',
+            };
+
+            $paymentStatus = match ($order->payment_method) {
+                'cod' => 'pending',  // COD collected later
+                'wallet' => 'completed', // Wallet instantly deducts
+                'card' => 'completed', // Online payment initiated
+                default => 'initiated',
             };
 
             $payment = Payment::create([
@@ -181,9 +189,10 @@ class OrderController extends Controller
                 'payment_gateway' => $paymentGateway,
                 'amount' => $order->total_amount,
                 'currency' => 'INR',
-                'status' => $order->payment_method === 'cod' ? 'pending' : 'initiated',
+                'status' => $paymentStatus,
                 'initiated_at' => now(),
             ]);
+
 
             Log::info("Payment record created for order {$order->id}: Payment ID {$payment->id}");
 
@@ -258,6 +267,68 @@ class OrderController extends Controller
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
+
+    public function listOrders(Request $request)
+        {
+            $user = auth()->user();
+
+            // Get customer profile for authenticated user
+            $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
+            if (! $customerProfile) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer profile not found for user.',
+                ], 404);
+            }
+
+            // Fetch customer orders with relations
+            $orders = Order::where('customer_id', $customerProfile->id)
+                ->with(['restaurant', 'orderItems', 'deliveryAssignment.partner.user'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            // Transform data for clean response
+            $orderData = $orders->map(function ($order) {
+                return [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'status' => $order->status,
+                    'total_amount' => $order->total_amount,
+                    'payment_method' => $order->payment_type,
+                    'placed_at' => $order->created_at->format('Y-m-d H:i:s'),
+
+                    // Restaurant info
+                    'restaurant' => [
+                        'name' => optional($order->restaurant)->name,
+                        'address' => optional($order->restaurant)->address,
+                    ],
+
+                    // Order items list
+                    'items' => $order->orderItems->map(function ($item) {
+                        return [
+                            'item_name' => $item->item_name,
+                            'quantity' => $item->quantity,
+                            'price' => $item->price,
+                        ];
+                    }),
+
+                    // Delivery partner details if available
+                    'delivery_partner' => $order->deliveryAssignment
+                        ? [
+                            'name' => $order->deliveryAssignment->partner->user->name ?? null,
+                            'phone' => $order->deliveryAssignment->partner->user->phone ?? null,
+                        ]
+                        : null,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'order_count' => $orders->count(),
+                'total_orders_amount' => $orders->sum('total_amount'),
+                'orders' => $orderData,
+            ], 200);
+        }
 
     /**
      * Assign nearest available delivery partner to the order

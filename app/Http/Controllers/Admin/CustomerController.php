@@ -48,6 +48,8 @@ class CustomerController extends Controller
                 ];
             });
 
+        // dd($customers->toArray());
+
         return view('pages.customer.customer', compact('customers'));
     }
 
@@ -170,11 +172,14 @@ class CustomerController extends Controller
     /**
      * Delete customer (soft delete)
      */
-    public function destroy($id)
+    public function destroy(User $id)
     {
-        $customer = User::where('role', 'customer')->findOrFail($id);
-        $customer->delete();
+        $id->delete();
 
-        return redirect()->route('admin.customers')->with('success', 'Customer deleted successfully');
+        return response()->json([
+            'success' => true,
+            'message' => 'Customer deleted successfully',
+        ], 200);
+
     }
 }
