@@ -14,7 +14,7 @@
                 <div class="d-inline-block align-items-center">
                     <nav>
                         <ol class="breadcrumb">
-                           <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}"><i
+                           <li class="breadcrumb-item"><a href="{{ route('home') }}"><i
                                         class="mdi mdi-home-outline"></i></a></li>
                             <li class="breadcrumb-item" aria-current="page">Menu</li>
                             <li class="breadcrumb-item active" aria-current="page">Menu List</li>
