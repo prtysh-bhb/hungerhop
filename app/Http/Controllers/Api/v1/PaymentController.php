@@ -40,6 +40,30 @@ class PaymentController extends Controller
             ], 403);
         }
 
+        // ✅ Check if order already has a successful payment (with valid transaction ID)
+        $existingPayment = Payment::where('order_id', $order->id)
+            ->where('status', 'completed')
+            ->whereNotNull('gateway_transaction_id')
+            ->where('gateway_transaction_id', '!=', '')
+            ->first();
+
+        if ($existingPayment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This order already has a completed payment.',
+                'payment_id' => $existingPayment->id,
+                'transaction_id' => $existingPayment->gateway_transaction_id,
+            ], 422);
+        }
+        
+        // Clean up any incomplete payment records (no transaction ID)
+        Payment::where('order_id', $order->id)
+            ->where(function ($query) {
+                $query->whereNull('gateway_transaction_id')
+                      ->orWhere('gateway_transaction_id', '');
+            })
+            ->delete();
+
         // ✅ Correct column for amount
         $amount = $order->total_amount ?? null;
 
@@ -58,10 +82,16 @@ class PaymentController extends Controller
 
         return response()->json([
             'success' => true,
-            // 'payment' => $payment,
+            'payment_intent_id' => $payment->gateway_transaction_id,
+            'client_secret' => $payment->gateway_response ? json_decode($payment->gateway_response)->client_secret : null, // THIS IS CRUCIAL FOR FRONTEND
             'amount' => $amount,
+            'currency' => $request->currency ?? 'inr',
+            'order_id' => $order->id,
+            'payment_id' => $payment->id,
             'user_id' => $user->id,
             'user_name' => $user->first_name.' '.$user->last_name,
+            'payment_getway' => $payment->payment_gateway,
+            // 'payment_getway_response' => $payment->gateway_response ? json_decode($payment->gateway_response) : null,
         ]);
     }
 
@@ -70,12 +100,17 @@ class PaymentController extends Controller
      */
     public function confirm(Request $request)
     {
+        // dd($request->all());
         $validate = $request->validate([
             'payment_id' => 'required|integer|exists:payments,id',
             'status' => 'required|string|in:completed,pending,cancelled',
         ]);
 
         $payment = $this->stripe->confirmPayment($validate['payment_id'], $validate['status']);
+        $order = Order::find($payment->order_id);
+        // payment_status enum: pending, completed, failed, refunded
+        $order->payment_status = $payment->status === 'completed' ? 'completed' : $payment->status;
+        $order->save();
 
         $message = '';
         switch ($validate['status']) {
@@ -98,6 +133,41 @@ class PaymentController extends Controller
             'status' => $payment->status,
             'message' => $message,
         ]);
+    }
+
+    /**
+     * Confirm payment with payment method (from Stripe Elements/Checkout)
+     *
+     * For testing, you can use these payment_method values:
+     * - "card" or "visa" -> pm_card_visa (success)
+     * - "mastercard" -> pm_card_mastercard (success)
+     * - "amex" -> pm_card_amex (success)
+     * - "card_declined" -> Will be declined
+     * - "card_insufficient" -> Insufficient funds
+     * - Or pass a real Stripe payment method ID (pm_xxx)
+     */
+    public function confirmWithMethod(Request $request)
+    {
+        $request->validate([
+            'payment_intent_id' => 'required|string',
+            'payment_method' => 'required|string',
+        ]);
+
+        $result = $this->stripe->confirmWithPaymentMethod(
+            $request->payment_intent_id,
+            $request->payment_method
+        );
+
+        // If payment succeeded, update order status
+        // payment_status enum: pending, completed, failed, refunded
+        if ($result['success'] ?? false) {
+            $payment = Payment::where('gateway_transaction_id', $request->payment_intent_id)->first();
+            if ($payment && $payment->order) {
+                $payment->order->update(['payment_status' => 'completed']);
+            }
+        }
+
+        return response()->json($result);
     }
 
     public function history(Request $request)

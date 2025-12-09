@@ -3,14 +3,15 @@
 use App\Http\Controllers\Api\v1\Auth\DeliveryPartnerPasswordController;
 use App\Http\Controllers\Api\v1\Auth\PasswordController;
 use App\Http\Controllers\Api\v1\AuthController;
+use App\Http\Controllers\Api\v1\CustomerFavoriteController;
 use App\Http\Controllers\Api\v1\CustomerRegistration;
 use App\Http\Controllers\API\v1\DeliveryBoyAssignController;
 use App\Http\Controllers\Api\v1\DeliveryPartner_login;
 use App\Http\Controllers\Api\v1\DeliveryPartnerController;
 use App\Http\Controllers\Api\v1\DeliveryPartnerLocationController;
 use App\Http\Controllers\Api\v1\DeliveryZoneController;
-use App\Http\Controllers\Api\v1\NearestRestaurantController;
 // Controllers
+use App\Http\Controllers\Api\v1\NearestRestaurantController;
 use App\Http\Controllers\API\v1\OrderController;
 use App\Http\Controllers\API\v1\PaymentController;
 use App\Http\Controllers\Api\v1\ReviewController;
@@ -78,6 +79,8 @@ Route::prefix('v1')->group(function () {
         // ----------------------------------------------
         Route::post('/add-address', [CustomerRegistration::class, 'addAddress'])->middleware('auth:api');
         Route::get('/addresses', [CustomerRegistration::class, 'addressesList'])->middleware('auth:api');
+        Route::post('/edit', [CustomerRegistration::class, 'editProfile'])->middleware('auth:api');
+        Route::get('/homepage', [CustomerRegistration::class, 'homepage'])->middleware('auth:api');
         // Route::put('/addresses/{id}', [CustomerRegistration::class, 'updateAddress'])->middleware('auth:api');
         Route::delete('/addresses/{id}', [CustomerRegistration::class, 'deleteAddress'])->middleware('auth:api');
     });
@@ -101,8 +104,19 @@ Route::prefix('v1')->group(function () {
         Route::post('/add', [OrderController::class, 'createOrder']);
         Route::post('/details', [OrderController::class, 'getOrderDetails']);
         Route::get('/list', [OrderController::class, 'listOrders']);
+        Route::post('/cancel', [OrderController::class, 'cancelOrder']);
     });
-   
+
+    // ----------------------------------------------
+    // Customer Favorites
+    // ----------------------------------------------
+    Route::prefix('favorites')->middleware('auth:api')->group(function () {
+        Route::post('/add', [CustomerFavoriteController::class, 'addFavorite']);
+        Route::post('/remove', [CustomerFavoriteController::class, 'removeFavorite']);
+        Route::get('/list', [CustomerFavoriteController::class, 'listFavorites']);
+        // Route::post('/toggle', [CustomerFavoriteController::class, 'toggleFavorite']); // Optional toggle route
+        Route::post('/check', [CustomerFavoriteController::class, 'checkFavorite']);
+    });
 
     // ----------------------------------------------
     // Payments

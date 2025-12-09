@@ -663,6 +663,7 @@ class OrderController extends Controller
         ];
     }
 
+
     /**
      * Calculate distance between two coordinates using Haversine formula
      */

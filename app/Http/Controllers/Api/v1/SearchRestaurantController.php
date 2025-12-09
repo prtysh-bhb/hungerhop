@@ -30,52 +30,66 @@ class SearchRestaurantController extends Controller
             $restaurantQuery->where(function ($q) use ($query) {
                 $q->where('restaurant_name', 'like', "%$query%")
                     ->orWhere('city', 'like', "%$query%")
-                    ->orWhere('cuisine_type', 'like', "%$query%");
+                    ->orWhere('cuisine_type', 'like', "%$query%")
+                    ->orWhere('description', 'like', "%$query%");
             });
         }
 
-        // Get restaurants with additional fields including pause status
-        $restaurants = $restaurantQuery->get([
-            'id',
-            'restaurant_name',
-            'city',
-            'cuisine_type',
-            'address',
-            'phone',
-            'email',
-            'image_url',
-            'is_paused',
-            'minimum_order_amount',
-            'base_delivery_fee',
-            'estimated_delivery_time',
-        ]);
+        // Get all restaurant data
+        $restaurants = $restaurantQuery->get();
 
-        // Transform the data to include pause message
+        // Transform the data to include all required fields
         $transformedRestaurants = $restaurants->map(function ($restaurant) {
             $data = [
                 'id' => $restaurant->id,
                 'restaurant_name' => $restaurant->restaurant_name,
-                'city' => $restaurant->cityRelation->name,
+                'city' => $restaurant->city,
                 'cuisine_type' => $restaurant->cuisine_type,
                 'address' => $restaurant->address,
+                'full_address' => $restaurant->address.', '.$restaurant->city.', '.$restaurant->state.' - '.$restaurant->postal_code,
                 'phone' => $restaurant->phone,
                 'email' => $restaurant->email,
                 'image_url' => $restaurant->image_url,
-                'average_rating' => $restaurant->average_rating,
-                'minimum_order_amount' => $restaurant->minimum_order_amount,
-                'base_delivery_fee' => $restaurant->base_delivery_fee,
-                'estimated_delivery_time' => $restaurant->estimated_delivery_time,
-                'is_paused' => $restaurant->is_paused,
-                'status' => $restaurant->is_paused ? 'paused' : 'active',
+                'cover_image_url' => $restaurant->cover_image_url,
+
+                // Required fields
+                'average_rating' => (string) ($restaurant->average_rating ?? '0'),
+                'total_reviews' => (int) ($restaurant->total_reviews ?? 0),
+                'estimated_delivery_time' => (string) ($restaurant->estimated_delivery_time ?? '30'),
+                'cost_for_two' => (string) (($restaurant->minimum_order_amount ?? 100) * 2),
+                'description' => $restaurant->description ?? '',
+                'short_description' => $restaurant->description
+                    ? (strlen($restaurant->description) > 100
+                        ? substr($restaurant->description, 0, 100).'...'
+                        : $restaurant->description)
+                    : '',
+
+                // Order & delivery info
+                'minimum_order_amount' => (string) ($restaurant->minimum_order_amount ?? '0'),
+                'base_delivery_fee' => (string) ($restaurant->base_delivery_fee ?? '0'),
+                'delivery_radius_km' => (string) ($restaurant->delivery_radius_km ?? '10'),
+                'tax_percentage' => (string) ($restaurant->tax_percentage ?? '0'),
+
+                // Status fields
+                'is_open' => $restaurant->is_open ? true : false,
+                'is_paused' => $restaurant->is_paused ? true : false,
+                'accepts_orders' => $restaurant->accepts_orders ? true : false,
+                'is_featured' => $restaurant->is_featured ? true : false,
+                'status' => $restaurant->is_paused ? 'paused' : ($restaurant->is_open ? 'open' : 'closed'),
+
+                // Can order logic
+                'can_order' => $restaurant->is_open && ! $restaurant->is_paused && $restaurant->accepts_orders,
             ];
 
-            // Add pause message if restaurant is paused
+            // Add status message based on restaurant state
             if ($restaurant->is_paused) {
-                $data['pause_message'] = 'This restaurant is temporarily paused and not accepting new orders at the moment.';
-                $data['can_order'] = false;
+                $data['status_message'] = 'This restaurant is temporarily paused and not accepting orders.';
+            } elseif (! $restaurant->is_open) {
+                $data['status_message'] = 'This restaurant is currently closed.';
+            } elseif (! $restaurant->accepts_orders) {
+                $data['status_message'] = 'This restaurant is not accepting orders at the moment.';
             } else {
-                $data['pause_message'] = null;
-                $data['can_order'] = true;
+                $data['status_message'] = 'Open for orders';
             }
 
             return $data;
