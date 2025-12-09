@@ -10,6 +10,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -185,5 +187,108 @@ class DeliveryPartner_login extends Controller
                 'errors' => ['general' => [$e->getMessage()]],
             ], 422);
         }
+    }
+
+    
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated. Please login first.',
+            ], 401);
+        }
+
+        if ($user->role !== 'delivery_partner') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only delivery partners can use this endpoint.',
+            ], 403);
+        }
+
+        $deliveryPartner = DeliveryPartner::where('user_id', $user->id)->first();
+        if (! $deliveryPartner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Delivery partner profile not found.',
+            ], 404);
+        }
+
+        // 🔥 Manual Validation (NOT request->validate)
+        $validator = Validator::make($request->all(), [
+
+            'first_name' => 'sometimes|required|string|min:2|max:100',
+            'last_name' => 'sometimes|required|string|min:2|max:100',
+
+            'phone' => [
+                'sometimes',
+                'required',
+                'string',
+                'min:10',
+                'max:15',
+                Rule::unique('users', 'phone')->ignore($user->id),
+                'regex:/^[0-9+\-\s]+$/',
+            ],
+
+            'vehicle_type' => [
+                'sometimes',
+                'required',
+                'string',
+                Rule::in(array_column(VehicleTypeEnums::cases(), 'value')),
+            ],
+
+            'vehicle_number' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:20',
+                'regex:/^[A-Za-z0-9\s\-]+$/',
+            ],
+
+            'license_number' => 'sometimes|required|string|max:50',
+
+            'current_longitude' => 'sometimes|required|numeric|between:-180,180',
+            'current_latitude' => 'sometimes|required|numeric|between:-90,90',
+
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+                'message' => 'Validation failed',
+            ], 422);
+        }
+
+        // 👍 Validation Passed
+        $validated = $validator->validated();
+
+        // Update User Data
+        $user->fill([
+            'first_name' => $validated['first_name'] ?? $user->first_name,
+            'last_name' => $validated['last_name'] ?? $user->last_name,
+            'phone' => $validated['phone'] ?? $user->phone,
+        ]);
+        $user->save();
+
+        // Update Delivery Partner Data
+        $deliveryPartner->fill([
+            'vehicle_type' => $validated['vehicle_type'] ?? $deliveryPartner->vehicle_type,
+            'vehicle_number' => $validated['vehicle_number'] ?? $deliveryPartner->vehicle_number,
+            'license_number' => $validated['license_number'] ?? $deliveryPartner->license_number,
+            'current_latitude' => $validated['current_latitude'] ?? $deliveryPartner->current_latitude,
+            'current_longitude' => $validated['current_longitude'] ?? $deliveryPartner->current_longitude,
+        ]);
+        $deliveryPartner->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profile updated successfully.',
+            'data' => [
+                'user' => $user,
+                'delivery_partner' => $deliveryPartner,
+            ],
+        ]);
     }
 }

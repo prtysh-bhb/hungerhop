@@ -9,6 +9,7 @@ use App\Http\Controllers\API\v1\DeliveryBoyAssignController;
 use App\Http\Controllers\Api\v1\DeliveryPartner_login;
 use App\Http\Controllers\Api\v1\DeliveryPartnerController;
 use App\Http\Controllers\Api\v1\DeliveryPartnerLocationController;
+use App\Http\Controllers\Api\v1\DeliveryPartnerWalletController;
 use App\Http\Controllers\Api\v1\DeliveryZoneController;
 // Controllers
 use App\Http\Controllers\Api\v1\NearestRestaurantController;
@@ -101,7 +102,9 @@ Route::prefix('v1')->group(function () {
     // Orders (Customer)
     // ----------------------------------------------
     Route::prefix('order')->middleware('auth:api')->group(function () {
-        Route::post('/add', [OrderController::class, 'createOrder']);
+        Route::post('/add', [OrderController::class, 'CreateOrder']);
+        Route::post('/{id}/edit', [OrderController::class, 'editOrder']);
+        Route::get('/{id}/checkout', [OrderController::class, 'checkout']);
         Route::post('/details', [OrderController::class, 'getOrderDetails']);
         Route::get('/list', [OrderController::class, 'listOrders']);
         Route::post('/cancel', [OrderController::class, 'cancelOrder']);
@@ -135,6 +138,7 @@ Route::prefix('v1')->group(function () {
         // Public routes (no authentication required)
         Route::post('/login', [DeliveryPartner_login::class, 'login']);
         Route::post('/register', [DeliveryPartner_login::class, 'register']); // Delivery partner registration
+        Route::post('/update-profile', [DeliveryPartner_login::class, 'updateProfile'])->middleware('auth:api');
 
         // // Password Reset Routes (Public - no auth required)
         // Route::post('/forgot-password', [DeliveryPartnerPasswordController::class, 'forgotPassword']);
@@ -160,6 +164,14 @@ Route::prefix('v1')->group(function () {
             Route::post('/location/batch', [DeliveryPartnerLocationController::class, 'batchUpdateLocation']);
             Route::post('/toggle-online', [DeliveryPartnerLocationController::class, 'toggleOnlineStatus']);
             Route::post('/toggle-availability', [DeliveryPartnerLocationController::class, 'toggleAvailability']);
+
+            // Wallet Management Routes
+            Route::prefix('wallet')->group(function () {
+                Route::post('/transaction', [DeliveryPartnerWalletController::class, 'walletTransaction']);
+                Route::get('/details', [DeliveryPartnerWalletController::class, 'getWalletDetails']);
+                Route::post('/payment-detail/add', [DeliveryPartnerWalletController::class, 'addPaymentDetail']);
+                Route::delete('/payment-detail/delete', [DeliveryPartnerWalletController::class, 'deletePaymentDetail']);
+            });
         });
 
         // Track delivery partner (for customers tracking their order)

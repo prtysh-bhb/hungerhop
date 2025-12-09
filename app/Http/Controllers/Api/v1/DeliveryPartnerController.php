@@ -201,7 +201,9 @@ class DeliveryPartnerController extends Controller
                 'total_past_orders' => $deliveredCount + $cancelledCount + $rejectedCount,
                 'total_earnings' => round($totalEarnings, 2),
                 'total_tips' => round($totalTips, 2),
+                'total_orders'=> $newOrdersCount + $inProgressCount + $deliveredCount + $cancelledCount + $rejectedCount,
                 'total_income' => round($totalEarnings + $totalTips, 2),
+                'tips' => round($totalTips, 2),
             ],
         ]);
     }

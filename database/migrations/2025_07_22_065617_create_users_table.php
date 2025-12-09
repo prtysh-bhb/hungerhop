@@ -27,6 +27,7 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive', 'suspended', 'pending_approval'])->default('active');
             $table->timestamp('email_verified_at')->nullable();
             $table->timestamp('phone_verified_at')->nullable();
+            $table->decimal('wallet_balance', 10, 2)->default(0.00);
             $table->timestamp('last_login_at')->nullable();
             $table->string('fcm_token', 500)->nullable();
             $table->timestamps();

@@ -51,6 +51,7 @@ class User extends Authenticatable implements JWTSubject
         'role',
         'status',
         'phone_verified_at',
+        'wallet_balance',
         'last_login_at',
         'fcm_token',
     ];
@@ -238,5 +239,30 @@ class User extends Authenticatable implements JWTSubject
     public function getNameAttribute()
     {
         return $this->first_name.' '.$this->last_name;
+    }
+
+    /**
+     * Get the payment details for the user.
+     */
+    public function paymentDetails()
+    {
+        return $this->hasMany(\App\Models\PaymentDetail::class);
+    }
+
+    /**
+     * Get the wallet transactions for the user.
+     */
+    public function walletTransactions()
+    {
+        return $this->hasMany(\App\Models\WalletTransaction::class);
+    }
+
+    /**
+     * Get the user's primary payment detail.
+     */
+    public function primaryPaymentDetail()
+    {
+        return $this->hasOne(\App\Models\PaymentDetail::class)
+            ->where('is_primary', true);
     }
 }
