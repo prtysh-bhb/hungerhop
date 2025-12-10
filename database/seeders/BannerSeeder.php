@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\RestaurantBanner;
 use App\Models\Restaurant;
+use App\Models\RestaurantBanner;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
@@ -65,7 +65,7 @@ class BannerSeeder extends Seeder
             // Get tenant banner limit
             $tenant = $restaurant->tenant;
             $bannerLimit = $tenant ? $tenant->banner_limit : 3;
-            
+
             // Create random number of banners up to limit
             $numBanners = rand(1, min($bannerLimit, count($bannerTemplates)));
             $selectedBanners = collect($bannerTemplates)->random($numBanners);

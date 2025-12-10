@@ -202,7 +202,7 @@ class DeliveryBoyAssignController extends Controller
 
         $delivery_boy_id = auth()->id();
         $delivery_partner = DeliveryPartner::where('user_id', $delivery_boy_id)->first();
-        
+
         if (! $delivery_partner) {
             return response()->json([
                 'success' => false,
@@ -211,7 +211,7 @@ class DeliveryBoyAssignController extends Controller
         }
 
         $order = Order::with(['deliveryAddress', 'restaurant'])->find($validated['order_id']);
-        
+
         if (! $order) {
             return response()->json([
                 'success' => false,
@@ -383,7 +383,7 @@ class DeliveryBoyAssignController extends Controller
             'out_for_delivery' => ['delivered'],
         ];
 
-        //-------------------- this validation is commented out to allow direct updates for testing------------------
+        // -------------------- this validation is commented out to allow direct updates for testing------------------
 
         // if (! isset($allowedTransitions[$currentStatus]) || ! in_array($newStatus, $allowedTransitions[$currentStatus])) {
         //     return response()->json([
@@ -397,7 +397,7 @@ class DeliveryBoyAssignController extends Controller
         try {
             // Update assignment status
             $assignment->status = $newStatus;
-            
+
             // Set timestamps based on status
             if ($newStatus === 'picked_up') {
                 $assignment->picked_up_at = now();
@@ -408,7 +408,7 @@ class DeliveryBoyAssignController extends Controller
                 $assignment->delivered_at = now();
                 $order->status = 'delivered';
                 $order->actual_delivery_time = now();
-                
+
                 // Mark delivery partner as available again
                 $delivery_partner->is_available = true;
                 $delivery_partner->save();
@@ -433,7 +433,7 @@ class DeliveryBoyAssignController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Update delivery status failed: ' . $e->getMessage());
+            Log::error('Update delivery status failed: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,

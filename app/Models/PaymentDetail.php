@@ -47,6 +47,7 @@ class PaymentDetail extends Model
      * Pay type constants
      */
     const PAY_TYPE_BANK = 'bank';
+
     const PAY_TYPE_UPI = 'upi';
 
     /**
@@ -138,6 +139,5 @@ class PaymentDetail extends Model
         $maskedUsername = substr($username, 0, 2).str_repeat('*', strlen($username) - 3).substr($username, -1);
 
         return $maskedUsername.'@'.$provider;
-}
-
+    }
 }

@@ -61,7 +61,7 @@ return new class extends Migration
             $table->index('user_id', 'idx_wallet_transactions_user');
             $table->index('type', 'idx_wallet_transactions_type');
             $table->index('reason', 'idx_wallet_transactions_reason');
-            $table->index('status', 'idx_wallet_transactions_status');  
+            $table->index('status', 'idx_wallet_transactions_status');
         });
     }
 

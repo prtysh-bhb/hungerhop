@@ -142,6 +142,7 @@ class DeliveryPartnerWalletController extends Controller
 
                 if (! $paymentDetail) {
                     DB::rollBack();
+
                     return response()->json([
                         'success' => false,
                         'message' => 'Payment detail not found or does not belong to you.',
@@ -197,8 +198,8 @@ class DeliveryPartnerWalletController extends Controller
                 ],
             ];
 
-            $message = $transactionType === 'in' 
-                ? 'Amount added to wallet successfully.' 
+            $message = $transactionType === 'in'
+                ? 'Amount added to wallet successfully.'
                 : 'Withdrawal processed successfully.';
 
             return response()->json([

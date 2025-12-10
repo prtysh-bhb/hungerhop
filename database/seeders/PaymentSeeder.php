@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Payment;
 use App\Models\Order;
+use App\Models\Payment;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
@@ -35,8 +35,8 @@ class PaymentSeeder extends Seeder
                     'tenant_id' => $order->tenant_id,
                     'payment_method' => $order->payment_method,
                     'payment_gateway' => $paymentGateways[array_rand($paymentGateways)],
-                    'gateway_transaction_id' => 'txn_' . uniqid() . '_' . $order->id,
-                    'gateway_payment_id' => 'pay_' . uniqid(),
+                    'gateway_transaction_id' => 'txn_'.uniqid().'_'.$order->id,
+                    'gateway_payment_id' => 'pay_'.uniqid(),
                     'amount' => $order->total_amount,
                     'currency' => $currencies[array_rand($currencies)],
                     'status' => $paymentStatus,

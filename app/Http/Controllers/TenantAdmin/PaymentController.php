@@ -628,7 +628,7 @@ class PaymentController extends Controller
 
                 $successMessage = "Plan upgraded to {$newLimits['name']}! Upgrade cost: ₹".number_format($upgradeCost, 2).' (prorated for remaining billing period). Please complete the payment to activate your new plan.';
                 if ($bannerWarning) {
-                    $successMessage .= ' ' . $bannerWarning;
+                    $successMessage .= ' '.$bannerWarning;
                 }
 
                 return redirect()->route('admin.tenant.payment.checkout')
@@ -654,7 +654,7 @@ class PaymentController extends Controller
 
                 $successMessage = "Plan changed to {$newLimits['name']} successfully! No additional payment required.";
                 if ($bannerWarning) {
-                    $successMessage .= ' ' . $bannerWarning;
+                    $successMessage .= ' '.$bannerWarning;
                 }
 
                 return redirect()->route('admin.tenant.payment.plans')

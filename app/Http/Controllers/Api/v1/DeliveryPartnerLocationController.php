@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
+use App\Models\DeliveryAssignment;
 use App\Models\DeliveryPartner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use App\Models\DeliveryAssignment;
 
 class DeliveryPartnerLocationController extends Controller
 {

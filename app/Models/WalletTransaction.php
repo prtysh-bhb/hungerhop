@@ -45,26 +45,37 @@ class WalletTransaction extends Model
      * Transaction type constants
      */
     const TYPE_IN = 'in';
+
     const TYPE_OUT = 'out';
 
     /**
      * Status constants
      */
     const STATUS_PENDING = 'pending';
+
     const STATUS_COMPLETED = 'completed';
+
     const STATUS_FAILED = 'failed';
+
     const STATUS_CANCELLED = 'cancelled';
 
     /**
      * Common reason constants
      */
     const REASON_ORDER_PAYMENT = 'order_payment';
+
     const REASON_ORDER_REFUND = 'order_refund';
+
     const REASON_WITHDRAWAL = 'withdrawal';
+
     const REASON_DEPOSIT = 'deposit';
+
     const REASON_CASHBACK = 'cashback';
+
     const REASON_PROMOTIONAL_CREDIT = 'promotional_credit';
+
     const REASON_DELIVERY_EARNINGS = 'delivery_earnings';
+
     const REASON_ADJUSTMENT = 'adjustment';
 
     /**
@@ -103,7 +114,7 @@ class WalletTransaction extends Model
     protected static function updateUserWalletBalance($transaction)
     {
         $user = User::find($transaction->user_id);
-        if (!$user) {
+        if (! $user) {
             return;
         }
 
@@ -126,7 +137,7 @@ class WalletTransaction extends Model
     protected static function reverseUserWalletBalance($transaction)
     {
         $user = User::find($transaction->user_id);
-        if (!$user) {
+        if (! $user) {
             return;
         }
 
@@ -229,7 +240,8 @@ class WalletTransaction extends Model
     public function getFormattedAmountAttribute(): string
     {
         $sign = $this->isCredit() ? '+' : '-';
-        return $sign . '₹' . number_format($this->amount, 2);
+
+        return $sign.'₹'.number_format($this->amount, 2);
     }
 
     /**

@@ -232,8 +232,7 @@ class CustomerFavoriteController extends Controller
             ->where('item_id', $itemId)
             ->where('tenant_id', $tenantId)
             ->first();
-        
-        
+
         if ($existingFavorite) {
             // Remove from favorites
             $existingFavorite->delete();

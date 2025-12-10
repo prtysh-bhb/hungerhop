@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\Restaurant;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
-use App\Models\Order;
 
 class NearestRestaurantController extends Controller
 {
@@ -47,7 +47,7 @@ class NearestRestaurantController extends Controller
                         'is_available' => $item->is_available,
                         'is_veg' => $item->is_veg,
                         'is_vaegan' => $item->is_vegan,
-                        
+
                         'description' => $item->description,
                     ];
                 }),

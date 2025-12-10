@@ -201,7 +201,7 @@ class DeliveryPartnerController extends Controller
                 'total_past_orders' => $deliveredCount + $cancelledCount + $rejectedCount,
                 'total_earnings' => round($totalEarnings, 2),
                 'total_tips' => round($totalTips, 2),
-                'total_orders'=> $newOrdersCount + $inProgressCount + $deliveredCount + $cancelledCount + $rejectedCount,
+                'total_orders' => $newOrdersCount + $inProgressCount + $deliveredCount + $cancelledCount + $rejectedCount,
                 'total_income' => round($totalEarnings + $totalTips, 2),
                 'tips' => round($totalTips, 2),
             ],
@@ -305,7 +305,7 @@ class DeliveryPartnerController extends Controller
             'delivery_fee' => (string) $deliveryFee ?? 0,
             'estimated_delivery_time' => $estimatedTime,
             'tip_amount' => $assignment->tip_amount ?? 0,
-            
+
             'estimated_distance_km' => (string) $assignment->estimated_distance_km ?? ($distance ? round($distance, 2) : null),
             'estimated_duration_minutes' => $assignment->estimated_duration_minutes ?? ($estimatedTime ? $this->getEstimatedMinutes($estimatedTime) : null),
 

@@ -121,6 +121,7 @@ class Order extends BaseTenantModel
     {
         return $this->belongsTo(MenuItem::class, 'item_id');
     }
+
     public function deliveryAssignment()
     {
         return $this->belongsTo(DeliveryAssignment::class, 'order_id');

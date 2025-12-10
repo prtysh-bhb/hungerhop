@@ -4,9 +4,7 @@ namespace App\Services\Api\v1;
 
 use App\Models\CustomerAddress;
 use App\Models\CustomerProfile;
-use App\Models\DeliveryAssignment;
 use App\Models\DeliveryPartner;
-use App\Models\DeliveryZone;
 use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -25,7 +23,7 @@ class OrderService
     {
         // Get customer profile for authenticated user
         $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
-        if (!$customerProfile) {
+        if (! $customerProfile) {
             return [
                 'success' => false,
                 'message' => 'Customer profile not found for user.',
@@ -39,7 +37,7 @@ class OrderService
         // Get restaurant_id & tenant_id from the first item
         $firstItem = $orderItems[0];
         $menuItem = MenuItem::find($firstItem['item_id']);
-        if (!$menuItem) {
+        if (! $menuItem) {
             return [
                 'success' => false,
                 'message' => 'Menu item not found.',
@@ -52,7 +50,7 @@ class OrderService
 
         // Check if restaurant can accept new orders
         $restaurant = Restaurant::find($restaurantId);
-        if (!$restaurant) {
+        if (! $restaurant) {
             return [
                 'success' => false,
                 'message' => 'Restaurant not found.',
@@ -60,13 +58,13 @@ class OrderService
             ];
         }
 
-        if (!$restaurant->canAcceptNewOrders()) {
+        if (! $restaurant->canAcceptNewOrders()) {
             $message = 'Order cannot be accepted.';
             if ($restaurant->is_paused) {
                 $message = 'Order cannot be accepted due to restaurant is temporarily closed.';
-            } elseif (!$restaurant->is_open) {
+            } elseif (! $restaurant->is_open) {
                 $message = 'Order cannot be accepted due to restaurant is closed.';
-            } elseif (!$restaurant->accepts_orders) {
+            } elseif (! $restaurant->accepts_orders) {
                 $message = 'Order cannot be accepted due to restaurant is not accepting orders.';
             } elseif ($restaurant->status !== 'approved') {
                 $message = 'Order cannot be accepted due to restaurant is not available.';
@@ -85,7 +83,7 @@ class OrderService
             ->where('customer_id', $customerProfile->id)
             ->first();
 
-        if (!$address) {
+        if (! $address) {
             return [
                 'success' => false,
                 'message' => 'Invalid delivery_address_id: Address does not belong to the customer.',
@@ -99,7 +97,7 @@ class OrderService
 
         // Calculate delivery fee based on distance
         $deliveryCalculation = $this->calculateDeliveryDetails($restaurant, $address);
-        if (!$deliveryCalculation['success']) {
+        if (! $deliveryCalculation['success']) {
             return $deliveryCalculation;
         }
 
@@ -179,7 +177,7 @@ class OrderService
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Order creation failed: ' . $e->getMessage());
+            Log::error('Order creation failed: '.$e->getMessage());
 
             return [
                 'success' => false,
@@ -196,7 +194,7 @@ class OrderService
     public function editOrder(int $orderId, array $data, $user): array
     {
         $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
-        if (!$customerProfile) {
+        if (! $customerProfile) {
             return [
                 'success' => false,
                 'message' => 'Customer profile not found for user.',
@@ -208,7 +206,7 @@ class OrderService
             ->where('customer_id', $customerProfile->id)
             ->first();
 
-        if (!$order) {
+        if (! $order) {
             return [
                 'success' => false,
                 'message' => 'Order not found or does not belong to you.',
@@ -218,7 +216,7 @@ class OrderService
 
         // Check if order can be edited (only placed or pending orders)
         $editableStatuses = ['placed', 'pending', 'confirmed'];
-        if (!in_array($order->status, $editableStatuses)) {
+        if (! in_array($order->status, $editableStatuses)) {
             return [
                 'success' => false,
                 'message' => 'Order cannot be edited. Only orders with status: placed, pending, or confirmed can be edited.',
@@ -228,7 +226,7 @@ class OrderService
         }
 
         $restaurant = Restaurant::find($order->restaurant_id);
-        if (!$restaurant) {
+        if (! $restaurant) {
             return [
                 'success' => false,
                 'message' => 'Restaurant not found.',
@@ -251,8 +249,9 @@ class OrderService
                     ->where('customer_id', $customerProfile->id)
                     ->first();
 
-                if (!$address) {
+                if (! $address) {
                     DB::rollBack();
+
                     return [
                         'success' => false,
                         'message' => 'Invalid delivery_address_id: Address does not belong to the customer.',
@@ -262,8 +261,9 @@ class OrderService
 
                 // Recalculate delivery fee with new address
                 $deliveryCalculation = $this->calculateDeliveryDetails($restaurant, $address);
-                if (!$deliveryCalculation['success']) {
+                if (! $deliveryCalculation['success']) {
                     DB::rollBack();
+
                     return $deliveryCalculation;
                 }
 
@@ -284,8 +284,9 @@ class OrderService
                 // Create new order items
                 foreach ($data['order_items'] as $item) {
                     $menuItem = MenuItem::find($item['item_id']);
-                    if (!$menuItem) {
+                    if (! $menuItem) {
                         DB::rollBack();
+
                         return [
                             'success' => false,
                             'message' => "Menu item with ID {$item['item_id']} not found.",
@@ -296,6 +297,7 @@ class OrderService
                     // Ensure item belongs to same restaurant
                     if ($menuItem->restaurant_id !== $order->restaurant_id) {
                         DB::rollBack();
+
                         return [
                             'success' => false,
                             'message' => 'All items must be from the same restaurant.',
@@ -329,7 +331,7 @@ class OrderService
             }
 
             // Recalculate total if any amount changed
-            if (!empty($updateData)) {
+            if (! empty($updateData)) {
                 $newSubtotal = $updateData['subtotal'] ?? $order->subtotal;
                 $newTaxAmount = $updateData['tax_amount'] ?? $order->tax_amount;
                 $newDeliveryFee = $updateData['delivery_fee'] ?? $order->delivery_fee;
@@ -365,7 +367,7 @@ class OrderService
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Order edit failed: ' . $e->getMessage());
+            Log::error('Order edit failed: '.$e->getMessage());
 
             return [
                 'success' => false,
@@ -382,7 +384,7 @@ class OrderService
     public function getCheckout(int $orderId, $user): array
     {
         $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
-        if (!$customerProfile) {
+        if (! $customerProfile) {
             return [
                 'success' => false,
                 'message' => 'Customer profile not found for user.',
@@ -395,7 +397,7 @@ class OrderService
             ->with(['orderItems', 'restaurant', 'deliveryAddress', 'customer.user'])
             ->first();
 
-        if (!$order) {
+        if (! $order) {
             return [
                 'success' => false,
                 'message' => 'Order not found or does not belong to you.',
@@ -421,7 +423,7 @@ class OrderService
     public function listOrders($user): array
     {
         $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
-        if (!$customerProfile) {
+        if (! $customerProfile) {
             return [
                 'success' => false,
                 'message' => 'Customer profile not found for user.',
@@ -455,7 +457,7 @@ class OrderService
         $order = Order::with(['customer.user', 'restaurant', 'deliveryAddress', 'orderItems'])
             ->find($orderId);
 
-        if (!$order) {
+        if (! $order) {
             return [
                 'success' => false,
                 'message' => 'Order not found',
@@ -595,7 +597,7 @@ class OrderService
     {
         $order->load(['deliveryAddress', 'restaurant']);
 
-        if (!$order->deliveryAddress || !$order->restaurant) {
+        if (! $order->deliveryAddress || ! $order->restaurant) {
             return [
                 'nearest_partner' => null,
                 'delivery_info' => null,
@@ -633,7 +635,7 @@ class OrderService
         $partnerPreview = null;
         if ($nearest) {
             $nearest->load('user');
-            $partnerName = $nearest->user ? $nearest->user->first_name . ' ' . $nearest->user->last_name : 'Unknown';
+            $partnerName = $nearest->user ? $nearest->user->first_name.' '.$nearest->user->last_name : 'Unknown';
 
             $partnerPreview = [
                 'id' => $nearest->id,
@@ -815,7 +817,7 @@ class OrderService
             ] : null,
             'customer' => $order->customer ? [
                 'id' => $order->customer->id,
-                'name' => $order->customer->user ? ($order->customer->user->first_name . ' ' . $order->customer->user->last_name) : null,
+                'name' => $order->customer->user ? ($order->customer->user->first_name.' '.$order->customer->user->last_name) : null,
                 'email' => $order->customer->user->email ?? null,
                 'phone' => $order->customer->user->phone ?? null,
             ] : null,
@@ -872,7 +874,7 @@ class OrderService
             ] : null,
             'customer' => $order->customer ? [
                 'id' => $order->customer->id,
-                'name' => $order->customer->user ? ($order->customer->user->first_name . ' ' . $order->customer->user->last_name) : null,
+                'name' => $order->customer->user ? ($order->customer->user->first_name.' '.$order->customer->user->last_name) : null,
                 'email' => $order->customer->user->email ?? null,
                 'phone' => $order->customer->user->phone ?? null,
             ] : null,

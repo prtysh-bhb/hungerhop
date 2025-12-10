@@ -4,10 +4,10 @@ namespace Database\Seeders;
 
 use App\Models\City;
 use App\Models\Restaurant;
+use App\Models\RestaurantWorkingHour;
 use App\Models\State;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Models\RestaurantWorkingHour;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -195,16 +195,18 @@ class RestaurantSeeder extends Seeder
         $bangaloreCity = City::where('name', 'Bangalore')->first();
         $karnatakaState = State::where('name', 'Karnataka')->first();
 
-        if (!$bangaloreCity || !$karnatakaState) {
+        if (! $bangaloreCity || ! $karnatakaState) {
             $this->command->warn('Bangalore city or Karnataka state not found. Please run CitySeeder first.');
+
             return;
         }
 
         foreach ($restaurantData as $tenantGroup) {
             $tenant = Tenant::where('email', $tenantGroup['tenant_email'])->first();
-            
-            if (!$tenant) {
+
+            if (! $tenant) {
                 $this->command->warn("Tenant not found: {$tenantGroup['tenant_email']}");
+
                 continue;
             }
 
@@ -215,7 +217,7 @@ class RestaurantSeeder extends Seeder
                     [
                         'first_name' => $restData['location_admin_name'][0],
                         'last_name' => $restData['location_admin_name'][1],
-                        'phone' => '98765' . str_pad($restaurantCount + 10, 5, '0', STR_PAD_LEFT),
+                        'phone' => '98765'.str_pad($restaurantCount + 10, 5, '0', STR_PAD_LEFT),
                         'tenant_id' => $tenant->id,
                         'role' => 'location_admin',
                         'status' => 'active',
@@ -231,8 +233,8 @@ class RestaurantSeeder extends Seeder
                         'tenant_id' => $tenant->id,
                         'location_admin_id' => $locationAdmin->id,
                         'restaurant_name' => $restData['restaurant_name'],
-                        'contact_person_name' => $restData['location_admin_name'][0] . ' ' . $restData['location_admin_name'][1],
-                        'slug' => Str::slug($restData['restaurant_name']) . '-' . $tenant->id,
+                        'contact_person_name' => $restData['location_admin_name'][0].' '.$restData['location_admin_name'][1],
+                        'slug' => Str::slug($restData['restaurant_name']).'-'.$tenant->id,
                         'description' => $restData['description'],
                         'cuisine_type' => $restData['cuisine_type'],
                         'address' => $restData['address'],

@@ -25,7 +25,7 @@ class UpdateMenuItemRequest extends FormRequest
             'item_name' => ['required', 'string', 'max:50', 'regex:/^[a-zA-Z0-9\s&\'.\/\-]+$/'],
             'base_price' => 'required|numeric|min:0|max:99999.99',
             'menu_category_id' => 'required|exists:menu_categories,id',
-            
+
             // Optional fields with proper limits
             'description' => 'nullable|string|max:255', // Single-line max 255
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Max 2MB

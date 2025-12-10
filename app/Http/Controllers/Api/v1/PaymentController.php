@@ -55,12 +55,12 @@ class PaymentController extends Controller
                 'transaction_id' => $existingPayment->gateway_transaction_id,
             ], 422);
         }
-        
+
         // Clean up any incomplete payment records (no transaction ID)
         Payment::where('order_id', $order->id)
             ->where(function ($query) {
                 $query->whereNull('gateway_transaction_id')
-                      ->orWhere('gateway_transaction_id', '');
+                    ->orWhere('gateway_transaction_id', '');
             })
             ->delete();
 

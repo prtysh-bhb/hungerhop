@@ -2,12 +2,11 @@
 
 namespace Database\Seeders;
 
-use App\Models\Review;
+use App\Models\MenuItem;
 use App\Models\MenuItemReview;
 use App\Models\Order;
-use App\Models\OrderItem;
 use App\Models\Restaurant;
-use App\Models\MenuItem;
+use App\Models\Review;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
@@ -84,7 +83,7 @@ class ReviewSeeder extends Seeder
             // Weighted random rating (more 4s and 5s)
             $rating = $this->getWeightedRating();
             $reviewText = $reviewTexts[$rating][array_rand($reviewTexts[$rating])];
-            
+
             $reviewDate = Carbon::parse($order->actual_delivery_time ?? $order->updated_at)
                 ->addHours(rand(1, 48));
 
@@ -139,7 +138,7 @@ class ReviewSeeder extends Seeder
             $avgRating = Review::where('reviewable_type', 'restaurant')
                 ->where('reviewable_id', $restaurant->id)
                 ->avg('rating');
-            
+
             $totalReviews = Review::where('reviewable_type', 'restaurant')
                 ->where('reviewable_id', $restaurant->id)
                 ->count();

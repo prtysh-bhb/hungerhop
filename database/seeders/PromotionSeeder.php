@@ -83,6 +83,7 @@ class PromotionSeeder extends Seeder
 
         if ($restaurants->isEmpty()) {
             $this->command->warn('No approved restaurants found. Run RestaurantSeeder first.');
+
             return;
         }
 
@@ -93,10 +94,10 @@ class PromotionSeeder extends Seeder
 
             // Each restaurant gets 2-4 promotions with unique codes
             $selectedPromos = collect($promotions)->shuffle()->take(rand(2, 4));
-            
+
             foreach ($selectedPromos as $promoData) {
                 // Make promotion code unique by appending restaurant ID
-                $uniqueCode = $promoData['promotion_code'] . $restaurant->id;
+                $uniqueCode = $promoData['promotion_code'].$restaurant->id;
 
                 Promotion::create([
                     'restaurant_id' => $restaurant->id,
@@ -111,7 +112,7 @@ class PromotionSeeder extends Seeder
                     'maximum_discount_amount' => $promoData['maximum_discount_amount'],
                     'usage_limit_per_customer' => $promoData['usage_limit_per_customer'],
                     'total_usage_limit' => $promoData['total_usage_limit'],
-                    'current_usage_count' => rand(0, (int)($promoData['total_usage_limit'] * 0.2)),
+                    'current_usage_count' => rand(0, (int) ($promoData['total_usage_limit'] * 0.2)),
                     'valid_from' => $now->copy()->subDays(rand(0, 10)),
                     'valid_until' => $now->copy()->addDays(rand(15, 45)),
                     'is_active' => true,

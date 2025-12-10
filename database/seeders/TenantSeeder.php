@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\SubscriptionPayment;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Models\SubscriptionPayment;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -65,7 +65,7 @@ class TenantSeeder extends Seeder
                 'billing_period_end' => $now->copy()->addDays(15)->toDateString(),
                 'payment_method' => 'card',
                 'payment_gateway' => 'stripe',
-                'gateway_transaction_id' => 'txn_lite_' . uniqid(),
+                'gateway_transaction_id' => 'txn_lite_'.uniqid(),
                 'status' => SubscriptionPayment::STATUS_COMPLETED,
                 'due_date' => $now->copy()->addDays(15)->toDateString(),
                 'paid_at' => $now->copy()->subDays(15),
@@ -118,7 +118,7 @@ class TenantSeeder extends Seeder
                 'billing_period_end' => $now->copy()->addDays(20)->toDateString(),
                 'payment_method' => 'upi',
                 'payment_gateway' => 'stripe',
-                'gateway_transaction_id' => 'txn_plus_' . uniqid(),
+                'gateway_transaction_id' => 'txn_plus_'.uniqid(),
                 'status' => SubscriptionPayment::STATUS_COMPLETED,
                 'due_date' => $now->copy()->addDays(20)->toDateString(),
                 'paid_at' => $now->copy()->subDays(10),
@@ -171,7 +171,7 @@ class TenantSeeder extends Seeder
                 'billing_period_end' => $now->copy()->addDays(25)->toDateString(),
                 'payment_method' => 'card',
                 'payment_gateway' => 'stripe',
-                'gateway_transaction_id' => 'txn_promax_' . uniqid(),
+                'gateway_transaction_id' => 'txn_promax_'.uniqid(),
                 'status' => SubscriptionPayment::STATUS_COMPLETED,
                 'due_date' => $now->copy()->addDays(25)->toDateString(),
                 'paid_at' => $now->copy()->subDays(5),

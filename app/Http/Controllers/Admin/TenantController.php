@@ -133,7 +133,7 @@ class TenantController extends Controller
             'subscription_start_date' => 'nullable|date',
             'next_billing_date' => 'nullable|date|after:subscription_start_date',
             'status' => 'nullable|in:'.implode(',', Tenant::STATUSES),
-            ], [
+        ], [
             'tenant_name.required' => 'Tenant name is required.',
             'tenant_name.max' => 'Tenant name may not be greater than 255 characters.',
 
@@ -178,14 +178,12 @@ class TenantController extends Controller
             'next_billing_date.after' => 'Next billing date must be after subscription start date.',
 
             'status.in' => 'Invalid status selected.',
-            ]);
-
+        ]);
 
         // Set default status if not provided
         if (empty($validated['status'])) {
             $validated['status'] = 'pending';
         }
-        
 
         // Remove subscription date fields - these will be filled when payment is completed
         unset($validated['subscription_start_date']);
@@ -443,16 +441,16 @@ class TenantController extends Controller
 
         $tenants = $query->get();
 
-        $filename = 'tenants_' . date('Y-m-d_His') . '.csv';
-        
+        $filename = 'tenants_'.date('Y-m-d_His').'.csv';
+
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ];
 
-        $callback = function() use ($tenants) {
+        $callback = function () use ($tenants) {
             $file = fopen('php://output', 'w');
-            
+
             // Add CSV headers
             fputcsv($file, [
                 'ID',
@@ -467,7 +465,7 @@ class TenantController extends Controller
                 'Active Restaurants',
                 'Status',
                 'Created Date',
-                'Approved Date'
+                'Approved Date',
             ]);
 
             // Add data rows
@@ -485,7 +483,7 @@ class TenantController extends Controller
                     $tenant->restaurants()->count(),
                     $tenant->status,
                     $tenant->created_at->format('Y-m-d H:i:s'),
-                    $tenant->approved_at ? $tenant->approved_at->format('Y-m-d H:i:s') : 'N/A'
+                    $tenant->approved_at ? $tenant->approved_at->format('Y-m-d H:i:s') : 'N/A',
                 ]);
             }
 
@@ -546,7 +544,7 @@ class TenantController extends Controller
             </style>
         </head>
         <body>
-            <div class="date">Generated: ' . date('Y-m-d H:i:s') . '</div>
+            <div class="date">Generated: '.date('Y-m-d H:i:s').'</div>
             <div class="header">
                 <h1>Tenants Report</h1>
             </div>
@@ -568,14 +566,14 @@ class TenantController extends Controller
         foreach ($tenants as $tenant) {
             $html .= '
                     <tr>
-                        <td>' . $tenant->id . '</td>
-                        <td>' . htmlspecialchars($tenant->tenant_name) . '</td>
-                        <td>' . htmlspecialchars($tenant->contact_person) . '</td>
-                        <td>' . htmlspecialchars($tenant->email) . '</td>
-                        <td>' . $tenant->subscription_plan . '</td>
-                        <td>' . $tenant->restaurants()->count() . ' / ' . $tenant->total_restaurants . '</td>
-                        <td>' . ucfirst($tenant->status) . '</td>
-                        <td>' . $tenant->created_at->format('Y-m-d') . '</td>
+                        <td>'.$tenant->id.'</td>
+                        <td>'.htmlspecialchars($tenant->tenant_name).'</td>
+                        <td>'.htmlspecialchars($tenant->contact_person).'</td>
+                        <td>'.htmlspecialchars($tenant->email).'</td>
+                        <td>'.$tenant->subscription_plan.'</td>
+                        <td>'.$tenant->restaurants()->count().' / '.$tenant->total_restaurants.'</td>
+                        <td>'.ucfirst($tenant->status).'</td>
+                        <td>'.$tenant->created_at->format('Y-m-d').'</td>
                     </tr>';
         }
 
@@ -590,6 +588,6 @@ class TenantController extends Controller
 
         return response($html)
             ->header('Content-Type', 'text/html')
-            ->header('Content-Disposition', 'inline; filename="tenants_' . date('Y-m-d_His') . '.html"');
+            ->header('Content-Disposition', 'inline; filename="tenants_'.date('Y-m-d_His').'.html"');
     }
 }

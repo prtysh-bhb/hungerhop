@@ -189,7 +189,6 @@ class DeliveryPartner_login extends Controller
         }
     }
 
-    
     public function updateProfile(Request $request)
     {
         $user = auth()->user();

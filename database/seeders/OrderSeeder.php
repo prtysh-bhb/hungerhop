@@ -2,15 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Models\CustomerProfile;
+use App\Models\DeliveryAssignment;
+use App\Models\DeliveryPartner;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatus;
 use App\Models\Restaurant;
-use App\Models\CustomerProfile;
-use App\Models\CustomerAddress;
-use App\Models\MenuItem;
-use App\Models\DeliveryAssignment;
-use App\Models\DeliveryPartner;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
@@ -35,6 +33,7 @@ class OrderSeeder extends Seeder
 
         if ($customers->isEmpty() || $restaurants->isEmpty()) {
             $this->command->warn('No customers or restaurants found. Run CustomerSeeder and RestaurantSeeder first.');
+
             return;
         }
 
@@ -45,7 +44,7 @@ class OrderSeeder extends Seeder
         foreach ($customers as $customer) {
             // Each customer gets 3-8 orders
             $numOrders = rand(3, 8);
-            
+
             for ($i = 0; $i < $numOrders; $i++) {
                 $restaurant = $restaurants->random();
                 $menuItems = $restaurant->menuItems;
@@ -55,23 +54,23 @@ class OrderSeeder extends Seeder
                 }
 
                 $address = $customer->addresses->first();
-                if (!$address) {
+                if (! $address) {
                     continue;
                 }
 
                 // Random order date in last 30 days
                 $orderDate = $now->copy()->subDays(rand(0, 30))->subHours(rand(0, 23));
-                
+
                 // Calculate order totals
                 $subtotal = 0;
                 $selectedItems = $menuItems->random(rand(1, min(4, $menuItems->count())));
-                
+
                 $itemsData = [];
                 foreach ($selectedItems as $item) {
                     $quantity = rand(1, 3);
                     $itemTotal = $item->base_price * $quantity;
                     $subtotal += $itemTotal;
-                    
+
                     $itemsData[] = [
                         'item' => $item,
                         'quantity' => $quantity,
@@ -89,7 +88,7 @@ class OrderSeeder extends Seeder
 
                 // Determine status - ensure good distribution including delivered orders
                 $daysSinceOrder = $now->diffInDays($orderDate);
-                
+
                 // Force some orders to be delivered/out_for_delivery for realistic data
                 $statusRoll = rand(1, 10);
                 if ($statusRoll <= 4) {
@@ -117,7 +116,7 @@ class OrderSeeder extends Seeder
 
                 // Create Order
                 $order = Order::create([
-                    'order_number' => 'ORD' . $orderNumber++,
+                    'order_number' => 'ORD'.$orderNumber++,
                     'customer_id' => $customer->id,
                     'restaurant_id' => $restaurant->id,
                     'delivery_address_id' => $address->id,
@@ -164,10 +163,12 @@ class OrderSeeder extends Seeder
                 // Create Order Status History
                 $statusIndex = array_search($status, $orderStatuses);
                 $statusTime = $orderDate->copy();
-                
+
                 for ($j = 0; $j <= $statusIndex && $j < count($orderStatuses) - 1; $j++) {
-                    if ($orderStatuses[$j] === 'cancelled') continue;
-                    
+                    if ($orderStatuses[$j] === 'cancelled') {
+                        continue;
+                    }
+
                     OrderStatus::create([
                         'order_id' => $order->id,
                         'status' => $orderStatuses[$j],
@@ -180,7 +181,7 @@ class OrderSeeder extends Seeder
                 // Create Delivery Assignment for orders that are out for delivery or delivered
                 if (in_array($status, ['out_for_delivery', 'delivered']) && $deliveryPartners->isNotEmpty()) {
                     $partner = $deliveryPartners->random();
-                    
+
                     // Valid delivery assignment statuses: 'assigned', 'accepted', 'rejected', 'picked_up', 'delivered', 'cancelled'
                     DeliveryAssignment::create([
                         'order_id' => $order->id,

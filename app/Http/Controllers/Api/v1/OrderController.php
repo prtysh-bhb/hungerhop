@@ -106,7 +106,6 @@ class OrderController extends Controller
         }
         $validated = $request->all();
 
-
         $validated = $validator->validated();
         $orderId = $id;
 
@@ -158,7 +157,7 @@ class OrderController extends Controller
     {
         $id = $request->input('id');
 
-        if (!$id) {
+        if (! $id) {
             return response()->json(['success' => false, 'message' => 'Order ID is required'], 422);
         }
 
