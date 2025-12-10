@@ -59,7 +59,7 @@ class CustomerController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:active,suspended,pending',
+            'status' => 'required|in:active,inactive,suspended,pending_approval',
         ]);
 
         $customer = User::where('role', 'customer')->findOrFail($id);
@@ -129,7 +129,7 @@ class CustomerController extends Controller
                 'max:15',
                 'regex:/^[0-9]{10,15}$/', // Only numbers, 10-15 digits
             ],
-            'status' => 'required|in:active,suspended,pending',
+            'status' => 'required|in:active,inactive,suspended,pending_approval',
         ], [
             'first_name.required' => 'First name is required.',
             'first_name.min' => 'First name must be at least 2 characters.',

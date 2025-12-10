@@ -33,15 +33,18 @@
                         <h4 class="box-title">Customer List</h4>
                         <div class="box-tools pull-right">
                             <div class="btn-group">
-                                <button type="button" class="btn btn-xs btn-outline dropdown-toggle"
+                                <button type="button" class="btn btn-outline-primary dropdown-toggle"
                                     data-bs-toggle="dropdown">Filter by Status</button>
                                 <div class="dropdown-menu">
                                     <a class="dropdown-item filter-status" href="#" data-status="all">All
                                         Customers</a>
                                     <a class="dropdown-item filter-status" href="#" data-status="active">Active</a>
                                     <a class="dropdown-item filter-status" href="#"
+                                        data-status="inactive">Inactive</a>
+                                    <a class="dropdown-item filter-status" href="#"
                                         data-status="suspended">Suspended</a>
-                                    <a class="dropdown-item filter-status" href="#" data-status="pending">Pending</a>
+                                    <a class="dropdown-item filter-status" href="#"
+                                        data-status="pending_approval">Pending</a>
                                 </div>
                             </div>
                         </div>
@@ -69,7 +72,8 @@
                                         <tr class="hover-primary">
                                             <td class="text-center">
                                                 <div class="d-flex flex-column align-items-center justify-content-center">
-                                                    <img src="{{ $customer['profile_image_url'] }}" alt="Avatar" class="avatar avatar-sm rounded-circle mb-1">
+                                                    <img src="{{ $customer['profile_image_url'] }}" alt="Avatar"
+                                                        class="avatar avatar-sm rounded-circle mb-1">
                                                     <strong>{{ $customer['customer_id'] }}</strong>
                                                 </div>
                                             </td>
@@ -82,11 +86,11 @@
                                                             class="avatar avatar-sm rounded-circle">
                                                     </div> --}}
                                                     {{-- <div> --}}
-                                                        <h6 class="mb-0">{{ $customer['name'] }}</h6>
-                                                        {{-- <small class="text-muted">{{ $customer['loyalty_points'] }} loyalty
+                                                    <h6 class="mb-0">{{ $customer['name'] }}</h6>
+                                                    {{-- <small class="text-muted">{{ $customer['loyalty_points'] }} loyalty
                                                             points</small>
                                                     </div> --}}
-                                                {{-- </div> --}}
+                                                    {{-- </div> --}}
                                             </td>
                                             <td>{{ $customer['email'] }}</td>
                                             <td>{{ $customer['phone'] ?: 'N/A' }}</td>
@@ -98,12 +102,16 @@
                                                         {{ $customer['status'] == 'active' ? 'selected' : '' }}>
                                                         Active
                                                     </option>
+                                                    <option value="inactive"
+                                                        {{ $customer['status'] == 'inactive' ? 'selected' : '' }}>
+                                                        Inactive
+                                                    </option>
                                                     <option value="suspended"
                                                         {{ $customer['status'] == 'suspended' ? 'selected' : '' }}>
-                                                        Suspend
+                                                        Suspended
                                                     </option>
-                                                    <option value="pending"
-                                                        {{ $customer['status'] == 'pending' ? 'selected' : '' }}>
+                                                    <option value="pending_approval"
+                                                        {{ $customer['status'] == 'pending_approval' ? 'selected' : '' }}>
                                                         Pending
                                                     </option>
                                                 </select>
@@ -194,16 +202,30 @@
                 ]
             });
 
+            // Custom search function for status filtering
+            $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                var filterStatus = $('#customersTable').data('filter-status');
+                if (!filterStatus || filterStatus === 'all') {
+                    return true;
+                }
+
+                // Get the select element value from the actual row
+                var row = table.row(dataIndex).node();
+                var selectedStatus = $(row).find('.status-select').val();
+
+                return selectedStatus === filterStatus;
+            });
+
             // Status filter functionality
             $('.filter-status').on('click', function(e) {
                 e.preventDefault();
                 var status = $(this).data('status');
 
-                if (status === 'all') {
-                    table.columns(5).search('').draw();
-                } else {
-                    table.columns(5).search(status).draw();
-                }
+                // Store the filter status on the table
+                $('#customersTable').data('filter-status', status);
+
+                // Redraw table with filter
+                table.draw();
             });
 
             // Status update functionality
@@ -313,7 +335,7 @@
 
             function updateStatusBadge(selectElement, status) {
                 // Remove all status classes
-                selectElement.removeClass('status-active status-suspended status-pending');
+                selectElement.removeClass('status-active status-inactive status-suspended status-pending_approval');
 
                 // Add the new status class
                 selectElement.addClass('status-' + status);
@@ -345,7 +367,13 @@
             border-color: #ffeaa7;
         }
 
-        .status-select.status-pending {
+        .status-select.status-inactive {
+            background-color: #e2e3e5;
+            color: #383d41;
+            border-color: #d6d8db;
+        }
+
+        .status-select.status-pending_approval {
             background-color: #f8d7da;
             color: #721c24;
             border-color: #f5c6cb;

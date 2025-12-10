@@ -134,6 +134,10 @@ Route::middleware(['auth', 'identify_tenant'])->group(function () {
     Route::get('/admin/dashboard/recent-orders', [SuparAdminDashboard::class, 'getRecentOrders'])
         ->middleware('role:super_admin')->name('admin.dashboard.recent-orders');
 
+    // Wallet Transactions (Super Admin only)
+    Route::get('/admin/wallet-transactions', [SuparAdminDashboard::class, 'walletTransactions'])
+        ->middleware('role:super_admin')->name('admin.wallet-transactions');
+
     // Tenant Admin specific dashboard
     Route::get('/admin/dashboard/tenant', [TenantAdminController::class, 'index'])
         ->middleware('role:tenant_admin')->name('admin.dashboard.tenant');

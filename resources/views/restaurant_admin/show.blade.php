@@ -500,7 +500,7 @@
                 @if ($restaurant->documents && $restaurant->documents->count() > 0)
                 <div class="card border-0 shadow-sm mt-4">
                     <div class="card-header bg-transparent border-bottom-0 py-3">
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex justify-content-between align-items-center " style="width: 100%;">
                             <h5 class="mb-0 text-primary">
                                 <i class="fa fa-file me-2"></i>Documents ({{ $restaurant->documents->count() }})
                             </h5>
@@ -568,7 +568,7 @@
 
                 <!-- Action Buttons -->
                 <div class="d-flex justify-content-between align-items-center mt-4 p-3 bg-light rounded">
-                    <a href="{{ route('restaurant-admin.list') }}" class="btn btn-outline-secondary">
+                    <a href="{{ route('restaurant-admin.list') }}" class="btn btn-dark">
                         <i class="fa fa-arrow-left me-1"></i> Back to List
                     </a>
                     <div class="d-flex gap-2">

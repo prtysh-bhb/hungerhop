@@ -311,9 +311,11 @@
                                 </table>
                             </div>
 
-                            <nav aria-label="Page navigation">
-                                {{ $restaurants->appends(request()->query())->links('pagination::bootstrap-4') }}
-                            </nav>
+                            <!-- Pagination -->
+                            <x-pagination-summary :paginator="$restaurants" />
+                            {{ $restaurants->appends(request()->query())->links('pagination::bootstrap-5')
+                            }}
+                            
 
                             <style>
                                 .pagination .page-item.disabled .page-link,

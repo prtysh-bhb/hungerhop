@@ -552,6 +552,11 @@
                                             value="{{ old('cuisine_type') }}"
                                             placeholder="e.g., Italian, Chinese, Mexican">
                                     </div>
+                                    @if ($errors->has('cuisine_type'))
+                                        <div class="invalid-feedback" style="display: block;">
+                                            {{ $errors->first('cuisine_type') }}</div>
+                                        </div>
+                                    @endif
                                 </div>
 
                                 <div class="col-md-6">

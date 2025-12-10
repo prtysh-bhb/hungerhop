@@ -52,12 +52,35 @@ class CustomerFavoriteController extends Controller
             ], 404);
         }
 
-        // Check if already in favorites
-        $existingFavorite = CustomerFavoriteItem::where('customer_id', $customerProfile->id)
+        // Check if already in favorites (including soft-deleted)
+        $existingFavorite = CustomerFavoriteItem::withTrashed()
+            ->where('customer_id', $customerProfile->id)
             ->where('item_id', $itemId)
             ->first();
 
         if ($existingFavorite) {
+            // If soft-deleted, restore it
+            if ($existingFavorite->trashed()) {
+                $existingFavorite->restore();
+                $existingFavorite->update([
+                    'restaurant_id' => $menuItem->restaurant_id,
+                    'tenant_id' => $menuItem->tenant_id,
+                    'added_at' => now(),
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Item added to favorites successfully.',
+                    'data' => [
+                        'id' => $existingFavorite->id,
+                        'item_id' => $existingFavorite->item_id,
+                        'item_name' => $menuItem->item_name,
+                        'restaurant_id' => $existingFavorite->restaurant_id,
+                        'added_at' => $existingFavorite->added_at->toDateTimeString(),
+                    ],
+                ], 201);
+            }
+
             return response()->json([
                 'success' => false,
                 'message' => 'Item is already in your favorites.',
@@ -227,14 +250,15 @@ class CustomerFavoriteController extends Controller
         $itemId = $request->input('item_id');
         $tenantId = MenuItem::where('id', $itemId)->value('tenant_id');
 
-        // Check if already in favorites
-        $existingFavorite = CustomerFavoriteItem::where('customer_id', $customerProfile->id)
+        // Check if already in favorites (including soft-deleted)
+        $existingFavorite = CustomerFavoriteItem::withTrashed()
+            ->where('customer_id', $customerProfile->id)
             ->where('item_id', $itemId)
             ->where('tenant_id', $tenantId)
             ->first();
 
-        if ($existingFavorite) {
-            // Remove from favorites
+        if ($existingFavorite && ! $existingFavorite->trashed()) {
+            // Remove from favorites (soft delete)
             $existingFavorite->delete();
 
             return response()->json([
@@ -243,8 +267,29 @@ class CustomerFavoriteController extends Controller
                 'is_favorite' => false,
             ], 200);
         } else {
-            // Add to favorites
+            // Add to favorites (restore if soft-deleted, or create new)
             $menuItem = MenuItem::find($itemId);
+
+            if ($existingFavorite && $existingFavorite->trashed()) {
+                // Restore soft-deleted record
+                $existingFavorite->restore();
+                $existingFavorite->update([
+                    'restaurant_id' => $menuItem->restaurant_id,
+                    'tenant_id' => $tenantId,
+                    'added_at' => now(),
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Item added to favorites.',
+                    'is_favorite' => true,
+                    'data' => [
+                        'id' => $existingFavorite->id,
+                        'item_id' => $existingFavorite->item_id,
+                        'item_name' => $menuItem->item_name,
+                    ],
+                ], 201);
+            }
 
             $favorite = CustomerFavoriteItem::create([
                 'customer_id' => $customerProfile->id,

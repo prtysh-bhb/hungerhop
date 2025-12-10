@@ -103,7 +103,7 @@ Route::prefix('v1')->group(function () {
     // ----------------------------------------------
     Route::prefix('order')->middleware('auth:api')->group(function () {
         Route::post('/add', [OrderController::class, 'CreateOrder']);
-        Route::post('/{id}/edit', [OrderController::class, 'editOrder']);
+        Route::post('/{id}/update', [OrderController::class, 'editOrder']);
         Route::get('/{id}/checkout', [OrderController::class, 'checkout']);
         Route::post('/details', [OrderController::class, 'getOrderDetails']);
         Route::get('/list', [OrderController::class, 'listOrders']);

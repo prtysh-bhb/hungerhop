@@ -290,12 +290,17 @@
                 const preview = $('#filePreview');
                 const fileInfo = $('#fileInfo');
 
+                // Check if a file is selected
                 if (file) {
-                    const fileSize = (file.size / 1024).toFixed(2);
+                    // Convert file size to KB
+                    const fileSize = (file.size / 1024).toFixed(2); // Size in KB
                     const fileName = file.name;
                     const fileType = file.type;
 
+                    // Default icon
                     let fileIcon = 'fa-file-o';
+
+                    // Set specific icons based on file type
                     if (fileType.includes('pdf')) {
                         fileIcon = 'fa-file-pdf-o text-danger';
                     } else if (fileType.includes('image')) {
@@ -304,21 +309,25 @@
                         fileIcon = 'fa-file-word-o text-info';
                     }
 
+                    // Update the file info section with the file name and size
                     fileInfo.html(`
-                <div class="d-flex align-items-center">
-                    <i class="fa ${fileIcon} fa-2x mr-3"></i>
-                    <div>
-                        <strong>${fileName}</strong><br>
-                        <small class="text-muted">${fileSize} KB</small>
-                    </div>
-                </div>
-            `);
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa ${fileIcon} fa-2x mr-3"></i>
+                            <div style="max-width: 200px; overflow-wrap: break-word;">
+                                <strong>${fileName}</strong><br>
+                                <small class="text-muted">${fileSize} KB</small>
+                            </div>
+                        </div>
+                    `);
 
+                    // Show the preview section
                     preview.show();
                 } else {
+                    // If no file is selected, hide the preview section
                     preview.hide();
                 }
             });
+
 
             // Form validation
             $('form').on('submit', function(e) {
@@ -329,7 +338,8 @@
                 if (!validateExpiryDate()) {
                     e.preventDefault();
                     alert(
-                        'Please enter a valid expiry date (year must be between current year and 10 years from now).');
+                        'Please enter a valid expiry date (year must be between current year and 10 years from now).'
+                    );
                     $('#expires_at').focus();
                     return false;
                 }

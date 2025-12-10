@@ -625,7 +625,7 @@
                 </div>
 
                 <!-- Subscription Dates -->
-                <div class="form-section p-4">
+                <div class="form-section p-6">
                     <h5><i class="fa fa-calendar-alt"></i> Subscription Dates</h5>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem;">
                         <div class="form-group">

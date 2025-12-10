@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Review;
 use App\Models\User;
+use App\Models\WalletTransaction;
 use Illuminate\Http\Request;
 
 class SuparAdminDashboard extends Controller
@@ -65,5 +66,46 @@ class SuparAdminDashboard extends Controller
             });
 
         return response()->json($orders);
+    }
+
+    /**
+     * Display all wallet transactions for super admin
+     */
+    public function walletTransactions(Request $request)
+    {
+        $query = WalletTransaction::with(['user', 'paymentDetail']);
+
+        // Apply filters
+        if ($request->has('type') && $request->type) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
+        }
+
+        $transactions = $query->orderByDesc('created_at')->paginate(2);
+
+        // Calculate totals
+        $totalCredits = WalletTransaction::where('type', 'in')
+            ->where('status', 'completed')
+            ->sum('amount');
+
+        $totalDebits = WalletTransaction::where('type', 'out')
+            ->where('status', 'completed')
+            ->sum('amount');
+
+        $pendingAmount = WalletTransaction::where('status', 'pending')
+            ->sum('amount');
+
+        $totalTransactions = WalletTransaction::count();
+
+        return view('pages.super_admin.wallet-transactions.index', [
+            'transactions' => $transactions,
+            'totalCredits' => $totalCredits,
+            'totalDebits' => $totalDebits,
+            'pendingAmount' => $pendingAmount,
+            'totalTransactions' => $totalTransactions,
+        ]);
     }
 }

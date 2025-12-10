@@ -87,15 +87,31 @@ class RestaurantAdminController extends Controller
 
         $rules = [
             // Basic Information
-            'restaurant_name' => 'required|string|min:3|max:50',
-            'contact_person_name' => 'required|string|min:3|max:50',
-            'phone' => [
-                'required',
-                'string',
-                'min:10',
-                'max:15',
-                'regex:/^[1-9][0-9]{9,14}$/', // Must start with 1-9, total 10-15 digits
+            'restaurant_name' => [
+                'required', 'string', 'min:3', 'max:50',
+                'regex:/^[A-Za-z0-9\s\-\&\.\',]+$/',
             ],
+
+            'contact_person_name' => [
+                'required', 'string', 'min:3', 'max:50',
+                'regex:/^[A-Za-z\s]+$/',
+            ],
+
+            'franchise_owner_name' => [
+                'nullable', 'string', 'min:3', 'max:50',
+                'regex:/^[A-Za-z\s]+$/',
+            ],
+
+            'location_admin_name' => [
+                'required', 'string', 'min:3', 'max:50',
+                'regex:/^[A-Za-z\s]+$/',
+            ],
+
+            'phone' => [
+                'required', 'string', 'min:10', 'max:15',
+                'regex:/^[1-9][0-9]{9,14}$/',
+            ],
+
             'email' => 'required|email|min:7|max:100',
 
             // Address Information
@@ -103,12 +119,10 @@ class RestaurantAdminController extends Controller
             'state_id' => 'required|integer|exists:states,id',
             'city_id' => 'required|integer|exists:cities,id',
             'postal_code' => [
-                'required',
-                'string',
-                'min:4',
-                'max:10',
+                'required', 'string', 'min:4', 'max:10',
                 'regex:/^[0-9A-Za-z\s\-]+$/',
             ],
+
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
 
@@ -121,13 +135,16 @@ class RestaurantAdminController extends Controller
             'restaurant_commission_percentage' => 'required|numeric|min:0|max:100',
 
             // Optional fields
-            'cuisine_type' => 'nullable|string|max:100',
+            'cuisine_type' => [
+                'nullable', 'string', 'min:3', 'max:30',
+                'regex:/^[A-Za-z\s\-]+$/',
+            ],
             'website_url' => 'nullable|url|max:255',
             'is_open' => 'sometimes|boolean',
             'tenant_id' => 'sometimes|nullable|exists:tenants,id',
             'image_url' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:2048',
 
-            // Business hours validation rules
+            // Business hours
             'business_hours' => 'required|array',
             'business_hours.*.day' => 'required|string|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
             'business_hours.*.is_open' => 'nullable|boolean',
@@ -135,17 +152,29 @@ class RestaurantAdminController extends Controller
             'business_hours.*.closing_time' => 'nullable|date_format:H:i|after:business_hours.*.opening_time',
         ];
 
-        // Custom validation messages
         $messages = [
             // Restaurant name
             'restaurant_name.required' => 'Restaurant name is required.',
             'restaurant_name.min' => 'Restaurant name must be at least 3 characters.',
             'restaurant_name.max' => 'Restaurant name cannot exceed 50 characters.',
+            'restaurant_name.regex' => 'Restaurant name contains invalid characters.',
 
             // Contact person
             'contact_person_name.required' => 'Contact person name is required.',
             'contact_person_name.min' => 'Contact person name must be at least 3 characters.',
             'contact_person_name.max' => 'Contact person name cannot exceed 50 characters.',
+            'contact_person_name.regex' => 'Contact person name may only contain letters and spaces.',
+
+            // Franchise owner
+            'franchise_owner_name.min' => 'Franchise owner name must be at least 3 characters.',
+            'franchise_owner_name.max' => 'Franchise owner name cannot exceed 50 characters.',
+            'franchise_owner_name.regex' => 'Franchise owner name may only contain letters and spaces.',
+
+            // Location Admin
+            'location_admin_name.required' => 'Location admin name is required.',
+            'location_admin_name.min' => 'Location admin name must be at least 3 characters.',
+            'location_admin_name.max' => 'Location admin name cannot exceed 50 characters.',
+            'location_admin_name.regex' => 'Location admin name may only contain letters and spaces.',
 
             // Phone
             'phone.required' => 'Phone number is required.',
@@ -176,12 +205,12 @@ class RestaurantAdminController extends Controller
             'postal_code.max' => 'Postal code cannot exceed 10 characters.',
             'postal_code.regex' => 'Postal code can only contain letters, numbers, spaces, and hyphens.',
 
-            // Latitude and Longitude
+            // Latitude & Longitude
             'latitude.required' => 'Latitude is required.',
-            'latitude.numeric' => 'Latitude must be a number.',
+            'latitude.numeric' => 'Latitude must be valid numbers.',
             'latitude.between' => 'Latitude must be between -90 and 90.',
             'longitude.required' => 'Longitude is required.',
-            'longitude.numeric' => 'Longitude must be a number.',
+            'longitude.numeric' => 'Longitude must be valid numbers.',
             'longitude.between' => 'Longitude must be between -180 and 180.',
 
             // Business Configuration
@@ -191,11 +220,11 @@ class RestaurantAdminController extends Controller
 
             'minimum_order_amount.required' => 'Minimum order amount is required.',
             'minimum_order_amount.min' => 'Minimum order amount cannot be negative.',
-            'minimum_order_amount.max' => 'Minimum order amount seems too high (max 10,000).',
+            'minimum_order_amount.max' => 'Minimum order amount is too high.',
 
             'base_delivery_fee.required' => 'Base delivery fee is required.',
             'base_delivery_fee.min' => 'Delivery fee cannot be negative.',
-            'base_delivery_fee.max' => 'Delivery fee seems too high (max 1,000).',
+            'base_delivery_fee.max' => 'Delivery fee is too high.',
 
             'estimated_delivery_time.required' => 'Estimated delivery time is required.',
             'estimated_delivery_time.min' => 'Delivery time must be at least 10 minutes.',
@@ -209,16 +238,26 @@ class RestaurantAdminController extends Controller
             'restaurant_commission_percentage.min' => 'Commission percentage cannot be negative.',
             'restaurant_commission_percentage.max' => 'Commission percentage cannot exceed 100%.',
 
-            // Business hours
+            // Cuisine Type
+            'cuisine_type.min' => 'Cuisine type must be at least 3 characters.',
+            'cuisine_type.max' => 'Cuisine type cannot exceed 30 characters.',
+            'cuisine_type.regex' => 'Cuisine type may only contain letters, spaces, and hyphens.',
+
+            // Image
+            'image_url.image' => 'The selected file must be an image.',
+            'image_url.mimes' => 'Image must be jpeg, jpg, png, or gif.',
+            'image_url.max' => 'Image size must not exceed 2MB.',
+
+            // Business Hours
             'business_hours.required' => 'Business hours are required.',
             'business_hours.*.closing_time.after' => 'Closing time must be after opening time.',
-
         ];
 
         // Add conditional validation for super_admin
         if (auth()->user()->role === 'super_admin' && $request->has('tenant_selection')) {
             if ($request->tenant_selection === 'new') {
-                $rules['contact_person'] = 'required|string|min:3|max:255';
+                $rules['contact_person'] = ['required', 'string', 'min:3', 'max:50',
+                'regex:/^[A-Za-z\s]+$/'];
                 $rules['tenant_email'] = 'required|email|min:7|max:100|unique:users,email';
                 $rules['tenant_phone'] = [
                     'required',
@@ -229,7 +268,10 @@ class RestaurantAdminController extends Controller
                     'unique:users,phone', // Add unique validation for phone
                 ];
                 // Require location admin fields for new franchise
-                $rules['location_admin_name'] = 'required|string|min:3|max:255';
+                $rules['location_admin_name'] = [
+                    'required', 'string', 'min:3', 'max:50',
+                    'regex:/^[A-Za-z\s]+$/',
+                ];
                 $rules['location_admin_email'] = 'required|email|min:7|max:100|unique:users,email';
                 $rules['location_admin_phone'] = [
                     'required',
@@ -751,7 +793,7 @@ class RestaurantAdminController extends Controller
                 'nullable',
                 'string',
                 'min:3',
-                'max:100',
+                'max:30',
                 'regex:/^[A-Za-z\s,\-]+$/',
             ],
 

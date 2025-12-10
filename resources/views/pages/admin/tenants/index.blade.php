@@ -350,32 +350,9 @@
                                 </div>
 
                                 <!-- Pagination -->
-                                <nav class="d-flex align-items-center text-center" aria-label="Page navigation">
-                                    {{ $tenants->appends(request()->query())->links('pagination::bootstrap-5') }}
-                                </nav>
+                               <x-pagination-summary :paginator="$tenants" />
 
                                 <style>
-                                    /* Layout */
-                                    .pagination {
-                                        margin: 0;
-                                        display: flex;
-                                        align-items: center;
-                                        text-align: center;
-                                    }
-
-                                    /* Smaller page links and chevrons */
-                                    .pagination .page-link {
-                                        font-size: 0.85rem;
-                                        padding: 6px 8px;
-                                        min-width: 36px;
-                                        height: 32px;
-                                        line-height: 1;
-                                        border-radius: 6px;
-                                        display: inline-flex;
-                                        align-items: center;
-                                        justify-content: center;
-                                    }
-
                                     /* Responsive: center pagination on small screens */
                                     @media (max-width: 576px) {
                                         .ms-auto {
