@@ -257,7 +257,7 @@ class RestaurantAdminController extends Controller
         if (auth()->user()->role === 'super_admin' && $request->has('tenant_selection')) {
             if ($request->tenant_selection === 'new') {
                 $rules['contact_person'] = ['required', 'string', 'min:3', 'max:50',
-                'regex:/^[A-Za-z\s]+$/'];
+                    'regex:/^[A-Za-z\s]+$/'];
                 $rules['tenant_email'] = 'required|email|min:7|max:100|unique:users,email';
                 $rules['tenant_phone'] = [
                     'required',
