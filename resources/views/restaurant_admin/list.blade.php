@@ -175,6 +175,7 @@
                                                         class="text-fade">{{ $restaurant->cityRelation ? $restaurant->cityRelation->name : $restaurant->city }},
                                                         {{ $restaurant->stateRelation ? $restaurant->stateRelation->name : $restaurant->state }}</small>
                                                 </td>
+
                                                 <td>
                                                     @switch($restaurant->status)
                                                         @case('pending')
@@ -215,12 +216,14 @@
                                                         @endphp
 
                                                         @if ($canManage && $restaurant->status === 'approved')
-                                                            <div class="form-check form-switch">
+                                                            {{-- With Checkbox --}}
+                                                            <div class="form-check form-switch d-flex align-items-center">
                                                                 <input type="checkbox" class="form-check-input pause-toggle"
                                                                     id="pauseToggle{{ $restaurant->id }}"
                                                                     data-restaurant-id="{{ $restaurant->id }}"
                                                                     {{ $restaurant->is_paused ? 'checked' : '' }}>
-                                                                <label class="form-check-label"
+
+                                                                <label class="form-check-label ms-2"
                                                                     for="pauseToggle{{ $restaurant->id }}">
                                                                     <span class="pause-text">
                                                                         {{ $restaurant->is_paused ? 'PAUSED' : 'ACTIVE' }}
@@ -228,14 +231,25 @@
                                                                 </label>
                                                             </div>
                                                         @else
-                                                            <span class="text-muted">
-                                                                {{ $restaurant->is_paused ? 'PAUSED' : 'ACTIVE' }}
-                                                            </span>
+                                                            {{-- WITHOUT Checkbox but same spacing --}}
+                                                            <div class="form-check form-switch d-flex align-items-center">
+
+                                                                {{-- Invisible fake checkbox to keep same space --}}
+                                                                <span
+                                                                    style="width:38px; height:22px; display:inline-block;"></span>
+
+                                                                <label class="form-check-label ms-2">
+                                                                    <span class="pause-text">
+                                                                        {{ $restaurant->is_paused ? 'PAUSED' : 'ACTIVE' }}
+                                                                    </span>
+                                                                </label>
+                                                            </div>
                                                         @endif
                                                     @else
                                                         <span class="text-muted">N/A</span>
                                                     @endif
                                                 </td>
+
                                                 <td>
                                                     <div>{{ $restaurant->created_at->format('M d, Y') }}</div>
                                                     <small
@@ -313,35 +327,6 @@
 
                             <!-- Pagination -->
                             <x-pagination-summary :paginator="$restaurants" />
-                            {{ $restaurants->appends(request()->query())->links('pagination::bootstrap-5')
-                            }}
-                            
-
-                            <style>
-                                .pagination .page-item.disabled .page-link,
-                                .pagination .page-item.active .page-link {
-                                    background-color: #0d6efd;
-                                    border-color: #0d6efd;
-                                    color: #fff;
-                                    pointer-events: none;
-                                }
-
-                                .pagination .page-item.disabled .page-link {
-                                    background-color: #e9ecef;
-                                    color: #6c757d;
-                                    border-color: #dee2e6;
-                                }
-
-                                .pagination .page-link {
-                                    border-radius: 6px !important;
-                                    padding: 6px 12px;
-                                    font-size: 0.875rem;
-                                }
-
-                                .pagination {
-                                    justify-content: center;
-                                }
-                            </style>
                         @else
                             <div class="text-center py-5">
                                 <img src="{{ asset('images/no-data.svg') }}" class="w-120" alt="No Data">

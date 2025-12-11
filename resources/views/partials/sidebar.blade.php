@@ -349,7 +349,57 @@
                               </a>
                           </li>
                       @endif
-                  @endauth <div class="sidebar-widgets">
+                  @endauth
+
+                  <!-- Wallet Management - For Tenant Admin and Location Admin -->
+                  @auth
+                      @if (in_array(auth()->user()->role, ['tenant_admin', 'location_admin']))
+                          <li class="treeview {{ request()->is('admin/wallet*') ? 'active menu-open' : '' }}">
+                              <a href="#">
+                                  <i class="ti-wallet me-10"><span class="path1"></span><span class="path2"></span></i>
+                                  <span>My Wallet</span>
+                                  <span class="pull-right-container">
+                                      <i class="fa fa-angle-right pull-right"></i>
+                                  </span>
+                              </a>
+                              <ul class="treeview-menu">
+                                  <li
+                                      class="{{ request()->is('admin/wallet') && !request()->is('admin/wallet/*') ? 'active' : '' }}">
+                                      <a href="{{ route('admin.wallet.index') }}">
+                                          <i class="icon-Commit"><span class="path1"></span><span
+                                                  class="path2"></span></i>Wallet Dashboard
+                                      </a>
+                                  </li>
+                                  <li class="{{ request()->is('admin/wallet/add-money') ? 'active' : '' }}">
+                                      <a href="{{ route('admin.wallet.add-money') }}">
+                                          <i class="icon-Commit"><span class="path1"></span><span
+                                                  class="path2"></span></i>Add Money
+                                      </a>
+                                  </li>
+                                  <li class="{{ request()->is('admin/wallet/withdraw') ? 'active' : '' }}">
+                                      <a href="{{ route('admin.wallet.withdraw') }}">
+                                          <i class="icon-Commit"><span class="path1"></span><span
+                                                  class="path2"></span></i>Withdraw
+                                      </a>
+                                  </li>
+                                  <li class="{{ request()->is('admin/wallet/transactions') ? 'active' : '' }}">
+                                      <a href="{{ route('admin.wallet.transactions') }}">
+                                          <i class="icon-Commit"><span class="path1"></span><span
+                                                  class="path2"></span></i>Transactions
+                                      </a>
+                                  </li>
+                                  <li class="{{ request()->is('admin/wallet/payment-details*') ? 'active' : '' }}">
+                                      <a href="{{ route('admin.wallet.payment-details') }}">
+                                          <i class="icon-Commit"><span class="path1"></span><span
+                                                  class="path2"></span></i>Payment Methods
+                                      </a>
+                                  </li>
+                              </ul>
+                          </li>
+                      @endif
+                  @endauth
+
+                  <div class="sidebar-widgets">
                       <div class="mx-25 mb-30 pb-20 side-bx bg-primary bg-food-dark rounded20">
                           <div class="text-center">
                               <img src="{{ asset('assets/admin/images/res-menu.png') }}" class="sideimg"

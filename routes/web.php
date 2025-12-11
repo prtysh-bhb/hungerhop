@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminWalletController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\CustomerProfileController;
 use App\Http\Controllers\Admin\DocumentManagementController;
@@ -164,6 +165,20 @@ Route::middleware(['auth', 'identify_tenant'])->group(function () {
             ->name('payment.update-plan');
         Route::get('/payment/invoice/{payment}', [PaymentController::class, 'downloadInvoice'])
             ->name('payment.invoice');
+    });
+
+    // ===== Wallet Management Routes for Location Admin and Tenant Admin =====
+    Route::middleware(['role:location_admin,tenant_admin'])->prefix('admin/wallet')->name('admin.wallet.')->group(function () {
+        Route::get('/', [AdminWalletController::class, 'index'])->name('index');
+        Route::get('/add-money', [AdminWalletController::class, 'showAddMoneyForm'])->name('add-money');
+        Route::post('/add-money', [AdminWalletController::class, 'addMoney'])->name('add-money.store');
+        Route::get('/withdraw', [AdminWalletController::class, 'showWithdrawForm'])->name('withdraw');
+        Route::post('/withdraw', [AdminWalletController::class, 'withdraw'])->name('withdraw.store');
+        Route::get('/transactions', [AdminWalletController::class, 'transactionHistory'])->name('transactions');
+        Route::get('/payment-details', [AdminWalletController::class, 'paymentDetails'])->name('payment-details');
+        Route::get('/payment-details/create', [AdminWalletController::class, 'showAddPaymentDetailForm'])->name('payment-details.create');
+        Route::post('/payment-details', [AdminWalletController::class, 'storePaymentDetail'])->name('payment-details.store');
+        Route::delete('/payment-details/{id}', [AdminWalletController::class, 'deletePaymentDetail'])->name('payment-details.delete');
     });
 
     // Restaurant Dashboard - for restaurant_staff, location_admin, and delivery_partner

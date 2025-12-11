@@ -583,6 +583,7 @@ class TenantController extends Controller
             <div style="margin-top: 30px; text-align: center; color: #666; font-size: 10px;">
                 <p>To save as PDF: Use your browser\'s Print function (Ctrl+P / Cmd+P) and select "Save as PDF"</p>
             </div>
+            <button onclick="window.print()" style="margin-top: 10px; padding: 8px 16px; font-size: 14px; cursor: pointer;">Print / Save as PDF</button>
         </body>
         </html>';
 
