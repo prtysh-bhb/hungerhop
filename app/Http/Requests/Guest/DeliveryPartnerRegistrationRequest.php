@@ -165,7 +165,7 @@ class DeliveryPartnerRegistrationRequest extends FormRequest
 
             'document_file.required' => 'Please upload a document file.',
             'document_file.mimes' => 'Document must be a file of type: jpeg, png, jpg, pdf.',
-            'document_file.max' => 'Document file size may not be greater than 5MB.',
+            'document_file.max' => 'Document file size may not be greater than 2MB.',
         ];
     }
 
