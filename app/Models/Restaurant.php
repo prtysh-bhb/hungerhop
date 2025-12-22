@@ -97,6 +97,8 @@ class Restaurant extends BaseTenantModel
 
     const STATUS_INACTIVE = 'inactive';
 
+    protected $table = 'restaurants';
+
     protected $fillable = [
         'tenant_id',
         'location_admin_id',

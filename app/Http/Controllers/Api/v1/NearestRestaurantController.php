@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
+use App\Models\MenuCategory;
+use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\Restaurant;
 use Illuminate\Http\Request;
@@ -77,6 +79,116 @@ class NearestRestaurantController extends Controller
         return response()->json([
             'success' => true,
             'data' => $reviews,
+        ]);
+    }
+
+    /**
+     * Get menu items by category name
+     * POST /api/v1/restaurant/menu
+     */
+    public function menuByCategoryWithRestaurant(Request $request)
+    {
+        $validated = $request->validate([
+            'category' => 'required|string|max:100',
+        ]);
+
+        $category = MenuCategory::whereRaw(
+            'LOWER(name) = ?',
+            [strtolower($validated['category'])]
+        )->first();
+
+        if (! $category) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Category not found',
+            ], 404);
+        }
+
+        // 2. Fetch menu items with restaurant
+        $menuItems = MenuItem::with('restaurant')
+            ->where('menu_category_id', $category->id)
+            ->get()
+            ->groupBy('restaurant_id');
+
+        // 3. Build response
+        // $data = $menuItems->map(function ($items) use ($category) {
+        //     $restaurant = $items->first()->restaurant;
+
+        //     return [
+        //         'id' => $restaurant->id,
+        //         'name' => $restaurant->restaurant_name,
+        //         'address' => $restaurant->address,
+        //         'rating' => (float) $restaurant->average_rating,
+        //         'is_open' => (bool) $restaurant->is_open,
+        //         'logo' => $restaurant->full_image_url,
+        //         'title' => $category->name,
+        //         'menu_item' => $items->map(function ($item) {
+        //             return [
+        //                 'id' => $item->id,
+        //                 'name' => $item->item_name,
+        //                 'price' => (float) $item->base_price,
+        //                 'description' => $item->description,
+        //                 'image' => $item->image_url
+        //                     ? url('storage/'.$item->image_url)
+        //                     : null,
+        //                 'is_available' => (bool) $item->is_available,
+        //                 'is_veg' => (bool) $item->is_veg,
+        //                 'is_vegan' => (bool) $item->is_vegan,
+        //                 'rating' => (float) $item->average_rating,
+        //             ];
+        //         })->values(),
+        //     ];
+        // })->values();
+
+        $data = $menuItems->map(function ($items) use ($category) {
+
+            // 1. Get FIRST NON-DELETED restaurant
+            $restaurant = $items
+                ->pluck('restaurant')
+                ->filter(fn ($r) => $r && $r->deleted_at === null)
+                ->first();
+
+            // 2. If ALL restaurants are deleted → skip this group
+            if (! $restaurant) {
+                return null;
+            }
+
+            return [
+                'id' => $restaurant->id,
+                'name' => $restaurant->restaurant_name,
+                'address' => $restaurant->address,
+                'rating' => (float) $restaurant->average_rating,
+                'is_open' => (bool) $restaurant->is_open,
+                'logo' => $restaurant->full_image_url,
+                'title' => $category->name,
+
+                'menu_item' => $items
+                    // 3. Keep only items whose restaurant is NOT deleted
+                    ->filter(fn ($item) => $item->restaurant && $item->restaurant->deleted_at === null)
+                    ->map(function ($item) {
+                        return [
+                            'id' => $item->id,
+                            'name' => $item->item_name,
+                            'price' => (float) $item->base_price,
+                            'description' => $item->description,
+                            'image' => $item->image_url
+                                ? url('storage/'.$item->image_url)
+                                : null,
+                            'is_available' => (bool) $item->is_available,
+                            'is_veg' => (bool) $item->is_veg,
+                            'is_vegan' => (bool) $item->is_vegan,
+                            'rating' => (float) $item->average_rating,
+                        ];
+                    })
+                    ->values(),
+            ];
+        })
+            ->filter()   // remove null restaurants safely
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
         ]);
     }
 
@@ -212,7 +324,7 @@ class NearestRestaurantController extends Controller
         $restaurants = $restaurants->map(function ($restaurant) {
             $businessHours = $this->getTiming($restaurant->business_hours);
             $todayHours = $businessHours[strtolower(now()->format('l'))] ?? null;
-            
+
             return [
                 'id' => $restaurant->id,
                 'name' => $restaurant->restaurant_name,
@@ -224,7 +336,7 @@ class NearestRestaurantController extends Controller
                 'is_open' => $restaurant->is_open,
                 'opening_time' => $todayHours['open'] ?? null,
                 'closing_time' => $todayHours['close'] ?? null,
-                'delivery_time' => $restaurant->estimated_delivery_time . ' mins',
+                'delivery_time' => $restaurant->estimated_delivery_time.' mins',
                 'logo' => $restaurant->full_image_url,
                 'cuisine_type' => $restaurant->cuisine_type,
                 'distance' => isset($restaurant->distance) ? round($restaurant->distance, 2) : null,
@@ -290,7 +402,7 @@ class NearestRestaurantController extends Controller
                     'offer_price' => (float) $item->base_price, // You can implement offer logic later
                     'description' => $item->description,
                     'category_id' => $item->menu_category_id,
-                    'image' => $item->image_url ? url('storage/' . $item->image_url) : null,
+                    'image' => $item->image_url ? url('storage/'.$item->image_url) : null,
                     'is_available' => $item->is_available,
                     'rating' => (float) $item->average_rating,
                     'is_vegetarian' => $item->is_vegetarian,
@@ -302,7 +414,7 @@ class NearestRestaurantController extends Controller
         // Restaurant data
         $businessHours = $this->getTiming($restaurant->business_hours);
         $todayHours = $businessHours[strtolower(now()->format('l'))] ?? null;
-        
+
         $restuarantData = [[
             'id' => $restaurant->id,
             'name' => $restaurant->restaurant_name,
@@ -314,7 +426,7 @@ class NearestRestaurantController extends Controller
             'is_open' => $restaurant->is_open,
             'opening_time' => $todayHours['open'] ?? null,
             'closing_time' => $todayHours['close'] ?? null,
-            'delivery_time' => $restaurant->estimated_delivery_time . ' mins',
+            'delivery_time' => $restaurant->estimated_delivery_time.' mins',
             'logo' => $restaurant->full_image_url,
             'cuisine_type' => $restaurant->cuisine_type,
             'phone' => $restaurant->phone,
@@ -325,7 +437,7 @@ class NearestRestaurantController extends Controller
         $galleryData = $restaurant->banners->map(function ($banner) {
             return [
                 'id' => $banner->id,
-                'image_url' => $banner->image_url ? url('storage/' . $banner->image_url) : null,
+                'image_url' => $banner->image_url ? url('storage/'.$banner->image_url) : null,
                 'title' => $banner->title,
             ];
         });
@@ -334,8 +446,8 @@ class NearestRestaurantController extends Controller
         $reviewData = $restaurant->reviews->map(function ($review) {
             return [
                 'id' => $review->id,
-                'user_name' => $review->customer && $review->customer->user 
-                    ? $review->customer->user->name 
+                'user_name' => $review->customer && $review->customer->user
+                    ? $review->customer->user->name
                     : 'Anonymous',
                 'rating' => $review->rating,
                 'review' => $review->review_text,
