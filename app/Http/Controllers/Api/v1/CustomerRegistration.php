@@ -410,6 +410,54 @@ class CustomerRegistration extends Controller
         ], 200);
     }
 
+    public function self(Request $request)
+    {
+        $user = auth()->user();
+
+        if (! $user || $user->role !== 'customer') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only customers can access this endpoint.',
+            ], 403);
+        }
+
+        $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
+
+        if (! $customerProfile) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Customer profile not found.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'user' => [
+                    'id' => (string) $user->id,
+                    'email' => (string) $user->email,
+                    'phone' => (string) $user->phone,
+                    'first_name' => (string) $user->first_name,
+                    'last_name' => (string) $user->last_name,
+                    'role' => (string) $user->role,
+                    'status' => (string) $user->status,
+                    'wallet_balance' => number_format((float) ($user->wallet_balance ?? 0), 2, '.', ''),
+                ],
+                'customer_profile' => [
+                    'id' => (string) $customerProfile->id,
+                    'date_of_birth' => $customerProfile->date_of_birth
+                        ? $customerProfile->date_of_birth->toDateString()
+                        : '',
+                    'gender' => (string) ($customerProfile->gender ?? ''),
+                    'total_orders' => (string) $customerProfile->total_orders,
+                    'total_spent' => number_format((float) $customerProfile->total_spent, 2, '.', ''),
+                    'loyalty_points' => (string) $customerProfile->loyalty_points,
+                    'referral_code' => (string) ($customerProfile->referral_code ?? ''),
+                ],
+            ],
+        ], 200);
+    }
+
     /**
      * Get banners for homepage
      */

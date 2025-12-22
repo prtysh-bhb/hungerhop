@@ -148,6 +148,8 @@ class AuthController extends Controller
                         'phone' => $user->phone,
                         'role' => $user->role,
                         'status' => $user->status,
+                        'date_of_birth' => $user->customerProfile ? $user->customerProfile->date_of_birth->toDateString() : null,
+                        'gender' => $user->customerProfile ? $user->customerProfile->gender : null,
                         'email_verified_at' => $user->email_verified_at ? $user->email_verified_at->toDateTimeString() : null,
                         'last_login_at' => $user->last_login_at ? $user->last_login_at->toDateTimeString() : null,
                     ],

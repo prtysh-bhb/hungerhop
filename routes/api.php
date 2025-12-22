@@ -74,6 +74,7 @@ Route::prefix('v1')->group(function () {
     Route::prefix('customer')->group(function () {
         // Public customer registration
         Route::post('/register', [CustomerRegistration::class, 'register']);
+        Route::get('me',[CustomerRegistration::class, 'self'])->middleware('auth:api');
 
         // ----------------------------------------------
         // Address Management (Customer)

@@ -206,18 +206,28 @@ class NearestRestaurantController extends Controller
                 ->orderBy('distance');
         }
 
-        $restaurants = $query->get(['id', 'restaurant_name', 'cuisine_type', 'average_rating', 'latitude', 'longitude', 'address', 'business_hours']);
+        $restaurants = $query->get();
 
-        // Add distance if calculated
+        // Map restaurants to structured format
         $restaurants = $restaurants->map(function ($restaurant) {
+            $businessHours = $this->getTiming($restaurant->business_hours);
+            $todayHours = $businessHours[strtolower(now()->format('l'))] ?? null;
+            
             return [
                 'id' => $restaurant->id,
-                'restaurant_name' => $restaurant->restaurant_name,
-                'cuisine_type' => $restaurant->cuisine_type,
-                'average_rating' => $restaurant->average_rating,
-                'distance' => isset($restaurant->distance) ? round($restaurant->distance, 2) : null,
-                'timing' => $this->getTiming($restaurant->business_hours)[strtolower(now()->format('l'))] ?? null,
+                'name' => $restaurant->restaurant_name,
                 'address' => $restaurant->address,
+                'latitude' => (string) $restaurant->latitude,
+                'longitude' => (string) $restaurant->longitude,
+                'rating' => (float) $restaurant->average_rating,
+                'total_reviews' => $restaurant->total_reviews,
+                'is_open' => $restaurant->is_open,
+                'opening_time' => $todayHours['open'] ?? null,
+                'closing_time' => $todayHours['close'] ?? null,
+                'delivery_time' => $restaurant->estimated_delivery_time . ' mins',
+                'logo' => $restaurant->full_image_url,
+                'cuisine_type' => $restaurant->cuisine_type,
+                'distance' => isset($restaurant->distance) ? round($restaurant->distance, 2) : null,
             ];
         });
 
@@ -238,25 +248,108 @@ class NearestRestaurantController extends Controller
         ]);
 
         $user = auth()->user();
-        $restaurant = Restaurant::where('id', $request->id)
+        $restaurant = Restaurant::with([
+            'menuCategories.menuItems',
+            'banners',
+            'reviews.customer.user',
+        ])->where('id', $request->id)
             ->when($user && in_array($user->role, ['admin', 'owner']), function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             })
             ->firstOrFail();
 
+        // Get active promotions for this restaurant
+        $coupons = \App\Models\Promotion::where('restaurant_id', $restaurant->id)
+            ->where('is_active', true)
+            ->where('valid_from', '<=', now())
+            ->where(function ($q) {
+                $q->whereNull('valid_until')
+                    ->orWhere('valid_until', '>=', now());
+            })
+            ->get()
+            ->map(function ($promo) {
+                return [
+                    'id' => $promo->id,
+                    'code' => $promo->promotion_code,
+                    'discount_type' => $promo->discount_type,
+                    'discount_value' => (float) $promo->discount_value,
+                    'min_order_amount' => (float) $promo->minimum_order_amount,
+                    'expiry_date' => $promo->valid_until ? $promo->valid_until->format('Y-m-d') : null,
+                    'is_active' => $promo->is_active,
+                ];
+            });
+
+        // Get menu items with categories
+        $productData = [];
+        foreach ($restaurant->menuCategories as $category) {
+            foreach ($category->menuItems as $item) {
+                $productData[] = [
+                    'id' => $item->id,
+                    'name' => $item->item_name,
+                    'price' => (float) $item->base_price,
+                    'offer_price' => (float) $item->base_price, // You can implement offer logic later
+                    'description' => $item->description,
+                    'category_id' => $item->menu_category_id,
+                    'image' => $item->image_url ? url('storage/' . $item->image_url) : null,
+                    'is_available' => $item->is_available,
+                    'rating' => (float) $item->average_rating,
+                    'is_vegetarian' => $item->is_vegetarian,
+                    'is_vegan' => $item->is_vegan,
+                ];
+            }
+        }
+
+        // Restaurant data
+        $businessHours = $this->getTiming($restaurant->business_hours);
+        $todayHours = $businessHours[strtolower(now()->format('l'))] ?? null;
+        
+        $restuarantData = [[
+            'id' => $restaurant->id,
+            'name' => $restaurant->restaurant_name,
+            'address' => $restaurant->address,
+            'latitude' => (string) $restaurant->latitude,
+            'longitude' => (string) $restaurant->longitude,
+            'rating' => (float) $restaurant->average_rating,
+            'total_reviews' => $restaurant->total_reviews,
+            'is_open' => $restaurant->is_open,
+            'opening_time' => $todayHours['open'] ?? null,
+            'closing_time' => $todayHours['close'] ?? null,
+            'delivery_time' => $restaurant->estimated_delivery_time . ' mins',
+            'logo' => $restaurant->full_image_url,
+            'cuisine_type' => $restaurant->cuisine_type,
+            'phone' => $restaurant->phone,
+            'email' => $restaurant->email,
+        ]];
+
+        // Gallery data (banners)
+        $galleryData = $restaurant->banners->map(function ($banner) {
+            return [
+                'id' => $banner->id,
+                'image_url' => $banner->image_url ? url('storage/' . $banner->image_url) : null,
+                'title' => $banner->title,
+            ];
+        });
+
+        // Review data
+        $reviewData = $restaurant->reviews->map(function ($review) {
+            return [
+                'id' => $review->id,
+                'user_name' => $review->customer && $review->customer->user 
+                    ? $review->customer->user->name 
+                    : 'Anonymous',
+                'rating' => $review->rating,
+                'review' => $review->review_text,
+                'created_at' => $review->created_at->format('Y-m-d'),
+            ];
+        });
+
         return response()->json([
             'success' => true,
-            'data' => [
-                'id' => $restaurant->id,
-                'restaurant_name' => $restaurant->restaurant_name,
-                'cuisine_type' => $restaurant->cuisine_type,
-                'average_rating' => $restaurant->average_rating,
-                'timing' => $this->getTiming($restaurant->business_hours)[strtolower(now()->format('l'))] ?? null,
-                'address' => $restaurant->address,
-                'latitude' => $restaurant->latitude,
-                'longitude' => $restaurant->longitude,
-                'offers' => $restaurant->offers ?? [],
-            ],
+            'Coupon' => $coupons,
+            'Product_Data' => $productData,
+            'restuarant_data' => $restuarantData,
+            'Gallery_Data' => $galleryData,
+            'Review_Data' => $reviewData,
         ]);
     }
 }
