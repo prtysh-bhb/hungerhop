@@ -42,21 +42,21 @@ class SearchRestaurantController extends Controller
         $transformedRestaurants = $restaurants->map(function ($restaurant) {
             $data = [
                 'id' => $restaurant->id,
-                'restaurant_name' => $restaurant->restaurant_name,
+                'name' => $restaurant->restaurant_name,
                 'city' => $restaurant->city,
                 'cuisine_type' => $restaurant->cuisine_type,
                 'address' => $restaurant->address,
                 'full_address' => $restaurant->address.', '.$restaurant->city.', '.$restaurant->state.' - '.$restaurant->postal_code,
                 'phone' => $restaurant->phone,
                 'email' => $restaurant->email,
-                'image_url' => $restaurant->image_url,
+                'logo_url' => $restaurant->image_url,
                 'cover_image_url' => $restaurant->cover_image_url,
 
                 // Required fields
-                'average_rating' => (string) ($restaurant->average_rating ?? '0'),
+                'rating' => (string) number_format((float) ($restaurant->average_rating ?? 0), 1),
                 'total_reviews' => (int) ($restaurant->total_reviews ?? 0),
                 'estimated_delivery_time' => (string) ($restaurant->estimated_delivery_time ?? '30'),
-                'cost_for_two' => (string) (($restaurant->minimum_order_amount ?? 100) * 2),
+                'cost_for_two' => (string) number_format((float) (($restaurant->minimum_order_amount ?? 100) * 2), 2),
                 'description' => $restaurant->description ?? '',
                 'short_description' => $restaurant->description
                     ? (strlen($restaurant->description) > 100
@@ -65,16 +65,16 @@ class SearchRestaurantController extends Controller
                     : '',
 
                 // Order & delivery info
-                'minimum_order_amount' => (string) ($restaurant->minimum_order_amount ?? '0'),
-                'base_delivery_fee' => (string) ($restaurant->base_delivery_fee ?? '0'),
-                'delivery_radius_km' => (string) ($restaurant->delivery_radius_km ?? '10'),
-                'tax_percentage' => (string) ($restaurant->tax_percentage ?? '0'),
+                'minimum_order_amount' => (string) number_format((float) ($restaurant->minimum_order_amount ?? 0), 2),
+                'base_delivery_fee' => (string) number_format((float) ($restaurant->base_delivery_fee ?? 0), 2),
+                'delivery_radius_km' => (string) number_format((float) ($restaurant->delivery_radius_km ?? 10), 2),
+                'tax_percentage' => (string) number_format((float) ($restaurant->tax_percentage ?? 0), 2),
 
                 // Status fields
-                'is_open' => $restaurant->is_open ? true : false,
-                'is_paused' => $restaurant->is_paused ? true : false,
-                'accepts_orders' => $restaurant->accepts_orders ? true : false,
-                'is_featured' => $restaurant->is_featured ? true : false,
+                'is_open' => (bool) $restaurant->is_open,
+                'is_paused' => (bool) $restaurant->is_paused,
+                'accepts_orders' => (bool) $restaurant->accepts_orders,
+                'is_featured' => (bool) $restaurant->is_featured,
                 'status' => $restaurant->is_paused ? 'paused' : ($restaurant->is_open ? 'open' : 'closed'),
 
                 // Can order logic

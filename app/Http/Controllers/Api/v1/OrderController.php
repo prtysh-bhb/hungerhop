@@ -27,19 +27,20 @@ class OrderController extends Controller
      *
      * Example JSON request:
      * {
-     *   "order_number": "ORD1234",
      *   "delivery_address_id": 5,
      *   "payment_method": "cod",
      *   "special_instructions": "Leave at the door",
      *   "order_items": [
      *     {
      *       "item_id": 1,
-     *       "item_name": "Pizza Margherita",
      *       "quantity": 2,
      *       "special_instructions": "Extra cheese"
      *     }
      *   ]
      * }
+     *
+     * Note: order_number is generated automatically
+     * Note: item_name is fetched automatically from menu_items table
      */
     public function CreateOrder(Request $request)
     {
@@ -47,14 +48,13 @@ class OrderController extends Controller
 
         // Validate request
         $validator = \Validator::make($request->all(), [
-            'order_number' => 'required|string|unique:orders,order_number',
             'delivery_address_id' => 'required|exists:customer_addresses,id',
             'payment_method' => 'required|string|in:cod,wallet,upi,card',
             'special_instructions' => 'nullable|string',
             'order_items' => 'required|array|min:1',
             'order_items.*.item_id' => 'required|exists:menu_items,id',
-            'order_items.*.item_name' => 'required|string',
             'order_items.*.quantity' => 'required|integer|min:1',
+            'order_items.*.special_instructions' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -68,25 +68,6 @@ class OrderController extends Controller
         return response()->json($result, $statusCode);
     }
 
-    /**
-     * Edit an existing order.
-     * Only orders with status: placed, pending, or confirmed can be edited.
-     *
-     * Example JSON request:
-     * {
-     *   "order_id": 5,
-     *   "special_instructions": "Ring the doorbell twice",
-     *   "delivery_address_id": 6,
-     *   "order_items": [
-     *     {
-     *       "item_id": 1,
-     *       "item_name": "Pizza Margherita",
-     *       "quantity": 3,
-     *       "special_instructions": "No olives"
-     *     }
-     *   ]
-     * }
-     */
     public function editOrder(Request $request, $id)
     {
         $user = auth()->user();
@@ -96,7 +77,6 @@ class OrderController extends Controller
             'delivery_address_id' => 'nullable|exists:customer_addresses,id',
             'order_items' => 'nullable|array|min:1',
             'order_items.*.item_id' => 'required_with:order_items|exists:menu_items,id',
-            'order_items.*.item_name' => 'required_with:order_items|string',
             'order_items.*.quantity' => 'required_with:order_items|integer|min:1',
             'order_items.*.special_instructions' => 'nullable|string',
         ]);

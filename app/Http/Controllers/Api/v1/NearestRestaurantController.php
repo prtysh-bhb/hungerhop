@@ -58,7 +58,10 @@ class NearestRestaurantController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $result,
+            'message' => 'Menu retrieved successfully',
+            'data' => [
+                'categories' => $result,
+            ],
         ]);
     }
 
@@ -157,9 +160,9 @@ class NearestRestaurantController extends Controller
                 'id' => $restaurant->id,
                 'name' => $restaurant->restaurant_name,
                 'address' => $restaurant->address,
-                'rating' => (float) $restaurant->average_rating,
+                'rating' => (string) number_format((float) $restaurant->average_rating, 1),
                 'is_open' => (bool) $restaurant->is_open,
-                'logo' => $restaurant->full_image_url,
+                'logo_url' => $restaurant->full_image_url,
                 'title' => $category->name,
 
                 'menu_item' => $items
@@ -331,13 +334,13 @@ class NearestRestaurantController extends Controller
                 'address' => $restaurant->address,
                 'latitude' => (string) $restaurant->latitude,
                 'longitude' => (string) $restaurant->longitude,
-                'rating' => (float) $restaurant->average_rating,
-                'total_reviews' => $restaurant->total_reviews,
-                'is_open' => $restaurant->is_open,
+                'rating' => (string) number_format((float) $restaurant->average_rating, 1),
+                'total_reviews' => (int) $restaurant->total_reviews,
+                'is_open' => (bool) $restaurant->is_open,
                 'opening_time' => $todayHours['open'] ?? null,
                 'closing_time' => $todayHours['close'] ?? null,
-                'delivery_time' => $restaurant->estimated_delivery_time.' mins',
-                'logo' => $restaurant->full_image_url,
+                'estimated_delivery_time' => (string) $restaurant->estimated_delivery_time,
+                'logo_url' => $restaurant->full_image_url,
                 'cuisine_type' => $restaurant->cuisine_type,
                 'distance' => isset($restaurant->distance) ? round($restaurant->distance, 2) : null,
             ];
@@ -402,6 +405,7 @@ class NearestRestaurantController extends Controller
                     'offer_price' => (float) $item->base_price, // You can implement offer logic later
                     'description' => $item->description,
                     'category_id' => $item->menu_category_id,
+                    'category_name' => $category->name,
                     'image' => $item->image_url ? url('storage/'.$item->image_url) : null,
                     'is_available' => $item->is_available,
                     'rating' => (float) $item->average_rating,
@@ -421,18 +425,26 @@ class NearestRestaurantController extends Controller
             'address' => $restaurant->address,
             'latitude' => (string) $restaurant->latitude,
             'longitude' => (string) $restaurant->longitude,
-            'rating' => (float) $restaurant->average_rating,
-            'total_reviews' => $restaurant->total_reviews,
-            'is_open' => $restaurant->is_open,
+            'rating' => (string) number_format((float) $restaurant->average_rating, 1),
+            'total_reviews' => (int) $restaurant->total_reviews,
+            'is_open' => (bool) $restaurant->is_open,
             'opening_time' => $todayHours['open'] ?? null,
             'closing_time' => $todayHours['close'] ?? null,
-            'delivery_time' => $restaurant->estimated_delivery_time.' mins',
-            'logo' => $restaurant->full_image_url,
+            'estimated_delivery_time' => (string) $restaurant->estimated_delivery_time,
+            'logo_url' => $restaurant->full_image_url,
             'cuisine_type' => $restaurant->cuisine_type,
             'phone' => $restaurant->phone,
             'email' => $restaurant->email,
         ]];
-
+        $categoryData = $restaurant->menuCategories
+            ->whereNull('deleted_at')
+            ->map(function ($category) {
+                return [
+                    'id' => $category->id,
+                    'name' => $category->name ?? $category->category_name,
+                ];
+            })
+            ->values();
         // Gallery data (banners)
         $galleryData = $restaurant->banners->map(function ($banner) {
             return [
@@ -457,11 +469,15 @@ class NearestRestaurantController extends Controller
 
         return response()->json([
             'success' => true,
-            'Coupon' => $coupons,
-            'Product_Data' => $productData,
-            'restuarant_data' => $restuarantData,
-            'Gallery_Data' => $galleryData,
-            'Review_Data' => $reviewData,
+            'message' => 'Restaurant details retrieved successfully',
+            'data' => [
+                'restaurant' => $restuarantData[0],
+                'coupons' => $coupons,
+                'categories' => $categoryData,
+                'products' => $productData,
+                'gallery' => $galleryData,
+                'reviews' => $reviewData,
+            ],
         ]);
     }
 }

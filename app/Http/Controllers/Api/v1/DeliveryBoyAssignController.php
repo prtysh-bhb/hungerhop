@@ -71,6 +71,8 @@ class DeliveryBoyAssignController extends Controller
             $restaurant_lat, $restaurant_lng,
             $customer_lat, $customer_lng
         );
+        $restaurantToCustomerDistance=10; // temp override for testing
+        
 
         Log::info("Restaurant to Customer distance: {$restaurantToCustomerDistance} km");
 
@@ -338,7 +340,7 @@ class DeliveryBoyAssignController extends Controller
     {
         $validated = $request->validate([
             'order_id' => 'required|integer',
-            'status' => 'required|string|in:picked_up,out_for_delivery,delivered',
+            'status' => 'required|string|in:picked_up,out_for_delivery,arrived,delivered',
         ]);
 
         $delivery_boy_id = auth()->id();
@@ -363,62 +365,62 @@ class DeliveryBoyAssignController extends Controller
         // Check if this delivery partner is assigned to this order
         $assignment = DeliveryAssignment::where('order_id', $order->id)
             ->where('partner_id', $delivery_partner->id)
-            ->whereIn('status', ['accepted', 'picked_up', 'out_for_delivery'])
+            ->whereIn('status', ['accepted', 'picked_up', 'out_for_delivery', 'arrived'])
             ->first();
-
-        if (! $assignment) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You are not assigned to this order or the order is not in a valid state.',
-            ], 403);
-        }
-
-        $newStatus = $validated['status'];
-        $currentStatus = $assignment->status;
-
-        // Validate status transitions
-        $allowedTransitions = [
-            'accepted' => ['picked_up'],
-            'picked_up' => ['out_for_delivery'],
-            'out_for_delivery' => ['delivered'],
-        ];
-
-        // -------------------- this validation is commented out to allow direct updates for testing------------------
-
-        // if (! isset($allowedTransitions[$currentStatus]) || ! in_array($newStatus, $allowedTransitions[$currentStatus])) {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => "Invalid status transition from '{$currentStatus}' to '{$newStatus}'.",
-        //         'current_status' => $currentStatus,
-        //         'allowed_transitions' => $allowedTransitions[$currentStatus] ?? [],
-        //     ], 422);
-        // }
-
-        try {
-            // Update assignment status
-            $assignment->status = $newStatus;
-
-            // Set timestamps based on status
-            if ($newStatus === 'picked_up') {
-                $assignment->picked_up_at = now();
-                $order->status = 'picked_up';
-            } elseif ($newStatus === 'out_for_delivery') {
-                $order->status = 'out_for_delivery';
-            } elseif ($newStatus === 'delivered') {
-                $assignment->delivered_at = now();
-                $order->status = 'delivered';
-                $order->actual_delivery_time = now();
-
-                // Mark delivery partner as available again
-                $delivery_partner->is_available = true;
-                $delivery_partner->save();
+            if (! $assignment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not assigned to this order or the order is not in a valid state.',
+                ], 403);
             }
+            
+            $newStatus = $validated['status'];
+            $currentStatus = $assignment->status;
+            
+            // Validate status transitions
+            $allowedTransitions = [
+                'accepted' => ['picked_up'],
+                'picked_up' => ['out_for_delivery'],
+                'out_for_delivery' => ['arrived'],
+                'arrived' => ['delivered'],
+            ];
+            
+            // -------------------- this validation is commented out to allow direct updates for testing------------------
+            
+            // if (! isset($allowedTransitions[$currentStatus]) || ! in_array($newStatus, $allowedTransitions[$currentStatus])) {
+            //         return response()->json([
+            //                 'success' => false,
+            //                 'message' => "Invalid status transition from '{$currentStatus}' to '{$newStatus}'.",
+            //                 'current_status' => $currentStatus,
+            //                 'allowed_transitions' => $allowedTransitions[$currentStatus] ?? [],
+            //             ], 422);
+            //         }
+                    
+                    try {
+                        // Update assignment status
+                        $assignment->status = $newStatus;
+                        
+                        // Set timestamps based on status
+                        if ($newStatus === 'picked_up') {
+                            $assignment->picked_up_at = now();
+                            $order->status = 'picked_up';
+                        } elseif ($newStatus === 'out_for_delivery') {
+                            $order->status = 'out_for_delivery';
+                        } elseif ($newStatus === 'delivered') {
+                            $assignment->delivered_at = now();
+                            $order->status = 'delivered';
+                            $order->actual_delivery_time = now();
+                            
+                            // Mark delivery partner as available again
+                            $delivery_partner->is_available = true;
+                            $delivery_partner->save();
+                        }
 
-            $assignment->save();
-            $order->save();
-
-            Log::info("Order {$order->id} status updated to '{$newStatus}' by partner {$delivery_partner->id}");
-
+                        $assignment->save();
+                        $order->save();
+                        
+                        Log::info("Order {$order->id} status updated to '{$newStatus}' by partner {$delivery_partner->id}");
+                        
             return response()->json([
                 'success' => true,
                 'message' => "Order status updated to '{$newStatus}' successfully.",

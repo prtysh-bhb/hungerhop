@@ -204,6 +204,10 @@ class CustomerFavoriteController extends Controller
                     'id' => $restaurant->id,
                     'name' => $restaurant->restaurant_name,
                     'image_url' => $restaurant->image_url ?? null,
+                    'rating' => $restaurant->average_rating,
+                    'description' => $restaurant->description,
+                    'estimated_delivery_time' => $restaurant->estimated_delivery_time,
+                    'cost_for_two' =>(string) ($restaurant->minimum_order_amount ? $restaurant->minimum_order_amount * 2 : null),
                 ] : null,
                 'added_at' => $favorite->added_at ? $favorite->added_at->toDateTimeString() : null,
             ];

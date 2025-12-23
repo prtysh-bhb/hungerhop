@@ -20,7 +20,7 @@ return new class extends Migration
             $table->unsignedBigInteger('tenant_id');
             $table->enum('status', [
                 'placed', 'accepted', 'preparing', 'ready_for_pickup',
-                'assigned_to_delivery', 'picked_up', 'out_for_delivery',
+                'assigned_to_delivery', 'picked_up', 'out_for_delivery','arrived',
                 'delivered', 'cancelled', 'rejected',
             ])->default('placed');
             $table->decimal('subtotal', 10, 2);

@@ -265,4 +265,9 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasOne(\App\Models\PaymentDetail::class)
             ->where('is_primary', true);
     }
+
+    public function deliveryPartner()
+    {
+        return $this->hasOne(\App\Models\DeliveryPartner::class, 'user_id');
+    }
 }

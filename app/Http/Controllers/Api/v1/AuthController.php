@@ -37,6 +37,9 @@ class AuthController extends Controller
             // Generate JWT token
             $token = JWTAuth::fromUser($user);
 
+            // Load customer profile if exists
+            $customerProfile = $user->customerProfile;
+
             return response()->json([
                 'success' => true,
                 'message' => 'Customer registered successfully',
@@ -50,13 +53,15 @@ class AuthController extends Controller
                         'phone' => $user->phone,
                         'role' => $user->role,
                         'status' => $user->status,
+                        'date_of_birth' => $customerProfile ? ($customerProfile->date_of_birth ? $customerProfile->date_of_birth->toDateString() : null) : null,
+                        'gender' => $customerProfile ? $customerProfile->gender : null,
                         'email_verified_at' => $user->email_verified_at ? $user->email_verified_at->toDateTimeString() : null,
-                        'created_at' => $user->created_at ? $user->created_at->toDateTimeString() : null,
+                        'last_login_at' => $user->last_login_at ? $user->last_login_at->toDateTimeString() : null,
                     ],
                     'token' => [
                         'access_token' => $token,
                         'token_type' => 'bearer',
-                        'expires_in' => 3600, // Fixed 1 hour
+                        'expires_in' => 36000, // 10 hours to match login
                     ],
                 ],
             ], 201);
@@ -190,6 +195,12 @@ class AuthController extends Controller
                 ], 404);
             }
 
+            // Load customer profile if exists
+            $customerProfile = $user->customerProfile;
+
+            // Generate new token
+            $token = JWTAuth::fromUser($user);
+
             return response()->json([
                 'success' => true,
                 'message' => 'User profile retrieved successfully',
@@ -203,10 +214,15 @@ class AuthController extends Controller
                         'phone' => $user->phone,
                         'role' => $user->role,
                         'status' => $user->status,
+                        'date_of_birth' => $customerProfile ? ($customerProfile->date_of_birth ? $customerProfile->date_of_birth->toDateString() : null) : null,
+                        'gender' => $customerProfile ? $customerProfile->gender : null,
                         'email_verified_at' => $user->email_verified_at ? $user->email_verified_at->toDateTimeString() : null,
                         'last_login_at' => $user->last_login_at ? $user->last_login_at->toDateTimeString() : null,
-                        'created_at' => $user->created_at ? $user->created_at->toDateTimeString() : null,
-                        'updated_at' => $user->updated_at ? $user->updated_at->toDateTimeString() : null,
+                    ],
+                    'token' => [
+                        'access_token' => $token,
+                        'token_type' => 'bearer',
+                        'expires_in' => 36000,
                     ],
                 ],
             ], 200);

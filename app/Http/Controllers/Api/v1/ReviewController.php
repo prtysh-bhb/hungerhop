@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
+use App\Models\DeliveryAssignment;
 use App\Models\MenuItem;
 use App\Models\MenuItemReview;
 use App\Models\Order;
@@ -45,76 +46,116 @@ class ReviewController extends Controller
      * POST /restaurant/{id}/reviews
      */
     public function addReview(Request $request)
-    {
-        $user = auth()->user();
-        $validated = Validator::make($request->all(), [
-            'id' => 'required|integer|exists:restaurants,id',
-            'user_id' => 'required|integer',
-            'customer_id' => 'required|integer|exists:customer_profiles,id',
-            'reviewable_type' => 'required|string|in:restaurant,delivery_partner',
-            'reviewable_id' => 'required|integer', // Now required since we support both types
-            'order_id' => 'required|integer|exists:orders,id',
-            'rating' => 'required|numeric|min:1|max:5',
-            'comment' => 'nullable|string',
-        ]);
+{
+    $user = auth()->user();
 
-        if ($validated->fails()) {
-            return response()->json(['success' => false, 'errors' => $validated->errors()], 422);
-        }
+    // 1. Validate request (only what client is allowed to send)
+    $validated = Validator::make($request->all(), [
+        'order_id' => 'required|integer|exists:orders,id',
+        'reviewable_type' => 'required|string|in:restaurant,delivery_partner',
+        'rating' => 'required|numeric|min:1|max:5',
+        'comment' => 'nullable|string|max:500',
+    ]);
 
-        $validated = $validated->validated();
-        try {
-            $restaurant = Restaurant::where('id', $validated['id'])
-                ->when($user && in_array($user->role, ['admin', 'owner']), function ($q) use ($user) {
-                    $q->where('user_id', $user->id);
-                })
-                ->firstOrFail();
-        } catch (ValidationException $e) {
+    if ($validated->fails()) {
+        return response()->json([
+            'success' => false,
+            'errors' => $validated->errors(),
+        ], 422);
+    }
+
+    $validated = $validated->validated();
+
+    // 2. Fetch order
+    $order = Order::where('id', $validated['order_id'])->first();
+    if (! $order) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Order not found.',
+        ], 404);
+    }
+
+    // 3. Fetch restaurant
+    $restaurant = Restaurant::where('id', $order->restaurant_id)->first();
+    if (! $restaurant) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Restaurant not found for this order.',
+        ], 404);
+    }
+
+    $customerId = $order->customer_id;
+
+    // 4. Resolve reviewable_id
+    if ($validated['reviewable_type'] === 'restaurant') {
+
+        $reviewableId = $restaurant->id;
+
+    } elseif ($validated['reviewable_type'] === 'delivery_partner') {
+
+        // IMPORTANT: use the CORRECT column name (partner_id)
+        $assignment = DeliveryAssignment::where('order_id', $order->id)
+            ->whereNotNull('partner_id')
+            ->whereIn('status', ['accepted', 'picked_up', 'delivered'])
+            ->latest()
+            ->first();
+
+        if (! $assignment) {
             return response()->json([
                 'success' => false,
-                'errors' => $e->errors(),
+                'message' => 'Delivery partner not assigned to this order yet.',
             ], 422);
         }
 
-        // Validate order belongs to customer and restaurant
-        $order = Order::where('id', $request->order_id)
-            ->where('customer_id', $request->customer_id)
-            ->where('restaurant_id', $restaurant->id)
-            ->first();
-        if (! $order) {
+        if (! $assignment->partner_id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Order not found for this customer and restaurant.',
-            ], 404);
+                'message' => 'Delivery partner ID missing in assignment record.',
+            ], 422);
         }
 
-        // Determine the correct reviewable_id based on reviewable_type
-        $reviewableId = $request->reviewable_type === 'restaurant'
-            ? $restaurant->id
-            : $request->reviewable_id;
+        $reviewableId = $assignment->partner_id;
 
-        // Create review directly using Review model (not through restaurant relationship)
-        $review = Review::create([
-            'order_id' => $request->order_id,
-            'tenant_id' => $restaurant->tenant_id,
-            'customer_id' => $request->customer_id,
-            'reviewable_type' => $validated['reviewable_type'],
-            'reviewable_id' => $reviewableId,
-            'rating' => $request->rating,
-            'review_text' => $request->comment ?? null,
-            'images' => $request->images ?? null,
-            'is_anonymous' => $request->is_anonymous ?? false,
-            'admin_response' => null,
-            'admin_responded_at' => null,
-            'admin_responded_by' => null,
-            'is_featured' => false,
-        ]);
-
+    } else {
         return response()->json([
-            'success' => true,
-            'data' => $review,
-        ]);
+            'success' => false,
+            'message' => 'Invalid reviewable type.',
+        ], 422);
     }
+
+    // 5. Prevent duplicate review for same order + type
+    $alreadyReviewed = Review::where('order_id', $order->id)
+        ->where('reviewable_type', $validated['reviewable_type'])
+        ->exists();
+
+    if ($alreadyReviewed) {
+        return response()->json([
+            'success' => false,
+            'message' => 'You have already reviewed this order.',
+        ], 409);
+    }
+
+    // 6. Create review
+    $review = Review::create([
+        'order_id' => $order->id,
+        'tenant_id' => $restaurant->tenant_id,
+        'customer_id' => $customerId,
+        'reviewable_type' => $validated['reviewable_type'],
+        'reviewable_id' => $reviewableId,
+        'rating' => $validated['rating'],
+        'review_text' => $validated['comment'] ?? null,
+        'images' => $request->images ?? null,
+        'is_anonymous' => $request->is_anonymous ?? false,
+        'is_featured' => false,
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Review added successfully.',
+        'data' => $review,
+    ]);
+}
+
 
     // Add menu item reviews methods here
     public function addMenuItemReview(Request $request)

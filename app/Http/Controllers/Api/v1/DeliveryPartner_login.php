@@ -35,21 +35,37 @@ class DeliveryPartner_login extends Controller
         if (! $token = JWTAuth::fromUser($user)) {
             return response()->json(['success' => false, 'message' => 'Could not create token.'], 500);
         }
-
         return response()->json([
             'success' => true,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->first_name.' '.$user->last_name,
-                'email' => $user->email,
-                'role' => $user->role,
-            ],
-            'token' => [
-                'access_token' => $token,
-                'token_type' => 'bearer',
-                'expires_in' => 360000, // Fixed 10 hour
+            'message' => 'Login successful',
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'full_name' => $user->first_name.' '.$user->last_name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'role' => $user->role,
+                    'delivery_partner' => [
+                        'vehicle_type' => $user->deliveryPartner->vehicle_type,
+                        'vehicle_number' => $user->deliveryPartner->vehicle_number,
+                        'license_number' => $user->deliveryPartner->license_number,
+                        'rating' => (string) number_format((float) ($user->deliveryPartner->average_rating ?? 0), 1),
+                        'current_latitude' => $user->deliveryPartner->current_latitude,
+                        'current_longitude' => $user->deliveryPartner->current_longitude,
+                        'total_deliveries' => $user->deliveryPartner->total_deliveries,
+                    ],
+                    'status' => $user->status, // pending_approval / active
+                ],
+                'token' => [
+                    'access_token' => $token,
+                    'token_type' => 'bearer',
+                    'expires_in' => 360000,
+                ],
             ],
         ], 200);
+
     }
 
     public function logout(Request $request)
@@ -104,7 +120,7 @@ class DeliveryPartner_login extends Controller
                 'current_longitude' => 'required|numeric|between:-180,180',
                 'current_latitude' => 'required|numeric|between:-90,90',
                 'document_type' => 'required|in:id_proof,driving_license,rc,address_proof,bank_passbook',
-                // 'document_file' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120', // 5MB max
+                'document_file' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120', // 5MB max0
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -148,18 +164,18 @@ class DeliveryPartner_login extends Controller
             ]);
 
             // Handle document upload
-            // $documentPath = $request->file('document_file')->store('delivery_partner_documents', 'public');
+            $documentPath = $request->file('document_file')->store('delivery_partner_documents', 'public');
 
-            // $deliveryPartnerDocument = DeliveryPartnerDocument::create([
-            //     'partner_id' => $deliveryPartner->id,
-            //     'document_type' => $validated['document_type'],
-            //         'document_path' => $documentPath,
-            //         'document_name' => $request->file('document_file')->getClientOriginalName(),
-            //         'file_size' => $request->file('document_file')->getSize(),
-            //         'mime_type' => $request->file('document_file')->getMimeType(),
-            //     'status' => 'pending', // Pending admin review
-            //     'uploaded_at' => now(),
-            // ]);
+            $deliveryPartnerDocument = DeliveryPartnerDocument::create([
+                'partner_id' => $deliveryPartner->id,
+                'document_type' => $validated['document_type'],
+                    'document_path' => $documentPath,
+                    'document_name' => $request->file('document_file')->getClientOriginalName(),
+                    'file_size' => $request->file('document_file')->getSize(),
+                    'mime_type' => $request->file('document_file')->getMimeType(),
+                'status' => 'pending', // Pending admin review
+                'uploaded_at' => now(),
+            ]);
 
             DB::commit();
 
@@ -167,14 +183,20 @@ class DeliveryPartner_login extends Controller
                 'success' => true,
                 'message' => 'Registration successful! Your application is pending admin approval. You will be notified once approved.',
                 'data' => [
-                    'user_id' => $user->id,
-                    'delivery_partner_id' => $deliveryPartner->id,
-                    'status' => 'pending_approval',
-                    'email' => $user->email,
-                    'phone' => $user->phone,
-                    'vehicle_type' => $deliveryPartner->vehicle_type,
-                    'vehicle_number' => $deliveryPartner->vehicle_number,
-                    'application_submitted_at' => now()->toDateTimeString(),
+                    'user' => [
+                        'id' => $user->id,
+                        'first_name' => $user->first_name,
+                        'last_name' => $user->last_name,
+                        'full_name' => $user->first_name.' '.$user->last_name,
+                        'email' => $user->email,
+                        'phone' => $user->phone,
+                        'role' => $user->role,
+                        'status' => 'pending_approval',
+                        'delivery_partner_id' => $deliveryPartner->id,
+                        'vehicle_type' => $deliveryPartner->vehicle_type,
+                        'vehicle_number' => $deliveryPartner->vehicle_number,
+                        'application_submitted_at' => now()->toDateTimeString(),
+                    ],
                 ],
             ], 201);
 
@@ -219,7 +241,13 @@ class DeliveryPartner_login extends Controller
 
             'first_name' => 'sometimes|required|string|min:2|max:100',
             'last_name' => 'sometimes|required|string|min:2|max:100',
-
+            'email' => [
+                'sometimes',
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($user->id),
+            ],
             'phone' => [
                 'sometimes',
                 'required',
@@ -268,6 +296,7 @@ class DeliveryPartner_login extends Controller
             'first_name' => $validated['first_name'] ?? $user->first_name,
             'last_name' => $validated['last_name'] ?? $user->last_name,
             'phone' => $validated['phone'] ?? $user->phone,
+            'email' => $validated['email'] ?? $user->email,
         ]);
         $user->save();
 
@@ -285,9 +314,27 @@ class DeliveryPartner_login extends Controller
             'success' => true,
             'message' => 'Profile updated successfully.',
             'data' => [
-                'user' => $user,
-                'delivery_partner' => $deliveryPartner,
+                'user' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'full_name' => $user->first_name.' '.$user->last_name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'role' => $user->role,
+                    'status' => $user->status,
+                    'delivery_partner' => [
+                        'vehicle_type' => $deliveryPartner->vehicle_type,
+                        'vehicle_number' => $deliveryPartner->vehicle_number,
+                        'license_number' => $deliveryPartner->license_number,
+                        'rating' => (string) number_format((float) $deliveryPartner->average_rating, 1),
+                        'total_deliveries' => $deliveryPartner->total_deliveries,
+                        'current_latitude' => $deliveryPartner->current_latitude,
+                        'current_longitude' => $deliveryPartner->current_longitude,
+                    ],
+                ],
             ],
-        ]);
+        ], 200);
+
     }
 }

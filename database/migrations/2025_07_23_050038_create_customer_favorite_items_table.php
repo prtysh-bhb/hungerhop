@@ -14,23 +14,49 @@ return new class extends Migration
         Schema::create('customer_favorite_items', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('customer_id');
-            $table->unsignedBigInteger('item_id');
+            $table->enum('type', ['menu_item', 'restaurant']);
+            $table->unsignedBigInteger('item_id')->nullable();
             $table->unsignedBigInteger('restaurant_id');
             $table->unsignedBigInteger('tenant_id');
             $table->timestamp('added_at')->useCurrent();
-
-            $table->timestamp('created_at')->useCurrent();
-            $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
+            $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('customer_id')->references('id')->on('customer_profiles')->onDelete('cascade');
-            $table->foreign('item_id')->references('id')->on('menu_items')->onDelete('cascade');
-            $table->foreign('restaurant_id')->references('id')->on('restaurants')->onDelete('cascade');
-            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
+            /* =====================
+             | Foreign Keys
+             ===================== */
+            $table->foreign('customer_id')
+                ->references('id')
+                ->on('customer_profiles')
+                ->onDelete('cascade');
 
-            $table->unique(['customer_id', 'item_id'], 'unique_customer_item');
+            $table->foreign('item_id')
+                ->references('id')
+                ->on('menu_items')
+                ->onDelete('cascade');
+
+            $table->foreign('restaurant_id')
+                ->references('id')
+                ->on('restaurants')
+                ->onDelete('cascade');
+
+            $table->foreign('tenant_id')
+                ->references('id')
+                ->on('tenants')
+                ->onDelete('cascade');
+
+            /* =====================
+             | Indexes & Constraints
+             ===================== */
+
+            // Prevent duplicate favorites (type-aware)
+            $table->unique(
+                ['customer_id', 'type', 'item_id', 'restaurant_id'],
+                'unique_customer_favorite'
+            );
+
             $table->index(['customer_id', 'added_at'], 'idx_customer_favorites');
-            $table->index(['tenant_id'], 'idx_tenant_restaurant');
+            $table->index(['tenant_id'], 'idx_tenant_favorite');
         });
     }
 

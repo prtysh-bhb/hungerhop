@@ -96,22 +96,21 @@ class CustomerRegistration extends Controller
                         'id' => $user->id,
                         'first_name' => $user->first_name,
                         'last_name' => $user->last_name,
+                        'full_name' => $user->first_name.' '.$user->last_name,
                         'email' => $user->email,
                         'phone' => $user->phone,
                         'role' => $user->role,
                         'status' => $user->status,
-                    ],
-                    'customer_profile' => [
-                        'id' => $customerProfile->id,
-                        'date_of_birth' => $customerProfile->date_of_birth,
+                        'date_of_birth' => $customerProfile->date_of_birth ? $customerProfile->date_of_birth->toDateString() : null,
                         'gender' => $customerProfile->gender,
-                        'loyalty_points' => $customerProfile->loyalty_points,
-                        'total_orders' => $customerProfile->total_orders,
-                        'total_spent' => $customerProfile->total_spent,
+                        'email_verified_at' => $user->email_verified_at ? $user->email_verified_at->toDateTimeString() : null,
+                        'last_login_at' => $user->last_login_at ? $user->last_login_at->toDateTimeString() : null,
                     ],
-                    'access_token' => $token,
-                    'token_type' => 'bearer',
-                    'expires_in' => config('jwt.ttl', 60) * 60, // Default 1 hour
+                    'token' => [
+                        'access_token' => $token,
+                        'token_type' => 'bearer',
+                        'expires_in' => 36000, // 10 hours to match login
+                    ],
                 ],
             ], 201);
 
@@ -327,14 +326,37 @@ class CustomerRegistration extends Controller
         unset($validated['last_name']);
         $customerProfile->save();
 
+        // Refresh models to get updated data
+        $user->refresh();
+        $customerProfile->refresh();
+
+        // Generate new token
+        $token = auth('api')->tokenById($user->id);
+
         return response()->json([
             'success' => true,
             'message' => 'Profile updated successfully.',
-            'data' => $customerProfile,
-            'phone' => $user->phone,
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
-            'gender' => $customerProfile->gender,
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'full_name' => $user->first_name.' '.$user->last_name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'role' => $user->role,
+                    'status' => $user->status,
+                    'date_of_birth' => $customerProfile->date_of_birth ? $customerProfile->date_of_birth->toDateString() : null,
+                    'gender' => $customerProfile->gender,
+                    'email_verified_at' => $user->email_verified_at ? $user->email_verified_at->toDateTimeString() : null,
+                    'last_login_at' => $user->last_login_at ? $user->last_login_at->toDateTimeString() : null,
+                ],
+                'token' => [
+                    'access_token' => $token,
+                    'token_type' => 'bearer',
+                    'expires_in' => 36000,
+                ],
+            ],
         ], 200);
     }
 
@@ -430,29 +452,31 @@ class CustomerRegistration extends Controller
             ], 404);
         }
 
+        // Generate new token
+        $token = auth('api')->tokenById($user->id);
+
         return response()->json([
             'success' => true,
+            'message' => 'User profile retrieved successfully',
             'data' => [
                 'user' => [
-                    'id' => (string) $user->id,
-                    'email' => (string) $user->email,
-                    'phone' => (string) $user->phone,
-                    'first_name' => (string) $user->first_name,
-                    'last_name' => (string) $user->last_name,
-                    'role' => (string) $user->role,
-                    'status' => (string) $user->status,
-                    'wallet_balance' => number_format((float) ($user->wallet_balance ?? 0), 2, '.', ''),
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'full_name' => $user->first_name.' '.$user->last_name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'role' => $user->role,
+                    'status' => $user->status,
+                    'date_of_birth' => $customerProfile->date_of_birth ? $customerProfile->date_of_birth->toDateString() : null,
+                    'gender' => $customerProfile->gender,
+                    'email_verified_at' => $user->email_verified_at ? $user->email_verified_at->toDateTimeString() : null,
+                    'last_login_at' => $user->last_login_at ? $user->last_login_at->toDateTimeString() : null,
                 ],
-                'customer_profile' => [
-                    'id' => (string) $customerProfile->id,
-                    'date_of_birth' => $customerProfile->date_of_birth
-                        ? $customerProfile->date_of_birth->toDateString()
-                        : '',
-                    'gender' => (string) ($customerProfile->gender ?? ''),
-                    'total_orders' => (string) $customerProfile->total_orders,
-                    'total_spent' => number_format((float) $customerProfile->total_spent, 2, '.', ''),
-                    'loyalty_points' => (string) $customerProfile->loyalty_points,
-                    'referral_code' => (string) ($customerProfile->referral_code ?? ''),
+                'token' => [
+                    'access_token' => $token,
+                    'token_type' => 'bearer',
+                    'expires_in' => 36000,
                 ],
             ],
         ], 200);

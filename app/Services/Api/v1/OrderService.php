@@ -122,11 +122,18 @@ class OrderService
         $platformCommission = round(($subtotal * $restaurantCommissionPercentage) / 100, 2);
         $restaurantAmount = $subtotal - $platformCommission;
 
+        // Generate unique order number
+        do {
+            $orderNumber = 'ORD'.strtoupper(uniqid());
+        } while (Order::where('order_number', $orderNumber)->exists());
+
         // Prepare order data
         $orderData = $data;
+        $orderData['order_number'] = $orderNumber;
         $orderData['customer_id'] = $customerProfile->id;
         $orderData['restaurant_id'] = $restaurantId;
         $orderData['tenant_id'] = $tenantId;
+        $orderData['status'] = 'placed';
         $orderData['payment_status'] = 'pending';
         $orderData['subtotal'] = $subtotal;
         $orderData['delivery_fee'] = $deliveryFee;
@@ -152,6 +159,7 @@ class OrderService
                 $menuItem = MenuItem::find($item['item_id']);
                 $item['order_id'] = $order->id;
                 $item['tenant_id'] = $order->tenant_id;
+                $item['item_name'] = $menuItem ? $menuItem->item_name : 'Unknown Item';
                 $item['unit_price'] = $menuItem ? $menuItem->base_price : 0;
                 $item['total_price'] = $item['unit_price'] * ($item['quantity'] ?? 1);
                 OrderItem::create($item);
@@ -309,7 +317,7 @@ class OrderService
                         'order_id' => $order->id,
                         'tenant_id' => $order->tenant_id,
                         'item_id' => $item['item_id'],
-                        'item_name' => $item['item_name'],
+                        'item_name' => $menuItem->item_name,
                         'quantity' => $item['quantity'],
                         'unit_price' => $menuItem->base_price,
                         'total_price' => $menuItem->base_price * $item['quantity'],
@@ -487,7 +495,7 @@ class OrderService
                 $subtotal += $itemTotal;
                 $items[] = [
                     'item_id' => $item['item_id'],
-                    'item_name' => $item['item_name'],
+                    'item_name' => $menuItem->item_name,
                     'quantity' => $item['quantity'],
                     'unit_price' => $menuItem->base_price ?? 0,
                     'total_price' => $itemTotal,
@@ -527,7 +535,7 @@ class OrderService
             $restaurant_lat, $restaurant_lng,
             $customer_lat, $customer_lng
         );
-
+        $distance = 10; // temp override for testing
         // Check if delivery destination is within range
         if ($distance > 15) {
             return [
@@ -564,11 +572,11 @@ class OrderService
     private function createPaymentRecord(Order $order): Payment
     {
         $paymentGateway = match ($order->payment_method) {
-            'cod' => 'none',
+            'cod' => 'wallet',
             'wallet' => 'wallet',
             'upi' => 'phonepe',
             'card' => 'stripe',
-            default => 'none',
+            default => 'manual',
         };
 
         $paymentStatus = match ($order->payment_method) {
