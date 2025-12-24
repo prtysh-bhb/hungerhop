@@ -13,6 +13,7 @@ class CustomerFavoriteItem extends Model
 
     protected $fillable = [
         'customer_id',
+        'type',            // ✅ NEW
         'item_id',
         'restaurant_id',
         'tenant_id',
@@ -20,11 +21,24 @@ class CustomerFavoriteItem extends Model
     ];
 
     protected $casts = [
-        'added_at' => 'datetime',
+        'added_at'   => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
     /**
-     * Get the customer profile that owns this favorite
+     * Constants for favorite types
+     */
+    public const TYPE_MENU_ITEM = 'menu_item';
+    public const TYPE_RESTAURANT = 'restaurant';
+
+    /* =====================
+     | Relationships
+     ===================== */
+
+    /**
+     * Customer who owns this favorite
      */
     public function customer()
     {
@@ -32,7 +46,7 @@ class CustomerFavoriteItem extends Model
     }
 
     /**
-     * Get the menu item that is favorited
+     * Favorited menu item (only when type = menu_item)
      */
     public function menuItem()
     {
@@ -40,7 +54,7 @@ class CustomerFavoriteItem extends Model
     }
 
     /**
-     * Get the restaurant of the favorited item
+     * Favorited restaurant
      */
     public function restaurant()
     {
@@ -48,10 +62,24 @@ class CustomerFavoriteItem extends Model
     }
 
     /**
-     * Get the tenant
+     * Tenant (multi-tenant support)
      */
     public function tenant()
     {
         return $this->belongsTo(Tenant::class, 'tenant_id');
+    }
+
+    /* =====================
+     | Query Scopes (Optional but Recommended)
+     ===================== */
+
+    public function scopeMenuItems($query)
+    {
+        return $query->where('type', self::TYPE_MENU_ITEM);
+    }
+
+    public function scopeRestaurants($query)
+    {
+        return $query->where('type', self::TYPE_RESTAURANT);
     }
 }

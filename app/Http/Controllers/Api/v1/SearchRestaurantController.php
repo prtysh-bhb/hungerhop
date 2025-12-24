@@ -41,7 +41,7 @@ class SearchRestaurantController extends Controller
         // Transform the data to include all required fields
         $transformedRestaurants = $restaurants->map(function ($restaurant) {
             $data = [
-                'id' => $restaurant->id,
+                'id' => (string) $restaurant->id,
                 'name' => $restaurant->restaurant_name,
                 'city' => $restaurant->city,
                 'cuisine_type' => $restaurant->cuisine_type,

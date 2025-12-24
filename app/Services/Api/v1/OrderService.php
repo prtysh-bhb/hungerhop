@@ -745,7 +745,7 @@ class OrderService
             ],
             'estimated_delivery_partner' => $deliveryPreview['nearest_partner'] ?? null,
             'restaurant' => [
-                'id' => $restaurant->id,
+                'id' => (string)$restaurant->id,
                 'name' => $restaurant->restaurant_name,
                 'address' => $restaurant->address,
                 'tax_percentage' => $taxPercentage,

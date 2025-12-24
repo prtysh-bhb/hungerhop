@@ -84,7 +84,7 @@ class SuparAdminDashboard extends Controller
             $query->where('status', $request->status);
         }
 
-        $transactions = $query->orderByDesc('created_at')->paginate(2);
+        $transactions = $query->orderByDesc('created_at')->paginate(5);
 
         // Calculate totals
         $totalCredits = WalletTransaction::where('type', 'in')

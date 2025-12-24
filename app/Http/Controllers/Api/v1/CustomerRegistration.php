@@ -590,47 +590,67 @@ class CustomerRegistration extends Controller
         // Calculate distance if coordinates provided
         $distance = null;
         if ($customerLat && $customerLng && $restaurant->latitude && $restaurant->longitude) {
-            $distance = $this->calculateDistance(
-                $customerLat,
-                $customerLng,
-                $restaurant->latitude,
-                $restaurant->longitude
-            );
+            $distance = $this->calculateDistance($customerLat, $customerLng, $restaurant->latitude, $restaurant->longitude);
         }
 
         // Check if restaurant is favorite (using customer_favorite_items with restaurant_id)
         $isFavorite = CustomerFavoriteItem::where('customer_id', $customerId)
             ->where('restaurant_id', $restaurant->id)
-            ->exists() ? 1 : 0;
+            ->where('type', CustomerFavoriteItem::TYPE_RESTAURANT)
+            ->exists();
 
+        // Unified response structure (match SearchRestaurantController@index)
         $data = [
-            'rest_id' => (string) $restaurant->id,
-            'rest_title' => $restaurant->restaurant_name,
-            'rest_img' => $restaurant->image_url ?? url('images/avatar/default.jpg'),
-            'rest_rating' => (string) ($restaurant->average_rating ?? '5'),
-            'rest_deliverytime' => (string) ($restaurant->estimated_delivery_time ?? '30'),
-            'rest_costfortwo' => (string) ($restaurant->minimum_order_amount * 2 ?? '200'),
-            'rest_is_veg' => '0', // You can add this field to restaurants table
-            'rest_full_address' => $restaurant->address.', '.$restaurant->city.', '.$restaurant->state.' - '.$restaurant->postal_code,
-            'rest_charge' => (string) ($restaurant->base_delivery_fee ?? '50'),
-            'rest_is_open' => $restaurant->is_open ? '1' : '0',
-            'cou_title' => '', // Coupon title - can be added later
-            'cou_subtitle' => '', // Coupon subtitle - can be added later
-            'rest_dcharge' => null,
-            'rest_morder' => (string) ($restaurant->minimum_order_amount ?? '100'),
-            'rest_sdesc' => $restaurant->description ?? '',
-            'rest_distance' => $distance ? number_format($distance, 2).' Kms' : null,
-            'IS_FAVOURITE' => $isFavorite,
+            'id' => (string) $restaurant->id,
+            'name' => $restaurant->restaurant_name,
+            'city' => $restaurant->city,
+            'cuisine_type' => $restaurant->cuisine_type,
+            'address' => $restaurant->address,
+            'full_address' => $restaurant->address.', '.$restaurant->city.', '.$restaurant->state.' - '.$restaurant->postal_code,
+            'phone' => $restaurant->phone,
+            'email' => $restaurant->email,
+            'logo_url' => $restaurant->image_url,
+            'cover_image_url' => $restaurant->cover_image_url,
+            'rating' => (string) number_format((float) ($restaurant->average_rating ?? 0), 1),
+            'total_reviews' => (int) ($restaurant->total_reviews ?? 0),
+            'estimated_delivery_time' => (string) ($restaurant->estimated_delivery_time ?? '30'),
+            'cost_for_two' => (string) number_format((float) (($restaurant->minimum_order_amount ?? 100) * 2), 2),
+            'description' => $restaurant->description ?? '',
+            'short_description' => $restaurant->description
+                ? (strlen($restaurant->description) > 100
+                    ? substr($restaurant->description, 0, 100).'...'
+                    : $restaurant->description)
+                : '',
+            'minimum_order_amount' => (string) number_format((float) ($restaurant->minimum_order_amount ?? 0), 2),
+            'base_delivery_fee' => (string) number_format((float) ($restaurant->base_delivery_fee ?? 0), 2),
+            'delivery_radius_km' => (string) number_format((float) ($restaurant->delivery_radius_km ?? 10), 2),
+            'tax_percentage' => (string) number_format((float) ($restaurant->tax_percentage ?? 0), 2),
+            'is_open' => (bool) $restaurant->is_open,
+            'is_paused' => (bool) $restaurant->is_paused,
+            'accepts_orders' => (bool) $restaurant->accepts_orders,
+            'is_featured' => (bool) $restaurant->is_featured,
+            'status' => $restaurant->is_paused ? 'paused' : ($restaurant->is_open ? 'open' : 'closed'),
+            'can_order' => $restaurant->is_open && ! $restaurant->is_paused && $restaurant->accepts_orders,
+            'is_favorite' => $isFavorite,
         ];
 
-        // Include categories if requested
+        // Add status message based on restaurant state
+        if ($restaurant->is_paused) {
+            $data['status_message'] = 'This restaurant is temporarily paused and not accepting orders.';
+        } elseif (! $restaurant->is_open) {
+            $data['status_message'] = 'This restaurant is currently closed.';
+        } elseif (! $restaurant->accepts_orders) {
+            $data['status_message'] = 'This restaurant is not accepting orders at the moment.';
+        } else {
+            $data['status_message'] = 'Open for orders';
+        }
+
+        // Optionally include categories if requested (unchanged)
         if ($includeCategories && $restaurant->menuCategories) {
-            $data['rest_category'] = $restaurant->menuCategories->map(function ($cat) {
+            $data['categories'] = $restaurant->menuCategories->map(function ($cat) {
                 return [
                     'id' => (string) $cat->id,
-                    'cat_name' => $cat->name,
-                    'cat_status' => '1',
-                    'cat_img' => $cat->image_url ?? url('images/avatar/default.jpg'),
+                    'name' => $cat->name ?? $cat->category_name ?? '',
                 ];
             })->toArray();
         }

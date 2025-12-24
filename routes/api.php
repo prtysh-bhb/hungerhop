@@ -117,10 +117,12 @@ Route::prefix('v1')->group(function () {
     // ----------------------------------------------
     Route::prefix('favorites')->middleware('auth:api')->group(function () {
         Route::post('/add', [CustomerFavoriteController::class, 'addFavorite']);
-        Route::post('/remove', [CustomerFavoriteController::class, 'removeFavorite']);
-        Route::get('/list', [CustomerFavoriteController::class, 'listFavorites']);
-        // Route::post('/toggle', [CustomerFavoriteController::class, 'toggleFavorite']); // Optional toggle route
+        Route::delete('/remove', [CustomerFavoriteController::class, 'removeFavorite']);
+        Route::get('/', [CustomerFavoriteController::class, 'listFavorites']);
+        Route::post('/toggle', [CustomerFavoriteController::class, 'toggleFavorite']);
         Route::post('/check', [CustomerFavoriteController::class, 'checkFavorite']);
+        // Route::get('/type/{type}', [CustomerFavoriteController::class, 'getFavoritesByType']);
+        Route::delete('/clear', [CustomerFavoriteController::class, 'clearAllFavorites']);
     });
 
     // ----------------------------------------------

@@ -157,7 +157,7 @@ class NearestRestaurantController extends Controller
             }
 
             return [
-                'id' => $restaurant->id,
+                'id' => (string)$restaurant->id,
                 'name' => $restaurant->restaurant_name,
                 'address' => $restaurant->address,
                 'rating' => (string) number_format((float) $restaurant->average_rating, 1),
@@ -329,7 +329,7 @@ class NearestRestaurantController extends Controller
             $todayHours = $businessHours[strtolower(now()->format('l'))] ?? null;
 
             return [
-                'id' => $restaurant->id,
+                'id' => (string)$restaurant->id,
                 'name' => $restaurant->restaurant_name,
                 'address' => $restaurant->address,
                 'latitude' => (string) $restaurant->latitude,
@@ -420,7 +420,7 @@ class NearestRestaurantController extends Controller
         $todayHours = $businessHours[strtolower(now()->format('l'))] ?? null;
 
         $restuarantData = [[
-            'id' => $restaurant->id,
+            'id' => (string)$restaurant->id,
             'name' => $restaurant->restaurant_name,
             'address' => $restaurant->address,
             'latitude' => (string) $restaurant->latitude,
