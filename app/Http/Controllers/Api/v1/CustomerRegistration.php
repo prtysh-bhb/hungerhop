@@ -16,6 +16,10 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class CustomerRegistration extends Controller
+    /**
+     * Get restaurants by category name (matches homepage response structure)
+     * POST /api/v1/restaurants/by-category
+     */
 {
     /**
      * Customer Registration API
@@ -417,6 +421,9 @@ class CustomerRegistration extends Controller
         // =====================
         $popularRestaurants = $this->getPopularRestaurants($customerProfile->id, $customerLat, $customerLng);
 
+        // Add gallery data (banners) to HomeData
+        $galleryData = $banners;
+
         return response()->json([
             'ResponseCode' => '200',
             'Result' => 'true',
@@ -428,6 +435,7 @@ class CustomerRegistration extends Controller
                 'wallet' => $walletBalance,
                 'restuarant_data' => $restaurantData,
                 'popular_restuarant' => $popularRestaurants,
+                'gallery_data' => $galleryData,
             ],
         ], 200);
     }

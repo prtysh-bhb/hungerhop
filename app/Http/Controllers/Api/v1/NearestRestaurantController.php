@@ -157,7 +157,7 @@ class NearestRestaurantController extends Controller
             }
 
             return [
-                'id' => (string)$restaurant->id,
+                'id' => (string) $restaurant->id,
                 'name' => $restaurant->restaurant_name,
                 'address' => $restaurant->address,
                 'rating' => (string) number_format((float) $restaurant->average_rating, 1),
@@ -321,15 +321,54 @@ class NearestRestaurantController extends Controller
                 ->orderBy('distance');
         }
 
-        $restaurants = $query->get();
+        $restaurants = $query->with('banners')->get();
 
-        // Map restaurants to structured format
+        // Map restaurants to structured format with gallery fallback
         $restaurants = $restaurants->map(function ($restaurant) {
             $businessHours = $this->getTiming($restaurant->business_hours);
             $todayHours = $businessHours[strtolower(now()->format('l'))] ?? null;
 
+            // Gallery data with fallback
+            $gallery = collect();
+
+            // 1️⃣ PRIMARY: Restaurant cover image
+            if (! empty($restaurant->cover_image_url)) {
+                $gallery->push([
+                    'id' => (string) $restaurant->id,
+                    'cover_image' => url($restaurant->cover_image_url),
+                    'image_url' => url($restaurant->cover_image_url),
+                    'title' => $restaurant->restaurant_name,
+                ]);
+            }
+
+            // 2️⃣ SECONDARY: restaurant banners (if any)
+            if ($restaurant->relationLoaded('banners') && $restaurant->banners->count() > 0) {
+                foreach ($restaurant->banners as $banner) {
+                    $gallery->push([
+                        'id' => (string) $banner->id,
+                        'cover_image' => $banner->cover_image
+                            ? url('storage/'.$banner->cover_image)
+                            : url($restaurant->cover_image_url),
+                        'image_url' => $banner->image_url
+                            ? url('storage/'.$banner->image_url)
+                            : url($restaurant->cover_image_url),
+                        'title' => $banner->title ?? $restaurant->restaurant_name,
+                    ]);
+                }
+            }
+
+            // 3️⃣ FINAL fallback (VERY IMPORTANT)
+            if ($gallery->isEmpty()) {
+                $gallery->push([
+                    'id' => '0',
+                    'cover_image' => asset('images/banner/default1.jpg'),
+                    'image_url' => asset('images/banner/default1.jpg'),
+                    'title' => 'Default Banner',
+                ]);
+            }
+
             return [
-                'id' => (string)$restaurant->id,
+                'id' => (string) $restaurant->id,
                 'name' => $restaurant->restaurant_name,
                 'address' => $restaurant->address,
                 'latitude' => (string) $restaurant->latitude,
@@ -343,6 +382,7 @@ class NearestRestaurantController extends Controller
                 'logo_url' => $restaurant->full_image_url,
                 'cuisine_type' => $restaurant->cuisine_type,
                 'distance' => isset($restaurant->distance) ? round($restaurant->distance, 2) : null,
+                'gallery' => $gallery,
             ];
         });
 
@@ -363,6 +403,19 @@ class NearestRestaurantController extends Controller
         ]);
 
         $user = auth()->user();
+        $restaurant = request()->user()
+            ? Restaurant::where('id', $request->id)
+                ->when($user && in_array($user->role, ['admin', 'owner']), function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })
+                ->first()
+            : Restaurant::where('id', $request->id)->first();
+        if (! $restaurant) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Restaurant not found',
+            ], 404);
+        }
         $restaurant = Restaurant::with([
             'menuCategories.menuItems',
             'banners',
@@ -372,7 +425,6 @@ class NearestRestaurantController extends Controller
                 $q->where('user_id', $user->id);
             })
             ->firstOrFail();
-
         // Get active promotions for this restaurant
         $coupons = \App\Models\Promotion::where('restaurant_id', $restaurant->id)
             ->where('is_active', true)
@@ -420,7 +472,7 @@ class NearestRestaurantController extends Controller
         $todayHours = $businessHours[strtolower(now()->format('l'))] ?? null;
 
         $restuarantData = [[
-            'id' => (string)$restaurant->id,
+            'id' => (string) $restaurant->id,
             'name' => $restaurant->restaurant_name,
             'address' => $restaurant->address,
             'latitude' => (string) $restaurant->latitude,
@@ -446,13 +498,28 @@ class NearestRestaurantController extends Controller
             })
             ->values();
         // Gallery data (banners)
-        $galleryData = $restaurant->banners->map(function ($banner) {
+        $gallery = $restaurant->banners->map(function ($banner) {
+            $defaultImage = asset('images/banner/default1.jpg');
+
             return [
                 'id' => $banner->id,
-                'image_url' => $banner->image_url ? url('storage/'.$banner->image_url) : null,
+                'cover_image' => $banner->cover_image ? url('storage/'.$banner->cover_image) : $defaultImage,
+                'image_url' => $banner->image_url ? url('storage/'.$banner->image_url) : $defaultImage,
                 'title' => $banner->title,
             ];
         });
+
+        // If no banners, provide at least one default
+        if ($gallery->isEmpty()) {
+            $gallery = collect([
+                [
+                    'id' => 0,
+                    'cover_image' => asset('images/banner/default1.jpg'),
+                    'image_url' => asset('images/banner/default1.jpg'),
+                    'title' => 'Default Banner',
+                ],
+            ]);
+        }
 
         // Review data
         $reviewData = $restaurant->reviews->map(function ($review) {
@@ -475,9 +542,97 @@ class NearestRestaurantController extends Controller
                 'coupons' => $coupons,
                 'categories' => $categoryData,
                 'products' => $productData,
-                'gallery' => $galleryData,
+                'gallery' => $gallery,
                 'reviews' => $reviewData,
             ],
+        ]);
+    }
+
+    /**
+     * Get restaurants by category name
+     * POST /api/v1/restaurants/by-category
+     */
+    public function CategoryWiseResaurant(Request $request)
+    {
+        $validated = $request->validate([
+            'category' => 'required|string|max:100',
+        ]);
+
+        // 1️⃣ Find category (case-insensitive)
+        $category = MenuCategory::whereRaw(
+            'LOWER(name) = ?',
+            [strtolower($validated['category'])]
+        )->whereNull('deleted_at')->first();
+
+        if (! $category) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Category not found',
+            ], 404);
+        }
+
+        // 2️⃣ Fetch restaurants having menu items in this category
+        $restaurants = Restaurant::whereNull('deleted_at')
+            ->whereHas('menuItems', function ($q) use ($category) {
+                $q->where('menu_category_id', $category->id)
+                    ->whereNull('deleted_at');
+            })
+            ->withCount(['menuItems as items_count' => function ($q) use ($category) {
+                $q->where('menu_category_id', $category->id)
+                    ->whereNull('deleted_at');
+            }])
+            ->get();
+
+        // 3️⃣ Format response to match homepage format
+        $data = $restaurants->map(function ($restaurant) {
+            // Match homepage format from CustomerRegistration@formatRestaurantData
+            return [
+                'id' => (string) $restaurant->id,
+                'name' => $restaurant->restaurant_name,
+                'city' => $restaurant->city,
+                'cuisine_type' => $restaurant->cuisine_type,
+                'address' => $restaurant->address,
+                'full_address' => $restaurant->address.', '.$restaurant->city.', '.$restaurant->state.' - '.$restaurant->postal_code,
+                'phone' => $restaurant->phone,
+                'email' => $restaurant->email,
+                'logo_url' => $restaurant->image_url ?? $restaurant->full_image_url,
+                'cover_image_url' => $restaurant->cover_image_url ?? null,
+                'rating' => (string) number_format((float) ($restaurant->average_rating ?? 0), 1),
+                'total_reviews' => (int) ($restaurant->total_reviews ?? 0),
+                'estimated_delivery_time' => (string) ($restaurant->estimated_delivery_time ?? '30'),
+                'cost_for_two' => (string) number_format((float) (($restaurant->minimum_order_amount ?? 100) * 2), 2),
+                'description' => $restaurant->description ?? '',
+                'short_description' => $restaurant->description
+                    ? (strlen($restaurant->description) > 100
+                        ? substr($restaurant->description, 0, 100).'...'
+                        : $restaurant->description)
+                    : '',
+                'minimum_order_amount' => (string) number_format((float) ($restaurant->minimum_order_amount ?? 0), 2),
+                'base_delivery_fee' => (string) number_format((float) ($restaurant->base_delivery_fee ?? 0), 2),
+                'delivery_radius_km' => (string) number_format((float) ($restaurant->delivery_radius_km ?? 10), 2),
+                'tax_percentage' => (string) number_format((float) ($restaurant->tax_percentage ?? 0), 2),
+                'is_open' => (bool) $restaurant->is_open,
+                'is_paused' => (bool) ($restaurant->is_paused ?? false),
+                'accepts_orders' => (bool) ($restaurant->accepts_orders ?? true),
+                'is_featured' => (bool) ($restaurant->is_featured ?? false),
+                'status' => ($restaurant->is_paused ?? false) ? 'paused' : ($restaurant->is_open ? 'open' : 'closed'),
+                'can_order' => $restaurant->is_open && ! ($restaurant->is_paused ?? false) && ($restaurant->accepts_orders ?? true),
+                'items_count' => $restaurant->items_count,
+                // Optionally add categories if available
+                'categories' => $restaurant->menuCategories ? $restaurant->menuCategories->map(function ($cat) {
+                    return [
+                        'id' => (string) $cat->id,
+                        'name' => $cat->name ?? $cat->category_name ?? '',
+                    ];
+                })->toArray() : [],
+            ];
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'category' => $category->name,
+            'total_restaurants' => $data->count(),
+            'data' => $data,
         ]);
     }
 }

@@ -117,7 +117,7 @@
                                     </div>
                                 @endif
 
-                                <form method="POST" action="{{ route('password.email') }}" id="forgotPasswordForm">
+                                <form method="POST" action="{{ route('password.email') }}" id="forgotPasswordForm" novalidate>
                                     @csrf
                                     <div class="form-group">
                                         <div class="input-group mb-3">
@@ -125,7 +125,7 @@
                                                     class="ti-email"></i></span>
                                             <input type="email" name="email" id="email"
                                                 class="form-control ps-15 bg-transparent @error('email') is-invalid @enderror"
-                                                placeholder="Enter your email address" required
+                                                placeholder="Enter your email address"
                                                 value="{{ old('email') }}" maxlength="255">
                                         </div>
                                         @error('email')
@@ -135,8 +135,8 @@
 
                                     <div class="row">
                                         <div class="col-12 text-center">
-                                            <button type="submit" class="btn btn-danger mt-10 w-100">
-                                                <i class="fa fa-paper-plane me-2"></i>Send Reset Link
+                                            <button type="submit" class="btn btn-danger mt-2">
+                                                <i class="fa fa-paper-plane me-2"></i> Send Reset Link
                                             </button>
                                         </div>
                                     </div>
@@ -146,7 +146,7 @@
                                     <p class="mt-20 mb-0">
                                         Remember your password?
                                         <a href="{{ route('login') }}" class="text-warning ms-2">
-                                            <i class="fa fa-arrow-left me-1"></i>Back to Sign In
+                                            Back to Sign In
                                         </a>
                                     </p>
                                 </div>

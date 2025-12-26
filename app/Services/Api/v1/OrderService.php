@@ -133,7 +133,7 @@ class OrderService
         $orderData['customer_id'] = $customerProfile->id;
         $orderData['restaurant_id'] = $restaurantId;
         $orderData['tenant_id'] = $tenantId;
-        $orderData['status'] = 'placed';
+        $orderData['status'] = 'draft';
         $orderData['payment_status'] = 'pending';
         $orderData['subtotal'] = $subtotal;
         $orderData['delivery_fee'] = $deliveryFee;
@@ -151,7 +151,7 @@ class OrderService
             // Create initial order status record
             OrderStatus::create([
                 'order_id' => $order->id,
-                'status' => 'placed',
+                'status' => 'draft',
             ]);
 
             // Create order items
@@ -178,7 +178,7 @@ class OrderService
             // Build response with billing details
             return [
                 'success' => true,
-                'message' => 'Order placed successfully! A delivery partner will be assigned when your order is ready for pickup.',
+                'message' => 'Order created successfully. Proceed to checkout.',
                 'data' => $this->buildOrderResponse($order, $itemsBreakdown['items'], $payment, $deliveryCalculation, $deliveryPreview, $restaurant, $taxPercentage),
                 'status_code' => 201,
             ];
@@ -222,14 +222,14 @@ class OrderService
             ];
         }
 
-        // Check if order can be edited (only placed or pending orders)
-        $editableStatuses = ['placed', 'pending', 'confirmed'];
+        // Only allow editing if order is in draft status
+        $editableStatuses = ['draft'];
         if (! in_array($order->status, $editableStatuses)) {
             return [
                 'success' => false,
-                'message' => 'Order cannot be edited. Only orders with status: placed, pending, or confirmed can be edited.',
+                'message' => 'Order cannot be edited after placement.',
                 'current_status' => $order->status,
-                'status_code' => 422,
+                'status_code' => 403,
             ];
         }
 
@@ -413,6 +413,17 @@ class OrderService
             ];
         }
 
+        // If order is in draft, mark as placed
+        if ($order->status === 'draft') {
+            $order->status = 'placed';
+            $order->save();
+            // Add order status history
+            OrderStatus::create([
+                'order_id' => $order->id,
+                'status' => 'placed',
+            ]);
+        }
+
         // Get payment details
         $payment = Payment::where('order_id', $order->id)->first();
 
@@ -423,6 +434,64 @@ class OrderService
             'data' => $this->buildCheckoutResponse($order, $payment),
             'status_code' => 200,
         ];
+    }
+
+    public function cancelOrder(int $orderId, $user, ?string $cancellationReason = null): array
+    {
+        try {
+            return DB::transaction(function () use ($orderId, $user, $cancellationReason) {
+                // Get customer profile for authenticated user
+                $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
+                if (! $customerProfile) {
+                    return [
+                        'success' => false,
+                        'message' => 'Customer profile not found for user.',
+                        'status_code' => 404,
+                    ];
+                }
+
+                // Find the order belonging to this customer
+                $order = Order::where('id', $orderId)
+                    ->where('customer_id', $customerProfile->id)
+                    ->first();
+
+                // Only allow cancellation if order is not already cancelled or completed
+                $nonCancellableStatuses = ['cancelled', 'completed','delivered','arrived'];
+                if (in_array($order->status, $nonCancellableStatuses)) {
+                    return [
+                        'success' => false,
+                        'message' => 'Order cannot be cancelled in its current status.',
+                        'current_status' => $order->status,
+                        'status_code' => 403,
+                    ];
+                }
+
+                $order->status = 'cancelled';
+                $order->cancellation_reason = $cancellationReason;
+                $order->save();
+
+                // Add order status history
+                OrderStatus::create([
+                    'order_id' => $order->id,
+                    'status' => 'cancelled',
+                    'remarks' => $cancellationReason,
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'Order cancelled successfully.',
+                    'order_id' => $order->id,
+                    'status_code' => 200,
+                ];
+            });
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'message' => 'Failed to cancel order.',
+                'error' => $e->getMessage(),
+                'status_code' => 500,
+            ];
+        }
     }
 
     /**
@@ -440,6 +509,7 @@ class OrderService
         }
 
         $orders = Order::where('customer_id', $customerProfile->id)
+            ->where('status', '!=', 'draft')
             ->with(['restaurant', 'orderItems', 'deliveryAssignment.partner.user', 'deliveryAddress'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -745,7 +815,7 @@ class OrderService
             ],
             'estimated_delivery_partner' => $deliveryPreview['nearest_partner'] ?? null,
             'restaurant' => [
-                'id' => (string)$restaurant->id,
+                'id' => (string) $restaurant->id,
                 'name' => $restaurant->restaurant_name,
                 'address' => $restaurant->address,
                 'tax_percentage' => $taxPercentage,

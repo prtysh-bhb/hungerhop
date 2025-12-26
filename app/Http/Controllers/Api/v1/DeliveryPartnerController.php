@@ -324,7 +324,7 @@ class DeliveryPartnerController extends Controller
 
             // Restaurant details
             'restaurant' => $restaurant ? [
-                'id' => (string)$restaurant->id,
+                'id' => (string) $restaurant->id,
                 'name' => $restaurant->restaurant_name,
                 'address' => $restaurant->address,
                 'phone' => $restaurant->phone,

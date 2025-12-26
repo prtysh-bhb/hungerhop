@@ -35,6 +35,7 @@ class DeliveryPartner_login extends Controller
         if (! $token = JWTAuth::fromUser($user)) {
             return response()->json(['success' => false, 'message' => 'Could not create token.'], 500);
         }
+
         return response()->json([
             'success' => true,
             'message' => 'Login successful',
@@ -169,10 +170,10 @@ class DeliveryPartner_login extends Controller
             $deliveryPartnerDocument = DeliveryPartnerDocument::create([
                 'partner_id' => $deliveryPartner->id,
                 'document_type' => $validated['document_type'],
-                    'document_path' => $documentPath,
-                    'document_name' => $request->file('document_file')->getClientOriginalName(),
-                    'file_size' => $request->file('document_file')->getSize(),
-                    'mime_type' => $request->file('document_file')->getMimeType(),
+                'document_path' => $documentPath,
+                'document_name' => $request->file('document_file')->getClientOriginalName(),
+                'file_size' => $request->file('document_file')->getSize(),
+                'mime_type' => $request->file('document_file')->getMimeType(),
                 'status' => 'pending', // Pending admin review
                 'uploaded_at' => now(),
             ]);

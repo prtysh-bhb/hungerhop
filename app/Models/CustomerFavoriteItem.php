@@ -21,7 +21,7 @@ class CustomerFavoriteItem extends Model
     ];
 
     protected $casts = [
-        'added_at'   => 'datetime',
+        'added_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -31,6 +31,7 @@ class CustomerFavoriteItem extends Model
      * Constants for favorite types
      */
     public const TYPE_MENU_ITEM = 'menu_item';
+
     public const TYPE_RESTAURANT = 'restaurant';
 
     /* =====================

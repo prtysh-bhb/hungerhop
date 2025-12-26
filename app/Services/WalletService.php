@@ -20,7 +20,7 @@ class WalletService
      */
     public function validateUserAccess(User $user): array
     {
-        if (!$user || !in_array($user->role, self::ALLOWED_ROLES)) {
+        if (! $user || ! in_array($user->role, self::ALLOWED_ROLES)) {
             return [
                 'success' => false,
                 'message' => 'Access denied. Only delivery partners, location admins, and tenant admins can access wallet features.',
@@ -33,16 +33,14 @@ class WalletService
 
     /**
      * Process wallet transaction (Add or Withdraw)
-     * 
-     * @param User $user
-     * @param array $data - Contains: type, amount, reason, and payment details
-     * @return array
+     *
+     * @param  array  $data  - Contains: type, amount, reason, and payment details
      */
     public function processTransaction(User $user, array $data): array
     {
         // Validate user access
         $accessCheck = $this->validateUserAccess($user);
-        if (!$accessCheck['success']) {
+        if (! $accessCheck['success']) {
             return $accessCheck;
         }
 
@@ -78,8 +76,9 @@ class WalletService
                     ->where('user_id', $user->id)
                     ->first();
 
-                if (!$paymentDetail) {
+                if (! $paymentDetail) {
                     DB::rollBack();
+
                     return [
                         'success' => false,
                         'message' => 'Payment detail not found or does not belong to you.',
@@ -145,7 +144,7 @@ class WalletService
         } catch (\Exception $e) {
             DB::rollBack();
             $actionLabel = $transactionType === 'in' ? 'deposit' : 'withdrawal';
-            Log::error("Wallet {$actionLabel} failed for user {$user->id}: " . $e->getMessage());
+            Log::error("Wallet {$actionLabel} failed for user {$user->id}: ".$e->getMessage());
 
             return [
                 'success' => false,
@@ -164,7 +163,7 @@ class WalletService
         $paymentDetailData = [
             'user_id' => $user->id,
             'pay_type' => $data['pay_type'],
-            'account_holder_name' => $data['account_holder_name'] ?? $user->first_name . ' ' . $user->last_name,
+            'account_holder_name' => $data['account_holder_name'] ?? $user->first_name.' '.$user->last_name,
         ];
 
         if ($data['pay_type'] === 'bank') {
@@ -191,10 +190,11 @@ class WalletService
 
         $existingPaymentDetail = $existingQuery->first();
 
-        if (!$existingPaymentDetail) {
+        if (! $existingPaymentDetail) {
             return PaymentDetail::create($paymentDetailData);
         } else {
             $existingPaymentDetail->update($paymentDetailData);
+
             return $existingPaymentDetail;
         }
     }
@@ -206,7 +206,7 @@ class WalletService
     {
         // Validate user access
         $accessCheck = $this->validateUserAccess($user);
-        if (!$accessCheck['success']) {
+        if (! $accessCheck['success']) {
             return $accessCheck;
         }
 
@@ -215,7 +215,7 @@ class WalletService
             $paymentDetailData = [
                 'user_id' => $user->id,
                 'pay_type' => $data['pay_type'],
-                'account_holder_name' => $data['account_holder_name'] ?? $user->first_name . ' ' . $user->last_name,
+                'account_holder_name' => $data['account_holder_name'] ?? $user->first_name.' '.$user->last_name,
             ];
 
             if ($data['pay_type'] === 'bank') {
@@ -246,7 +246,7 @@ class WalletService
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Failed to add payment detail for user {$user->id}: " . $e->getMessage());
+            Log::error("Failed to add payment detail for user {$user->id}: ".$e->getMessage());
 
             return [
                 'success' => false,
@@ -264,7 +264,7 @@ class WalletService
     {
         // Validate user access
         $accessCheck = $this->validateUserAccess($user);
-        if (!$accessCheck['success']) {
+        if (! $accessCheck['success']) {
             return $accessCheck;
         }
 
@@ -272,7 +272,7 @@ class WalletService
             ->where('user_id', $user->id)
             ->first();
 
-        if (!$paymentDetail) {
+        if (! $paymentDetail) {
             return [
                 'success' => false,
                 'message' => 'Payment detail not found or does not belong to you.',
@@ -309,7 +309,7 @@ class WalletService
     {
         // Validate user access
         $accessCheck = $this->validateUserAccess($user);
-        if (!$accessCheck['success']) {
+        if (! $accessCheck['success']) {
             return $accessCheck;
         }
 
@@ -384,7 +384,7 @@ class WalletService
     {
         // Validate user access
         $accessCheck = $this->validateUserAccess($user);
-        if (!$accessCheck['success']) {
+        if (! $accessCheck['success']) {
             return $accessCheck;
         }
 
@@ -404,7 +404,7 @@ class WalletService
     {
         // Validate user access
         $accessCheck = $this->validateUserAccess($user);
-        if (!$accessCheck['success']) {
+        if (! $accessCheck['success']) {
             return $accessCheck;
         }
 
@@ -412,19 +412,19 @@ class WalletService
             ->with('paymentDetail');
 
         // Apply filters
-        if (!empty($filters['type'])) {
+        if (! empty($filters['type'])) {
             $query->where('type', $filters['type']);
         }
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (!empty($filters['start_date'])) {
+        if (! empty($filters['start_date'])) {
             $query->whereDate('created_at', '>=', $filters['start_date']);
         }
 
-        if (!empty($filters['end_date'])) {
+        if (! empty($filters['end_date'])) {
             $query->whereDate('created_at', '<=', $filters['end_date']);
         }
 

@@ -189,7 +189,7 @@ class CustomerFavoriteController extends Controller
 
         $query = CustomerFavoriteItem::where('customer_id', $customerProfile->id)
             ->with([
-                'menuItem' ,
+                'menuItem',
                 'restaurant', // Only eager load restaurant, not non-existent relations
             ]);
 
@@ -509,7 +509,7 @@ class CustomerFavoriteController extends Controller
     private function formatRestaurantResponse(Restaurant $restaurant)
     {
         return [
-            'id' => (string)$restaurant->id,
+            'id' => (string) $restaurant->id,
             'name' => $restaurant->restaurant_name,
             'image_url' => $restaurant->image_url,
             'rating' => $restaurant->average_rating,
@@ -528,6 +528,7 @@ class CustomerFavoriteController extends Controller
             ] : null,
         ];
     }
+
     /**
      * Format basic favorite response
      *

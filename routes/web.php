@@ -98,8 +98,6 @@ Route::post('/register/restaurant-staff', [RegisterController::class, 'registerR
 // Delivery Partner Registration (Guest)
 
 Route::get('/delivery-partner/register', [DeliveryPartnerRegistrationController::class, 'showForm'])->name('guest.delivery-partner.register-form');
-
-// Route::post('/delivery-partner/document/upload', [DeliveryPartnerRegistrationController::class, 'uploadDocument'])->name('guest.delivery-partner.document.upload');
 Route::post('/delivery-partner/register', [DeliveryPartnerRegistrationController::class, 'register'])->name('guest.delivery-partner.register');
 
 // Delivery Partner Management Routes (Protected by auth)

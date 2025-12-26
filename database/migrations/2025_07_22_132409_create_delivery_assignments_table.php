@@ -25,7 +25,7 @@ return new class extends Migration
             $table->integer('estimated_duration_minutes')->nullable();
             $table->decimal('delivery_fee', 6, 2)->nullable();
             $table->decimal('tip_amount', 6, 2)->default(0);
-            $table->enum('status', ['assigned', 'accepted', 'rejected', 'picked_up', 'out_for_delivery','arrived', 'delivered', 'cancelled'])->default('assigned');
+            $table->enum('status', ['assigned', 'accepted', 'rejected', 'picked_up', 'out_for_delivery', 'arrived', 'delivered', 'cancelled'])->default('assigned');
             $table->timestamp('assigned_at')->useCurrent();
             $table->timestamp('accepted_at')->nullable();
             $table->timestamp('picked_up_at')->nullable();

@@ -80,6 +80,24 @@ class SearchRestaurantController extends Controller
                 // Can order logic
                 'can_order' => $restaurant->is_open && ! $restaurant->is_paused && $restaurant->accepts_orders,
             ];
+            $gallery = [];
+
+            if (! empty($restaurant->cover_image_url)) {
+                $gallery[] = [
+                    'id' => (string) $restaurant->id,
+                    'image_url' => url($restaurant->cover_image_url),
+                    'title' => $restaurant->restaurant_name,
+                ];
+            }
+
+            if (empty($gallery)) {
+                $gallery[] = [
+                    'id' => '0',
+                    'image_url' => asset('images/banner/default1.jpg'),
+                    'title' => 'Default Banner',
+                ];
+            }
+            $data['gallery'] = $gallery;
 
             // Add status message based on restaurant state
             if ($restaurant->is_paused) {

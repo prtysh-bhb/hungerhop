@@ -7,9 +7,6 @@
         <!-- Header with Actions -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div class="d-flex align-items-center">
-                <a href="{{ route('restaurant-admin.index') }}" class="btn btn-outline-secondary btn-sm me-2">
-                    <i class="fa fa-arrow-right" aria-hidden="true"></i>
-                </a>
                 <h1 class="h3 mb-0">Restaurant Details</h1>
                 <span
                     class="badge ms-3 @switch($restaurant->status)
@@ -27,6 +24,9 @@
                 @endif
             </div>
             <div class="btn-group">
+                <a href="{{ route('restaurant-admin.index') }}" class="btn btn-primary">
+                    <i class="fa fa-arrow-left me-1" aria-hidden="true"></i> Back to List
+                </a>
                 <a href="{{ route('restaurant-admin.edit', $restaurant->id) }}" class="btn btn-warning">
                     <i class="fa fa-edit me-1" aria-hidden="true"></i> Edit Restaurant
                 </a>
@@ -250,14 +250,13 @@
                             </div>
                             <div class="col-12">
                                 <div class="detail-item">
-                                    <label class="text-muted small">Commission Rate</label>
+                                    <label class="text-muted small">Commission Rate: {{ $restaurant->restaurant_commission_percentage }}%</label>
                                     <div class="d-flex align-items-center">
-                                        <div class="progress flex-grow-1 me-3" style="height: 8px;">
+                                        <div class="progress flex-grow-1 me-2" style="height: 8px;">
                                             <div class="progress-bar bg-success"
                                                 style="width: {{ $restaurant->restaurant_commission_percentage }}%">
                                             </div>
                                         </div>
-                                        <span class="fw-bold">{{ $restaurant->restaurant_commission_percentage }}%</span>
                                     </div>
                                 </div>
                             </div>
@@ -290,7 +289,6 @@
                                     <div class="detail-item">
                                         <label class="text-muted small">Coordinates</label>
                                         <p class="mb-0">
-                                            <i class="fa fa-crosshair me-1"></i>
                                             {{ number_format($restaurant->latitude, 6) }},
                                             {{ number_format($restaurant->longitude, 6) }}
                                         </p>

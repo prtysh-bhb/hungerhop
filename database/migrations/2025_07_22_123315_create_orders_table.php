@@ -19,10 +19,10 @@ return new class extends Migration
             $table->unsignedBigInteger('delivery_address_id');
             $table->unsignedBigInteger('tenant_id');
             $table->enum('status', [
-                'placed', 'accepted', 'preparing', 'ready_for_pickup',
-                'assigned_to_delivery', 'picked_up', 'out_for_delivery','arrived',
+                'draft', 'placed', 'accepted', 'preparing', 'ready_for_pickup',
+                'assigned_to_delivery', 'picked_up', 'out_for_delivery', 'arrived',
                 'delivered', 'cancelled', 'rejected',
-            ])->default('placed');
+            ])->default('draft');
             $table->decimal('subtotal', 10, 2);
             $table->decimal('tax_amount', 8, 2)->default(0);
             $table->decimal('delivery_fee', 6, 2)->default(0);

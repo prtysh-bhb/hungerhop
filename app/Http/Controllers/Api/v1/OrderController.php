@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api\v1;
+use Illuminate\Support\Facades\Validator;
 
 use App\Http\Controllers\Controller;
 use App\Services\Api\v1\OrderService;
@@ -142,6 +143,46 @@ class OrderController extends Controller
         }
 
         $result = $this->orderService->getOrderDetails($id);
+        $statusCode = $result['status_code'] ?? 200;
+        unset($result['status_code']);
+
+        return response()->json($result, $statusCode);
+    }
+
+    public function cancelOrder(Request $request)
+    {
+        
+        $validator = Validator::make($request->all(), [
+            'order_id' => 'required|integer|exists:orders,id',
+            'cancellation_reason' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = auth()->user();
+
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        
+        $orderId = $request->input('order_id');
+        $cancellationReason = $request->input('cancellation_reason');
+
+        $result = $this->orderService->cancelOrder(
+            $orderId,
+            $user,
+            $cancellationReason
+        );
+
         $statusCode = $result['status_code'] ?? 200;
         unset($result['status_code']);
 
