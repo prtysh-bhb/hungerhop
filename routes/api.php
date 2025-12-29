@@ -56,7 +56,6 @@ Route::prefix('v1')->group(function () {
         Route::post('/menu/category', [NearestRestaurantController::class, 'menuByCategoryWithRestaurant']);
         Route::post('/by-category', [NearestRestaurantController::class, 'CategoryWiseResaurant']);
 
-
         // Restaurant Reviews
         Route::get('/reviews', [ReviewController::class, 'getReviews'])->withoutMiddleware('auth:api'); // ?restaurant_id=1
         Route::post('/reviews', [ReviewController::class, 'addReview']);

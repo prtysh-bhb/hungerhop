@@ -1,11 +1,11 @@
 <?php
 
 namespace App\Http\Controllers\Api\v1;
-use Illuminate\Support\Facades\Validator;
 
 use App\Http\Controllers\Controller;
 use App\Services\Api\v1\OrderService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class OrderController extends Controller
 {
@@ -151,7 +151,7 @@ class OrderController extends Controller
 
     public function cancelOrder(Request $request)
     {
-        
+
         $validator = Validator::make($request->all(), [
             'order_id' => 'required|integer|exists:orders,id',
             'cancellation_reason' => 'nullable|string|max:255',
@@ -173,7 +173,6 @@ class OrderController extends Controller
             ], 401);
         }
 
-        
         $orderId = $request->input('order_id');
         $cancellationReason = $request->input('cancellation_reason');
 

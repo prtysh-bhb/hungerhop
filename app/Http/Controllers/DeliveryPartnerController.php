@@ -4,10 +4,43 @@ namespace App\Http\Controllers;
 
 use App\Enums\VehicleTypeEnums;
 use App\Models\DeliveryPartner;
+use App\Models\DeliveryPartnerDocument;
 use Illuminate\Http\Request;
+
 
 class DeliveryPartnerController extends Controller
 {
+
+    /**
+     * Approve a delivery partner document.
+     */
+    public function approveDocument($documentId)
+    {
+        $document = DeliveryPartnerDocument::findOrFail($documentId);
+        $document->status = 'approved';
+        $document->rejection_reason = null;
+        $document->reviewed_at = now();
+        $document->reviewed_by = auth()->id();
+        $document->save();
+        return redirect()->back()->with('success', 'Document approved successfully.');
+    }
+
+    /**
+     * Reject a delivery partner document with a reason.
+     */
+    public function rejectDocument(Request $request, $documentId)
+    {
+        $request->validate([
+            'rejection_reason' => 'required|string|max:255',
+        ]);
+        $document = DeliveryPartnerDocument::findOrFail($documentId);
+        $document->status = 'rejected';
+        $document->rejection_reason = $request->rejection_reason;
+        $document->reviewed_at = now();
+        $document->reviewed_by = auth()->id();
+        $document->save();
+        return redirect()->back()->with('success', 'Document rejected with reason.');
+    }
     /**
      * Display a listing of all delivery partners.
      */

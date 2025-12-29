@@ -103,6 +103,8 @@ Route::post('/delivery-partner/register', [DeliveryPartnerRegistrationController
 // Delivery Partner Management Routes (Protected by auth)
 Route::middleware(['auth'])->group(function () {
     Route::resource('/delivery/partners', DeliveryPartnerController::class);
+    Route::post('/delivery/partners/document/{document}/approve', [DeliveryPartnerController::class, 'approveDocument'])->name('partners.document.approve');
+    Route::post('/delivery/partners/document/{document}/reject', [DeliveryPartnerController::class, 'rejectDocument'])->name('partners.document.reject');
 });
 
 Route::post('/restaurant/registration/store', [RestaurantAdminController::class, 'storeRegistration'])->name('public.restaurant.registration.store');

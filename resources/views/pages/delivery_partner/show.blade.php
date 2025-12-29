@@ -101,6 +101,58 @@
                                                     @else
                                                         <span class="text-muted">No file</span>
                                                     @endif
+                                                    <div class="mt-2">
+                                                        @if ($document->status !== 'approved')
+                                                            <form
+                                                                action="{{ route('partners.document.approve', $document->id) }}"
+                                                                method="POST" style="display:inline-block;">
+                                                                @csrf
+                                                                <button type="submit"
+                                                                    class="btn btn-sm btn-success">Approve</button>
+                                                            </form>
+                                                            <button type="button" class="btn btn-sm btn-danger"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#rejectReasonModal-{{ $document->id }}">Reject</button>
+                                                        @endif
+                                                    </div>
+                                                    <!-- Reject Reason Modal -->
+                                                    <div class="modal fade" id="rejectReasonModal-{{ $document->id }}"
+                                                        tabindex="-1"
+                                                        aria-labelledby="rejectReasonModalLabel-{{ $document->id }}"
+                                                        aria-hidden="true">
+                                                        <div class="modal-dialog">
+                                                            <div class="modal-content">
+                                                                <form
+                                                                    action="{{ route('partners.document.reject', $document->id) }}"
+                                                                    method="POST">
+                                                                    @csrf
+                                                                    <div class="modal-header">
+                                                                        <h5 class="modal-title"
+                                                                            id="rejectReasonModalLabel-{{ $document->id }}">
+                                                                            Rejection Reason</h5>
+                                                                        <button type="button" class="btn-close"
+                                                                            data-bs-dismiss="modal"
+                                                                            aria-label="Close"></button>
+                                                                    </div>
+                                                                    <div class="modal-body">
+                                                                        <div class="mb-3">
+                                                                            <label
+                                                                                for="rejection_reason_{{ $document->id }}"
+                                                                                class="form-label">Reason</label>
+                                                                            <textarea class="form-control" id="rejection_reason_{{ $document->id }}" name="rejection_reason" rows="3"
+                                                                                required></textarea>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="modal-footer">
+                                                                        <button type="button" class="btn btn-secondary"
+                                                                            data-bs-dismiss="modal">Cancel</button>
+                                                                        <button type="submit"
+                                                                            class="btn btn-danger">Reject</button>
+                                                                    </div>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         @endforeach
@@ -144,7 +196,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="card">
                     <div class="card-header">
                         <h5>Profile Details</h5>

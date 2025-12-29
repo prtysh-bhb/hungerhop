@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CustomerProfile extends Model
+
 {
     use Auditable, HasFactory, Searchable, SoftDeletes;
 
@@ -65,5 +66,29 @@ class CustomerProfile extends Model
     {
         // Returns the latest address for the customer (customize as needed)
         return $this->hasOne(CustomerAddress::class, 'customer_id')->latestOfMany();
+    }
+    
+    /**
+     * Check if a restaurant is in the customer's favorites
+     */
+    public function hasFavoriteRestaurant($restaurantId)
+    {
+        return $this->favoriteItems()->where('restaurant_id', $restaurantId)->where('type', 'restaurant')->exists();
+    }
+
+    /**
+     * Check if a menu item is in the customer's favorites
+     */
+    public function hasFavoriteMenuItem($itemId)
+    {
+        return $this->favoriteItems()->where('item_id', $itemId)->where('type', 'menu_item')->exists();
+    }
+
+    /**
+     * Relationship: all favorite items for this customer
+     */
+    public function favoriteItems()
+    {
+        return $this->hasMany(\App\Models\CustomerFavoriteItem::class, 'customer_id');
     }
 }

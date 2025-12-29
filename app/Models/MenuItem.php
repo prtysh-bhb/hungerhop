@@ -10,6 +10,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class MenuItem extends BaseTenantModel
+
+    /**
+     * Customer favorites for this menu item
+     */
+  
 {
     use Auditable, HasFactory, Searchable, SoftDeletes, TenantScoped, TracksActivity;
 
@@ -75,5 +80,9 @@ class MenuItem extends BaseTenantModel
     public function variations()
     {
         return $this->hasMany(MenuVariation::class);
+    }
+      public function favorites()
+    {
+        return $this->hasMany(CustomerFavoriteItem::class, 'item_id')->where('type', CustomerFavoriteItem::TYPE_MENU_ITEM);
     }
 }

@@ -38,8 +38,15 @@ class SearchRestaurantController extends Controller
         // Get all restaurant data
         $restaurants = $restaurantQuery->get();
 
+        // Get authenticated customer profile if available
+        $user = auth()->user();
+        $customerProfile = null;
+        if ($user && $user->role === 'customer') {
+            $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
+        }
+
         // Transform the data to include all required fields
-        $transformedRestaurants = $restaurants->map(function ($restaurant) {
+        $transformedRestaurants = $restaurants->map(function ($restaurant) use ($customerProfile) {
             $data = [
                 'id' => (string) $restaurant->id,
                 'name' => $restaurant->restaurant_name,
@@ -109,6 +116,9 @@ class SearchRestaurantController extends Controller
             } else {
                 $data['status_message'] = 'Open for orders';
             }
+
+            // Add is_favourite key
+            $data['is_favourite'] = $customerProfile ? $customerProfile->hasFavoriteRestaurant($restaurant->id) : false;
 
             return $data;
         });

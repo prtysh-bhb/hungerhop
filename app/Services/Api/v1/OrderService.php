@@ -456,7 +456,7 @@ class OrderService
                     ->first();
 
                 // Only allow cancellation if order is not already cancelled or completed
-                $nonCancellableStatuses = ['cancelled', 'completed','delivered','arrived'];
+                $nonCancellableStatuses = ['cancelled', 'completed', 'delivered', 'arrived'];
                 if (in_array($order->status, $nonCancellableStatuses)) {
                     return [
                         'success' => false,

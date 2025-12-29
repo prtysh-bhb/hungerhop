@@ -24,6 +24,10 @@ class NearestRestaurantController extends Controller
                 $q->where('user_id', $user->id);
             })
             ->firstOrFail();
+        $customerProfile = null;
+        if ($user && $user->role === 'customer') {
+            $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
+        }
 
         $categoryName = $request->input('category');
         $categoriesInput = $request->input('categories');
@@ -38,10 +42,10 @@ class NearestRestaurantController extends Controller
             $q->where('restaurant_id', $restaurant->id);
         }])->get();
 
-        $result = $categories->map(function ($cat) {
+        $result = $categories->map(function ($cat) use ($customerProfile) {
             return [
                 'category' => $cat->name ?? $cat->category_name ?? '',
-                'items' => $cat->menuItems->map(function ($item) {
+                'items' => $cat->menuItems->map(function ($item) use ($customerProfile) {
                     return [
                         'id' => $item->id,
                         'name' => $item->item_name,
@@ -49,8 +53,8 @@ class NearestRestaurantController extends Controller
                         'is_available' => $item->is_available,
                         'is_veg' => $item->is_veg,
                         'is_vaegan' => $item->is_vegan,
-
                         'description' => $item->description,
+                        'is_favourite' => $customerProfile ? $customerProfile->hasFavoriteMenuItem($item->id) : false,
                     ];
                 }),
             ];
@@ -143,7 +147,12 @@ class NearestRestaurantController extends Controller
         //     ];
         // })->values();
 
-        $data = $menuItems->map(function ($items) use ($category) {
+        $user = auth()->user();
+        $customerProfile = null;
+        if ($user && $user->role === 'customer') {
+            $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
+        }
+        $data = $menuItems->map(function ($items) use ($category, $customerProfile) {
 
             // 1. Get FIRST NON-DELETED restaurant
             $restaurant = $items
@@ -164,11 +173,11 @@ class NearestRestaurantController extends Controller
                 'is_open' => (bool) $restaurant->is_open,
                 'logo_url' => $restaurant->full_image_url,
                 'title' => $category->name,
-
+                'is_favourite' => $customerProfile ? $customerProfile->hasFavoriteRestaurant($restaurant->id) : false,
                 'menu_item' => $items
                     // 3. Keep only items whose restaurant is NOT deleted
                     ->filter(fn ($item) => $item->restaurant && $item->restaurant->deleted_at === null)
-                    ->map(function ($item) {
+                    ->map(function ($item) use ($customerProfile) {
                         return [
                             'id' => $item->id,
                             'name' => $item->item_name,
@@ -181,6 +190,7 @@ class NearestRestaurantController extends Controller
                             'is_veg' => (bool) $item->is_veg,
                             'is_vegan' => (bool) $item->is_vegan,
                             'rating' => (float) $item->average_rating,
+                            'is_favourite' => $customerProfile ? $customerProfile->hasFavoriteMenuItem($item->id) : false,
                         ];
                     })
                     ->values(),
