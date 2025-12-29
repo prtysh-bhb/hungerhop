@@ -336,6 +336,13 @@
                                   </li>
                               </ul>
                           </li>
+                          <li class="{{ request()->is('admin/tenant-plans*') ? 'active' : '' }}">
+                              <a href="{{ Route('admin.faq.index') }}">
+                                  <i class="icon-Layers"><span class="path1"></span><span
+                                          class="path2"></span></i>
+                                  <span>FAQs</span>
+                              </a>
+                            </li>
                       @endcan
                   @endif
 

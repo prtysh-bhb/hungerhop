@@ -42,9 +42,10 @@ class NearestRestaurantController extends Controller
             $q->where('restaurant_id', $restaurant->id);
         }])->get();
 
-        $result = $categories->map(function ($cat) use ($customerProfile) {
+        $result = $categories->map(function ($cat) use ($customerProfile, $restaurant) {
             return [
                 'category' => $cat->name ?? $cat->category_name ?? '',
+                'is_favourite' => $customerProfile ? $customerProfile->hasFavoriteRestaurant($restaurant->id) : false,
                 'items' => $cat->menuItems->map(function ($item) use ($customerProfile) {
                     $isFavourite = false;
                     if ($customerProfile) {
@@ -57,7 +58,7 @@ class NearestRestaurantController extends Controller
                     return [
                         'id' => $item->id,
                         'name' => $item->item_name,
-                        'price' => $item->base_price,
+                        'price' => (string) $item->base_price,
                         'is_available' => $item->is_available,
                         'is_veg' => $item->is_veg,
                         'is_vaegan' => $item->is_vegan,
@@ -491,7 +492,10 @@ class NearestRestaurantController extends Controller
                     'is_active' => $promo->is_active,
                 ];
             });
-
+             $customerProfile = null;
+        if ($user && $user->role === 'customer') {
+            $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
+        }
         // Get menu items with categories
         $productData = [];
         foreach ($restaurant->menuCategories as $category) {
@@ -509,6 +513,7 @@ class NearestRestaurantController extends Controller
                     'rating' => (float) $item->average_rating,
                     'is_vegetarian' => $item->is_vegetarian,
                     'is_vegan' => $item->is_vegan,
+                    'is_favourite' => $customerProfile ? $customerProfile->hasFavoriteMenuItem($item->id) : false,
                 ];
             }
         }
@@ -526,6 +531,7 @@ class NearestRestaurantController extends Controller
             'rating' => (string) number_format((float) $restaurant->average_rating, 1),
             'total_reviews' => (int) $restaurant->total_reviews,
             'is_open' => (bool) $restaurant->is_open,
+            'is_favourite' => $customerProfile ? $customerProfile->hasFavoriteRestaurant($restaurant->id) : false,
             'opening_time' => $todayHours['open'] ?? null,
             'closing_time' => $todayHours['close'] ?? null,
             'estimated_delivery_time' => (string) $restaurant->estimated_delivery_time,
@@ -622,12 +628,23 @@ class NearestRestaurantController extends Controller
             $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
         }
 
+        // Get customer profile for is_favourite
+        $user = auth()->user();
+        $customerProfile = null;
+        if ($user && $user->role === 'customer') {
+            $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
+        }
+
         // 2️⃣ Fetch restaurants having menu items in this category
         $restaurants = Restaurant::whereNull('deleted_at')
             ->whereHas('menuItems', function ($q) use ($category) {
                 $q->where('menu_category_id', $category->id)
                     ->whereNull('deleted_at');
             })
+            ->with(['menuItems' => function ($q) use ($category) {
+                $q->where('menu_category_id', $category->id)
+                    ->whereNull('deleted_at');
+            }])
             ->withCount(['menuItems as items_count' => function ($q) use ($category) {
                 $q->where('menu_category_id', $category->id)
                     ->whereNull('deleted_at');
@@ -635,8 +652,7 @@ class NearestRestaurantController extends Controller
             ->get();
 
         // 3️⃣ Format response to match homepage format
-        $data = $restaurants->map(function ($restaurant) {
-            // Match homepage format from CustomerRegistration@formatRestaurantData
+        $data = $restaurants->map(function ($restaurant) use ($customerProfile) {
             return [
                 'id' => (string) $restaurant->id,
                 'name' => $restaurant->restaurant_name,
@@ -664,6 +680,7 @@ class NearestRestaurantController extends Controller
                 'tax_percentage' => (string) number_format((float) ($restaurant->tax_percentage ?? 0), 2),
                 'is_open' => (bool) $restaurant->is_open,
                 'is_paused' => (bool) ($restaurant->is_paused ?? false),
+                'is_favourite' => $customerProfile ? $customerProfile->hasFavoriteRestaurant($restaurant->id) : false,
                 'accepts_orders' => (bool) ($restaurant->accepts_orders ?? true),
                 'is_featured' => (bool) ($restaurant->is_featured ?? false),
                 'status' => ($restaurant->is_paused ?? false) ? 'paused' : ($restaurant->is_open ? 'open' : 'closed'),
