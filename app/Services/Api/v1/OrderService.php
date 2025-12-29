@@ -714,7 +714,7 @@ class OrderService
                 'name' => $partnerName,
                 'vehicle_type' => $nearest->vehicle_type,
                 'average_rating' => $nearest->average_rating,
-                'distance_to_restaurant_km' => round($minDistance, 2),
+                'distance_to_restaurant_km' => (string) round($minDistance, 2),
                 'note' => 'This is an estimated delivery partner. Actual assignment will be made when order is ready for pickup.',
             ];
         }
@@ -823,8 +823,8 @@ class OrderService
             ],
             'order_items' => $order->orderItems->map(function ($item) {
                 return [
-                    'item_id' => (string) $item->item_id,
-                    'item_name' => (string) $item->item_name,
+                    'id' =>$item->item_id,
+                    'name' => (string) $item->item_name,
                     'quantity' => (int) $item->quantity,
                     'unit_price' => (float) $item->unit_price,
                     'total_price' => (float) $item->total_price,
@@ -834,7 +834,7 @@ class OrderService
             'billing_details' => $this->buildBillingDetails($order),
             'payment' => $payment ? [
                 'id' => (string) $payment->id,
-                'amount' => (float) $payment->amount,
+                'amount' => (string) $payment->amount,
                 'currency' => (string) $payment->currency,
                 'payment_method' => (string) $payment->payment_method,
                 'payment_gateway' => (string) $payment->payment_gateway,
@@ -842,8 +842,8 @@ class OrderService
                 'initiated_at' => ($payment->initiated_at instanceof \Carbon\Carbon) ? $payment->initiated_at->toISOString() : (string) $payment->initiated_at,
             ] : null,
             'delivery_info' => [
-                'distance_km' => $distanceKm !== null ? (float) $distanceKm : null,
-                'delivery_fee' => (float) $order->delivery_fee,
+                'distance_km' => (string) ($distanceKm !== null ? $distanceKm : ''),
+                'delivery_fee' => (string) $order->delivery_fee,
                 'estimated_delivery_time' => (string) $estimatedDeliveryTime,
                 'restaurant_location' => $order->restaurant ? [
                     'latitude' => (float) $order->restaurant->latitude,
