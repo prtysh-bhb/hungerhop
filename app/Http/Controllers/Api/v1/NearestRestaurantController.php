@@ -492,7 +492,7 @@ class NearestRestaurantController extends Controller
                     'is_active' => $promo->is_active,
                 ];
             });
-             $customerProfile = null;
+        $customerProfile = null;
         if ($user && $user->role === 'customer') {
             $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
         }
@@ -622,7 +622,7 @@ class NearestRestaurantController extends Controller
                 'message' => 'Category not found',
             ], 404);
         }
-         $user = auth()->user();
+        $user = auth()->user();
         $customerProfile = null;
         if ($user && $user->role === 'customer') {
             $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
@@ -695,7 +695,7 @@ class NearestRestaurantController extends Controller
                 })->toArray() : [],
             ];
         })->values();
-        
+
         // Add is_favourite key for each restaurant if customer profile is available
         if ($customerProfile) {
             $data = $data->map(function ($restaurantData) use ($customerProfile) {
@@ -704,6 +704,7 @@ class NearestRestaurantController extends Controller
                     ->where('restaurant_id', $restaurantData['id'])
                     ->exists();
                 $restaurantData['is_favourite'] = $isFavourite;
+
                 return $restaurantData;
             });
         }

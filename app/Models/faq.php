@@ -75,7 +75,7 @@ class Faq extends Model
     {
         return $query->where(function ($q) use ($tenantId) {
             $q->whereNull('tenant_id')
-              ->orWhere('tenant_id', $tenantId);
+                ->orWhere('tenant_id', $tenantId);
         });
     }
 
@@ -85,6 +85,6 @@ class Faq extends Model
     public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('sort_order')
-                     ->orderBy('id', 'desc');
+            ->orderBy('id', 'desc');
     }
 }

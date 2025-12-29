@@ -555,21 +555,21 @@ class OrderService
         foreach ($orderItems as $item) {
             $menuItem = MenuItem::find($item['item_id']);
             if ($menuItem) {
-                $itemTotal = (float)($menuItem->base_price ?? 0) * ($item['quantity'] ?? 1);
+                $itemTotal = (float) ($menuItem->base_price ?? 0) * ($item['quantity'] ?? 1);
                 $subtotal += $itemTotal;
                 $items[] = [
                     'id' => $item['item_id'],
                     'name' => $menuItem->item_name,
                     'quantity' => $item['quantity'],
-                    'price' => (float)($menuItem->base_price ?? 0),
-                    'total_price' => (float)$itemTotal,
+                    'price' => (float) ($menuItem->base_price ?? 0),
+                    'total_price' => (float) $itemTotal,
                     'special_instructions' => $item['special_instructions'] ?? null,
                 ];
             }
         }
 
         return [
-            'subtotal' => (float)$subtotal,
+            'subtotal' => (float) $subtotal,
             'items' => $items,
         ];
     }
@@ -823,7 +823,7 @@ class OrderService
             ],
             'order_items' => $order->orderItems->map(function ($item) {
                 return [
-                    'id' =>$item->item_id,
+                    'id' => $item->item_id,
                     'name' => (string) $item->item_name,
                     'quantity' => (int) $item->quantity,
                     'unit_price' => (float) $item->unit_price,
@@ -874,7 +874,7 @@ class OrderService
             ] : null,
             'customer' => $order->customer && $order->customer->user ? [
                 'id' => (string) $order->customer->id,
-                'name' => (string) ($order->customer->user->first_name . ' ' . $order->customer->user->last_name),
+                'name' => (string) ($order->customer->user->first_name.' '.$order->customer->user->last_name),
                 'email' => (string) $order->customer->user->email,
                 'phone' => (string) ($order->customer->user->phone ?? ''),
             ] : null,

@@ -22,7 +22,7 @@ return new class extends Migration
                 'restaurant',
                 'delivery_partner',
                 'admin',
-                'all'
+                'all',
             ])->default('all');
             $table->string('category')->nullable()
                 ->comment('General, Payments, Orders, Delivery, etc');

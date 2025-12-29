@@ -395,7 +395,8 @@ class Restaurant extends BaseTenantModel
         // 'state' field is actually state_id, but named 'state' in DB
         return $this->belongsTo(State::class, 'state', 'id');
     }
-     /**
+
+    /**
      * Customer favorites for this restaurant
      */
     public function favorites()

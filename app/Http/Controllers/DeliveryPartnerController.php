@@ -7,10 +7,8 @@ use App\Models\DeliveryPartner;
 use App\Models\DeliveryPartnerDocument;
 use Illuminate\Http\Request;
 
-
 class DeliveryPartnerController extends Controller
 {
-
     /**
      * Approve a delivery partner document.
      */
@@ -22,6 +20,7 @@ class DeliveryPartnerController extends Controller
         $document->reviewed_at = now();
         $document->reviewed_by = auth()->id();
         $document->save();
+
         return redirect()->back()->with('success', 'Document approved successfully.');
     }
 
@@ -39,8 +38,10 @@ class DeliveryPartnerController extends Controller
         $document->reviewed_at = now();
         $document->reviewed_by = auth()->id();
         $document->save();
+
         return redirect()->back()->with('success', 'Document rejected with reason.');
     }
+
     /**
      * Display a listing of all delivery partners.
      */
