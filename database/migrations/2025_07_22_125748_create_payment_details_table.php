@@ -32,7 +32,7 @@ return new class extends Migration
             // Indexes
             $table->index('user_id', 'idx_payment_details_user');
             $table->index(['user_id', 'pay_type'], 'idx_payment_details_user_type');
-            $table->index(['user_id', 'is_primary'], 'idx_payment_details_user_primary');
+            // $table->index(['user_id', 'is_primary'], 'idx_payment_details_user_primary');
         });
     }
 

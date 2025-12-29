@@ -30,6 +30,7 @@ use App\Http\Controllers\Restaurant\MenuVariationController;
 use App\Http\Controllers\Restaurant\OrderController;
 use App\Http\Controllers\SuperAdmin\MemberController;
 use App\Http\Controllers\TenantAdmin\PaymentController;
+use App\Http\Controllers\Admin\FaqController;
 use App\Models\City;
 use App\Models\State;
 use Illuminate\Support\Facades\Route;
@@ -486,6 +487,18 @@ Route::middleware(['auth', 'identify_tenant'])->group(function () {
 
     // Admin Management Routes
     // Route handled by MemberController resource, closure removed to avoid conflict
+    // FAQ Management (Admin)
+    Route::prefix('admin/faq')->name('admin.faq.')->middleware(['auth', 'role:super_admin,tenant_admin'])->group(function () {
+        Route::get('/', [FaqController::class, 'index'])->name('index');
+        Route::get('/reply/{id}', [FaqController::class, 'reply'])->name('reply');
+        Route::post('/reply/{id}', [FaqController::class, 'submitReply'])->name('reply.submit');
+        Route::get('/create', [FaqController::class, 'create'])->name('create');
+        Route::post('/store', [FaqController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [FaqController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [FaqController::class, 'update'])->name('update');
+        Route::delete('/delete/{id}', [FaqController::class, 'destroy'])->name('destroy');  
+        Route::post('/toggle-status', [FaqController::class, 'toggleStatus'])->name('toggle');
+    });
 });
 
 Route::middleware(['auth'])->group(function () {

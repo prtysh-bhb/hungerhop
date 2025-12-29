@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\v1\DeliveryPartnerLocationController;
 use App\Http\Controllers\Api\v1\DeliveryPartnerWalletController;
 use App\Http\Controllers\Api\v1\DeliveryZoneController;
 // Controllers
+use App\Http\Controllers\Api\v1\FAQController;
 use App\Http\Controllers\Api\v1\NearestRestaurantController;
 use App\Http\Controllers\API\v1\OrderController;
 use App\Http\Controllers\API\v1\PaymentController;
@@ -214,4 +215,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/get-delivery-fee', [DeliveryZoneController::class, 'getDeliveryFee']);
     });
 
+    Route::get('/faqs', [FaqController::class, 'index']);
+    
+    Route::post('/faqs', [FaqController::class, 'store']); 
+    Route::get('faqs/{faq}', [FaqController::class, 'show']);
 });
