@@ -46,6 +46,14 @@ class NearestRestaurantController extends Controller
             return [
                 'category' => $cat->name ?? $cat->category_name ?? '',
                 'items' => $cat->menuItems->map(function ($item) use ($customerProfile) {
+                    $isFavourite = false;
+                    if ($customerProfile) {
+                        $isFavourite = \App\Models\CustomerFavoriteItem::where('customer_id', $customerProfile->id)
+                            ->where('type', 'menu_item')
+                            ->where('item_id', $item->id)
+                            ->exists();
+                    }
+
                     return [
                         'id' => $item->id,
                         'name' => $item->item_name,
@@ -54,7 +62,7 @@ class NearestRestaurantController extends Controller
                         'is_veg' => $item->is_veg,
                         'is_vaegan' => $item->is_vegan,
                         'description' => $item->description,
-                        'is_favourite' => $customerProfile ? $customerProfile->hasFavoriteMenuItem($item->id) : false,
+                        'is_favourite' => (bool) $isFavourite,
                     ];
                 }),
             ];
@@ -153,7 +161,6 @@ class NearestRestaurantController extends Controller
             $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
         }
         $data = $menuItems->map(function ($items) use ($category, $customerProfile) {
-
             // 1. Get FIRST NON-DELETED restaurant
             $restaurant = $items
                 ->pluck('restaurant')
@@ -165,6 +172,14 @@ class NearestRestaurantController extends Controller
                 return null;
             }
 
+            $isRestaurantFavourite = false;
+            if ($customerProfile) {
+                $isRestaurantFavourite = \App\Models\CustomerFavoriteItem::where('customer_id', $customerProfile->id)
+                    ->where('type', 'restaurant')
+                    ->where('restaurant_id', $restaurant->id)
+                    ->exists();
+            }
+
             return [
                 'id' => (string) $restaurant->id,
                 'name' => $restaurant->restaurant_name,
@@ -173,11 +188,19 @@ class NearestRestaurantController extends Controller
                 'is_open' => (bool) $restaurant->is_open,
                 'logo_url' => $restaurant->full_image_url,
                 'title' => $category->name,
-                'is_favourite' => $customerProfile ? $customerProfile->hasFavoriteRestaurant($restaurant->id) : false,
+                'is_favourite' => (bool) $isRestaurantFavourite,
                 'menu_item' => $items
                     // 3. Keep only items whose restaurant is NOT deleted
                     ->filter(fn ($item) => $item->restaurant && $item->restaurant->deleted_at === null)
                     ->map(function ($item) use ($customerProfile) {
+                        $isFavourite = false;
+                        if ($customerProfile) {
+                            $isFavourite = \App\Models\CustomerFavoriteItem::where('customer_id', $customerProfile->id)
+                                ->where('type', 'menu_item')
+                                ->where('item_id', $item->id)
+                                ->exists();
+                        }
+
                         return [
                             'id' => $item->id,
                             'name' => $item->item_name,
@@ -190,7 +213,7 @@ class NearestRestaurantController extends Controller
                             'is_veg' => (bool) $item->is_veg,
                             'is_vegan' => (bool) $item->is_vegan,
                             'rating' => (float) $item->average_rating,
-                            'is_favourite' => $customerProfile ? $customerProfile->hasFavoriteMenuItem($item->id) : false,
+                            'is_favourite' => (bool) $isFavourite,
                         ];
                     })
                     ->values(),
@@ -334,7 +357,11 @@ class NearestRestaurantController extends Controller
         $restaurants = $query->with('banners')->get();
 
         // Map restaurants to structured format with gallery fallback
-        $restaurants = $restaurants->map(function ($restaurant) {
+        $customerProfile = null;
+        if ($user && $user->role === 'customer') {
+            $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
+        }
+        $restaurants = $restaurants->map(function ($restaurant) use ($customerProfile) {
             $businessHours = $this->getTiming($restaurant->business_hours);
             $todayHours = $businessHours[strtolower(now()->format('l'))] ?? null;
 
@@ -377,6 +404,14 @@ class NearestRestaurantController extends Controller
                 ]);
             }
 
+            $isFavourite = false;
+            if ($customerProfile) {
+                $isFavourite = \App\Models\CustomerFavoriteItem::where('customer_id', $customerProfile->id)
+                    ->where('type', 'restaurant')
+                    ->where('restaurant_id', $restaurant->id)
+                    ->exists();
+            }
+
             return [
                 'id' => (string) $restaurant->id,
                 'name' => $restaurant->restaurant_name,
@@ -386,6 +421,7 @@ class NearestRestaurantController extends Controller
                 'rating' => (string) number_format((float) $restaurant->average_rating, 1),
                 'total_reviews' => (int) $restaurant->total_reviews,
                 'is_open' => (bool) $restaurant->is_open,
+                'is_favourite' => (bool) $isFavourite,
                 'opening_time' => $todayHours['open'] ?? null,
                 'closing_time' => $todayHours['close'] ?? null,
                 'estimated_delivery_time' => (string) $restaurant->estimated_delivery_time,
@@ -580,6 +616,11 @@ class NearestRestaurantController extends Controller
                 'message' => 'Category not found',
             ], 404);
         }
+         $user = auth()->user();
+        $customerProfile = null;
+        if ($user && $user->role === 'customer') {
+            $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
+        }
 
         // 2️⃣ Fetch restaurants having menu items in this category
         $restaurants = Restaurant::whereNull('deleted_at')
@@ -637,6 +678,18 @@ class NearestRestaurantController extends Controller
                 })->toArray() : [],
             ];
         })->values();
+        
+        // Add is_favourite key for each restaurant if customer profile is available
+        if ($customerProfile) {
+            $data = $data->map(function ($restaurantData) use ($customerProfile) {
+                $isFavourite = \App\Models\CustomerFavoriteItem::where('customer_id', $customerProfile->id)
+                    ->where('type', \App\Models\CustomerFavoriteItem::TYPE_RESTAURANT)
+                    ->where('restaurant_id', $restaurantData['id'])
+                    ->exists();
+                $restaurantData['is_favourite'] = $isFavourite;
+                return $restaurantData;
+            });
+        }
 
         return response()->json([
             'success' => true,
