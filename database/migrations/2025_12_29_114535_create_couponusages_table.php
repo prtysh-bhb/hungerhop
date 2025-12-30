@@ -24,19 +24,19 @@ return new class extends Migration
 
             // Foreign keys
             $table->foreign('coupon_id')
-                  ->references('id')
-                  ->on('coupons')
-                  ->onDelete('cascade');
+                ->references('id')
+                ->on('coupons')
+                ->onDelete('cascade');
 
             $table->foreign('user_id')
-                  ->references('id')
-                  ->on('users')
-                  ->onDelete('cascade');
+                ->references('id')
+                ->on('users')
+                ->onDelete('cascade');
 
             $table->foreign('order_id')
-                  ->references('id')
-                  ->on('orders')
-                  ->onDelete('cascade');
+                ->references('id')
+                ->on('orders')
+                ->onDelete('cascade');
 
             // Prevent duplicate usage for same order
             $table->unique(['coupon_id', 'order_id']);

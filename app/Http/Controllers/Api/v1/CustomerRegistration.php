@@ -157,6 +157,7 @@ class CustomerRegistration extends Controller
             'state' => 'required|string|max:100',
             'postal_code' => 'required|string|max:20',
             'country' => 'required|string|max:100',
+            'is_default' => 'nullable|boolean',
         ]);
 
         $user = auth()->user();

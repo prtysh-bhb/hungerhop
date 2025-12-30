@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 class Coupon extends Model
@@ -30,12 +30,12 @@ class Coupon extends Model
     ];
 
     protected $casts = [
-        'discount_value'   => 'float',
-        'max_discount'     => 'float',
-        'min_order_value'  => 'float',
-        'is_active'        => 'boolean',
-        'valid_from'       => 'datetime',
-        'valid_to'         => 'datetime',
+        'discount_value' => 'float',
+        'max_discount' => 'float',
+        'min_order_value' => 'float',
+        'is_active' => 'boolean',
+        'valid_from' => 'datetime',
+        'valid_to' => 'datetime',
     ];
 
     /* =========================
@@ -60,10 +60,10 @@ class Coupon extends Model
 
         return $query->where(function ($q) use ($now) {
             $q->whereNull('valid_from')
-              ->orWhere('valid_from', '<=', $now);
+                ->orWhere('valid_from', '<=', $now);
         })->where(function ($q) use ($now) {
             $q->whereNull('valid_to')
-              ->orWhere('valid_to', '>=', $now);
+                ->orWhere('valid_to', '>=', $now);
         });
     }
 

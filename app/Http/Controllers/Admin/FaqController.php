@@ -35,22 +35,22 @@ class FaqController extends Controller
     {
         $validated = $request->validate([
             'question' => 'required|string|max:500',
-            'answer'   => 'nullable|string',
+            'answer' => 'nullable|string',
             'category' => 'nullable|string|max:100',
             'target_role' => 'required|string|in:all,customer,restaurant,delivery_partner,admin',
-            'order'    => 'nullable|integer|min:0',
-            'is_active'=> 'boolean',
+            'order' => 'nullable|integer|min:0',
+            'is_active' => 'boolean',
         ]);
 
         Faq::create([
-            'tenant_id' => auth()->user()->tenant_id ?? null, 
-            'question'  => $validated['question'],
-            'answer'    => $validated['answer'] ?? null,
-            'category'  => $validated['category'] ?? null,
+            'tenant_id' => auth()->user()->tenant_id ?? null,
+            'question' => $validated['question'],
+            'answer' => $validated['answer'] ?? null,
+            'category' => $validated['category'] ?? null,
             'target_role' => $validated['target_role'],
             'sort_order' => $validated['order'] ?? 0,
             'is_active' => $validated['is_active'] ?? true,
-            'created_by'=> auth()->id(),
+            'created_by' => auth()->id(),
         ]);
 
         return redirect()
@@ -64,6 +64,7 @@ class FaqController extends Controller
     public function edit($id)
     {
         $faq = Faq::findOrFail($id);
+
         return view('admin.faq.edit', compact('faq'));
     }
 
@@ -76,17 +77,17 @@ class FaqController extends Controller
 
         $validated = $request->validate([
             'question' => 'required|string|max:500',
-            'answer'   => 'nullable|string',
+            'answer' => 'nullable|string',
             'category' => 'nullable|string|max:100',
             'target_role' => 'required|string|in:all,customer,restaurant,delivery_partner,admin',
-            'order'    => 'nullable|integer|min:0',
-            'is_active'=> 'boolean',
+            'order' => 'nullable|integer|min:0',
+            'is_active' => 'boolean',
         ]);
 
         $faq->update([
-            'question'  => $validated['question'],
-            'answer'    => $validated['answer'] ?? null,
-            'category'  => $validated['category'] ?? $faq->category,
+            'question' => $validated['question'],
+            'answer' => $validated['answer'] ?? null,
+            'category' => $validated['category'] ?? $faq->category,
             'target_role' => $validated['target_role'],
             'sort_order' => $validated['order'] ?? $faq->sort_order,
             'is_active' => $validated['is_active'] ?? $faq->is_active,
@@ -103,6 +104,7 @@ class FaqController extends Controller
     public function reply($id)
     {
         $faq = Faq::findOrFail($id);
+
         return view('admin.faq.reply', compact('faq'));
     }
 

@@ -21,7 +21,7 @@ class FaqController extends Controller
             ->where(function ($q) use ($tenantId) {
                 if ($tenantId) {
                     $q->whereNull('tenant_id')
-                      ->orWhere('tenant_id', $tenantId);
+                        ->orWhere('tenant_id', $tenantId);
                 } else {
                     $q->whereNull('tenant_id');
                 }
@@ -31,7 +31,7 @@ class FaqController extends Controller
                 'id',
                 'question',
                 'answer',
-                'category'
+                'category',
             ]);
 
         return response()->json([
@@ -47,19 +47,19 @@ class FaqController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'question'  => 'required|string|max:500',
-            'category'  => 'nullable|string|max:100',
+            'question' => 'required|string|max:500',
+            'category' => 'nullable|string|max:100',
             'tenant_id' => 'nullable|integer',
         ]);
 
         $faq = Faq::create([
-            'tenant_id'   => $validated['tenant_id'] ?? null,
-            'question'    => $validated['question'],
-            'answer'      => '', // empty until admin replies
-            'category'    => $validated['category'] ?? 'General',
+            'tenant_id' => $validated['tenant_id'] ?? null,
+            'question' => $validated['question'],
+            'answer' => '', // empty until admin replies
+            'category' => $validated['category'] ?? 'General',
             'target_role' => 'customer',
-            'is_active'   => false, // admin approval required
-            'sort_order'  => 0,
+            'is_active' => false, // admin approval required
+            'sort_order' => 0,
         ]);
 
         return response()->json([
@@ -78,9 +78,10 @@ class FaqController extends Controller
     public function show(Faq $faq)
     {
         // Only allow access if active and for customer/all
-        if (!$faq->is_active || !in_array($faq->target_role, ['customer', 'all'])) {
+        if (! $faq->is_active || ! in_array($faq->target_role, ['customer', 'all'])) {
             abort(404);
         }
+
         return response()->json([
             'success' => true,
             'data' => [

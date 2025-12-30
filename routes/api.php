@@ -222,7 +222,7 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::get('/faqs', [FaqController::class, 'index']);
-    
-    Route::post('/faqs', [FaqController::class, 'store']); 
+
+    Route::post('/faqs', [FaqController::class, 'store']);
     Route::get('faqs/{faq}', [FaqController::class, 'show']);
 });
