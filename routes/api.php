@@ -18,6 +18,7 @@ use App\Http\Controllers\API\v1\OrderController;
 use App\Http\Controllers\API\v1\PaymentController;
 use App\Http\Controllers\Api\v1\ReviewController;
 use App\Http\Controllers\Api\v1\SearchRestaurantController;
+use App\Http\Controllers\Api\v1\CouponController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -68,6 +69,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/reviews', [ReviewController::class, 'addMenuItemReview']);
     });
 
+    // Coupon List
+    Route::get('/coupons', [CouponController::class, 'index'])->middleware('auth:api');
+
     // Restaurant Search
     Route::post('/search/restaurants', [SearchRestaurantController::class, 'index']);
 
@@ -108,6 +112,7 @@ Route::prefix('v1')->group(function () {
     Route::prefix('order')->middleware('auth:api')->group(function () {
         Route::post('/add', [OrderController::class, 'CreateOrder']);
         Route::post('/{id}/update', [OrderController::class, 'editOrder']);
+        Route::post('/{id}/apply-coupon', [OrderController::class, 'applyCoupon']);
         Route::get('/{id}/checkout', [OrderController::class, 'checkout']);
         Route::post('/details', [OrderController::class, 'getOrderDetails']);
         Route::get('/list', [OrderController::class, 'listOrders']);
@@ -118,9 +123,9 @@ Route::prefix('v1')->group(function () {
     // Customer Favorites
     // ----------------------------------------------
     Route::prefix('favorites')->middleware('auth:api')->group(function () {
+        Route::get('/', [CustomerFavoriteController::class, 'listFavorites']);
         Route::post('/add', [CustomerFavoriteController::class, 'addFavorite']);
         Route::delete('/remove', [CustomerFavoriteController::class, 'removeFavorite']);
-        Route::get('/', [CustomerFavoriteController::class, 'listFavorites']);
         Route::post('/toggle', [CustomerFavoriteController::class, 'toggleFavorite']);
         Route::post('/check', [CustomerFavoriteController::class, 'checkFavorite']);
         // Route::get('/type/{type}', [CustomerFavoriteController::class, 'getFavoritesByType']);
@@ -131,6 +136,7 @@ Route::prefix('v1')->group(function () {
     // Payments
     // ----------------------------------------------
     Route::prefix('payment')->middleware('auth:api')->group(function () {
+            Route::get('/methods', [PaymentController::class, 'paymentMethods']);
         Route::post('/intent', [PaymentController::class, 'createIntent']);
         Route::post('/confirm', [PaymentController::class, 'confirm']);
         Route::post('/confirm-with-method', [PaymentController::class, 'confirmWithMethod']);

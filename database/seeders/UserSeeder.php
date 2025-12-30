@@ -14,12 +14,15 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Super Admin user
+        $superAdminPhone = '98765' . rand(10000, 99999);
         User::updateOrCreate(
-            ['email' => 'superadmin@hungerhop.com'],
+            [
+                'email' => 'superadmin@hungerhop.com',
+            ],
             [
                 'first_name' => 'Super',
                 'last_name' => 'Admin',
-                'phone' => '9876543210',
+                'phone' => $superAdminPhone,
                 'role' => 'super_admin',
                 'status' => 'active',
                 'password' => Hash::make('Admin@123'),

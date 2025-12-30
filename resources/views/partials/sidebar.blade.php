@@ -157,6 +157,12 @@
                           </li>
                       @endif
                       @if (auth()->check() && auth()->user()->role === 'super_admin')
+                          <li class="{{ request()->is('admin/coupons*') ? 'active' : '' }}">
+                              <a href="{{ route('admin.coupons.index') }}">
+                                  <i class="fa fa-gift" aria-hidden="true"></i>
+                                  <span>Coupons</span>
+                              </a>
+                          </li>
                           <li
                               class="treeview {{ request()->is('admin/members*', 'admin/customers*') ? 'active menu-open' : '' }}">
                               <a href="#">

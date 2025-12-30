@@ -31,6 +31,7 @@ use App\Http\Controllers\Restaurant\OrderController;
 use App\Http\Controllers\SuperAdmin\MemberController;
 use App\Http\Controllers\TenantAdmin\PaymentController;
 use App\Http\Controllers\Admin\FaqController;
+use App\Http\Controllers\Admin\CouponAdminController;
 use App\Models\City;
 use App\Models\State;
 use Illuminate\Support\Facades\Route;
@@ -545,6 +546,14 @@ Route::prefix('admin/restaurant/{restaurant}')->name('admin.restaurant.')->middl
     });
 });
 
+// Coupon Admin Routes
+Route::prefix('admin/coupons')->name('admin.coupons.')->middleware(['auth', 'role:super_admin,tenant_admin'])->group(function () {
+    Route::get('/', [CouponAdminController::class, 'index'])->name('index');
+    Route::get('/create', [CouponAdminController::class, 'create'])->name('create');
+    Route::post('/store', [CouponAdminController::class, 'store'])->name('store');
+    Route::post('/{coupon}/toggle', [CouponAdminController::class, 'toggle'])->name('toggle');
+    Route::delete('/{id}/delete', [CouponAdminController::class, 'destroy'])->name('delete');
+});
 // ====== API ROUTES FOR RESTAURANT MANAGEMENT ======
 // Route::prefix('api/v1')->name('api.')->middleware(['auth:sanctum'])->group(function () {
 //     // Restaurant API Routes

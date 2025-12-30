@@ -28,15 +28,15 @@ class CustomerRegistration extends Controller
     public function register(Request $request)
     {
         // Debug: Check if request expects JSON
-        if (! $request->expectsJson()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Request must include Accept: application/json header',
-                'debug' => [
-                    'headers' => $request->headers->all(),
-                ],
-            ], 400);
-        }
+        // if (! $request->expectsJson()) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Request must include Accept: application/json header',
+        //         'debug' => [
+        //             'headers' => $request->headers->all(),
+        //         ],
+        //     ], 400);
+        // }
 
         try {
             $validated = $request->validate([
@@ -73,7 +73,7 @@ class CustomerRegistration extends Controller
             ]);
 
             // Create CustomerProfile record
-            $customerProfile = CustomerProfile::create([
+            $user->customerProfile()->create([
                 'user_id' => $user->id,
                 'date_of_birth' => $validated['date_of_birth'] ?? null,
                 'gender' => $validated['gender'] ?? null,
@@ -105,8 +105,8 @@ class CustomerRegistration extends Controller
                         'phone' => $user->phone,
                         'role' => $user->role,
                         'status' => $user->status,
-                        'date_of_birth' => $customerProfile->date_of_birth ? $customerProfile->date_of_birth->toDateString() : null,
-                        'gender' => $customerProfile->gender,
+                        'date_of_birth' => $user->customerProfile->date_of_birth ? $user->customerProfile->date_of_birth->toDateString() : null,
+                        'gender' => $user->customerProfile->gender,
                         'email_verified_at' => $user->email_verified_at ? $user->email_verified_at->toDateTimeString() : null,
                         'last_login_at' => $user->last_login_at ? $user->last_login_at->toDateTimeString() : null,
                     ],
@@ -593,7 +593,7 @@ class CustomerRegistration extends Controller
     /**
      * Format restaurant data for API response
      */
-    private function formatRestaurantData($restaurant, $customerId, $customerLat = null, $customerLng = null, $includeCategories = true)
+    public function formatRestaurantData($restaurant, $customerId, $customerLat = null, $customerLng = null, $includeCategories = true)
     {
         // Calculate distance if coordinates provided
         $distance = null;

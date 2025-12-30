@@ -13,6 +13,7 @@ use App\Models\Payment;
 use App\Models\Restaurant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Models\Coupon;
 
 class OrderService
 {
@@ -47,6 +48,18 @@ class OrderService
 
         $restaurantId = $menuItem->restaurant_id;
         $tenantId = $menuItem->tenant_id;
+
+        // Ensure all items are from the same restaurant
+        foreach ($orderItems as $item) {
+            $itemMenu = MenuItem::find($item['item_id']);
+            if (! $itemMenu || $itemMenu->restaurant_id != $restaurantId) {
+                return [
+                    'success' => false,
+                    'message' => 'All items must be from the same restaurant.',
+                    'status_code' => 422,
+                ];
+            }
+        }
 
         // Check if restaurant can accept new orders
         $restaurant = Restaurant::find($restaurantId);
@@ -245,6 +258,45 @@ class OrderService
         DB::beginTransaction();
         try {
             $updateData = [];
+            // // Coupon logic
+            // $coupon = null;
+            // $discountAmount = $order->discount_amount;
+            // if (isset($data['coupon_code']) && !empty($data['coupon_code'])) {
+            //     $coupon = Coupon::where('code', $data['coupon_code'])
+            //         ->where('is_active', true)
+            //         ->where('valid_from', '<=', now())
+            //         ->where('valid_to', '>=', now())
+            //         ->first();
+            //     if (!$coupon) {
+            //         DB::rollBack();
+            //         return [
+            //             'success' => false,
+            //             'message' => 'Invalid or expired coupon code.',
+            //             'status_code' => 422,
+            //         ];
+            //     }
+            //     // Check min order value
+            //     $currentSubtotal = isset($updateData['subtotal']) ? $updateData['subtotal'] : $order->subtotal;
+            //     if ($coupon->min_order_value && $currentSubtotal < $coupon->min_order_value) {
+            //         DB::rollBack();
+            //         return [
+            //             'success' => false,
+            //             'message' => 'Order does not meet the minimum value for this coupon.',
+            //             'status_code' => 422,
+            //         ];
+            //     }
+            //     // Calculate discount
+            //     if ($coupon->discount_type === 'flat') {
+            //         $discountAmount = (float) $coupon->discount_value;
+            //     } elseif ($coupon->discount_type === 'percentage') {
+            //         $discountAmount = ($currentSubtotal * $coupon->discount_value) / 100;
+            //         if ($coupon->max_discount) {
+            //             $discountAmount = min($discountAmount, $coupon->max_discount);
+            //         }
+            //     }
+            //     $updateData['discount_amount'] = $discountAmount;
+            //     $updateData['coupon_code'] = $coupon->code;
+            // }
 
             // Update special instructions if provided
             if (isset($data['special_instructions'])) {
@@ -282,6 +334,27 @@ class OrderService
 
             // Update order items if provided
             if (isset($data['order_items']) && is_array($data['order_items'])) {
+                // Ensure all items are from the same restaurant as the order
+                foreach ($data['order_items'] as $item) {
+                    $menuItem = MenuItem::find($item['item_id']);
+                    if (! $menuItem) {
+                        DB::rollBack();
+                        return [
+                            'success' => false,
+                            'message' => "Menu item with ID {$item['item_id']} not found.",
+                            'status_code' => 422,
+                        ];
+                    }
+                    if ($menuItem->restaurant_id != $order->restaurant_id) {
+                        DB::rollBack();
+                        return [
+                            'success' => false,
+                            'message' => 'All items must be from the same restaurant.',
+                            'status_code' => 422,
+                        ];
+                    }
+                }
+
                 // Delete existing order items
                 OrderItem::where('order_id', $order->id)->delete();
 
@@ -292,16 +365,6 @@ class OrderService
                 // Create new order items
                 foreach ($data['order_items'] as $item) {
                     $menuItem = MenuItem::find($item['item_id']);
-                    if (! $menuItem) {
-                        DB::rollBack();
-
-                        return [
-                            'success' => false,
-                            'message' => "Menu item with ID {$item['item_id']} not found.",
-                            'status_code' => 422,
-                        ];
-                    }
-
                     OrderItem::create([
                         'order_id' => $order->id,
                         'tenant_id' => $order->tenant_id,
@@ -333,7 +396,7 @@ class OrderService
                 $newTaxAmount = $updateData['tax_amount'] ?? $order->tax_amount;
                 $newDeliveryFee = $updateData['delivery_fee'] ?? $order->delivery_fee;
                 $platformFee = $order->platform_fee;
-                $discountAmount = $order->discount_amount;
+                $discountAmount = $updateData['discount_amount'] ?? $order->discount_amount;
 
                 $updateData['total_amount'] = $newSubtotal + $newTaxAmount + $newDeliveryFee + $platformFee - $discountAmount;
 
@@ -377,6 +440,166 @@ class OrderService
             ];
         }
     }
+public function applyCouponToOrder(int $orderId, string $couponCode, $user): array
+{
+    $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
+    if (! $customerProfile) {
+        return [
+            'success' => false,
+            'message' => 'Customer profile not found.',
+            'status_code' => 404,
+        ];
+    }
+
+    $order = Order::where('id', $orderId)
+        ->where('customer_id', $customerProfile->id)
+        ->first();
+
+    if (! $order) {
+        return [
+            'success' => false,
+            'message' => 'Order not found or does not belong to you.',
+            'status_code' => 404,
+        ];
+    }
+
+    // Coupon can be applied ONLY in draft
+    if ($order->status !== 'draft') {
+        return [
+            'success' => false,
+            'message' => 'Coupon can only be applied before order placement.',
+            'current_status' => $order->status,
+            'status_code' => 403,
+        ];
+    }
+
+    // Normalize coupon code
+    $couponCode = strtoupper(trim($couponCode));
+
+    $coupon = Coupon::where('code', $couponCode)
+        ->where('is_active', true)
+        ->first();
+
+    if (! $coupon) {
+        return [
+            'success' => false,
+            'message' => 'Invalid or inactive coupon code.',
+            'status_code' => 422,
+        ];
+    }
+
+    // Validity window
+    if ($coupon->valid_from && now()->lt($coupon->valid_from)) {
+        return [
+            'success' => false,
+            'message' => 'Coupon is not yet valid.',
+            'status_code' => 422,
+        ];
+    }
+
+    if ($coupon->valid_to && now()->gt($coupon->valid_to)) {
+        return [
+            'success' => false,
+            'message' => 'Coupon has expired.',
+            'status_code' => 422,
+        ];
+    }
+
+    // Scope check (restaurant coupons)
+    if ($coupon->coupon_scope === 'restaurant') {
+        if (! isset($coupon->restaurant_id) || $coupon->restaurant_id != $order->restaurant_id) {
+            return [
+                'success' => false,
+                'message' => 'Coupon is not applicable to this restaurant.',
+                'status_code' => 422,
+            ];
+        }
+    }
+
+    $subtotal = (float) $order->subtotal;
+
+    // Minimum order value
+    if ($subtotal < (float) $coupon->min_order_value) {
+        return [
+            'success' => false,
+            'message' => 'Order does not meet minimum value for this coupon.',
+            'min_order_value' => $coupon->min_order_value,
+            'status_code' => 422,
+        ];
+    }
+
+    // Total usage limit
+    if ($coupon->usage_limit !== null &&
+        $coupon->usages()->count() >= $coupon->usage_limit) {
+        return [
+            'success' => false,
+            'message' => 'Coupon usage limit reached.',
+            'status_code' => 422,
+        ];
+    }
+
+    // Per-user usage limit
+    if ($coupon->usages()
+        ->where('user_id', $user->id)
+        ->count() >= $coupon->usage_per_user) {
+        return [
+            'success' => false,
+            'message' => 'You have already used this coupon.',
+            'status_code' => 422,
+        ];
+    }
+
+    // Calculate discount
+    if ($coupon->discount_type === 'flat') {
+        $discountAmount = min($coupon->discount_value, $subtotal);
+    } else {
+        $discountAmount = ($subtotal * $coupon->discount_value) / 100;
+        if ($coupon->max_discount !== null) {
+            $discountAmount = min($discountAmount, $coupon->max_discount);
+        }
+    }
+
+    $discountAmount = round($discountAmount, 2);
+
+    DB::beginTransaction();
+    try {
+        // Update order
+        $order->update([
+            'coupon_code' => $coupon->code,
+            'discount_amount' => $discountAmount,
+            'total_amount' =>
+                $order->subtotal +
+                $order->tax_amount +
+                $order->delivery_fee +
+                $order->platform_fee -
+                $discountAmount,
+        ]);
+
+        DB::commit();
+
+        return [
+            'success' => true,
+            'message' => 'Coupon applied successfully.',
+            'data' => [
+                'coupon_code' => $coupon->code,
+                'discount_amount' => $discountAmount,
+                'total_amount' => $order->total_amount,
+            ],
+            'status_code' => 200,
+        ];
+
+    } catch (\Throwable $e) {
+        DB::rollBack();
+
+        return [
+            'success' => false,
+            'message' => 'Failed to apply coupon.',
+            'error' => $e->getMessage(),
+            'status_code' => 500,
+        ];
+    }
+}
+
 
     /**
      * Get checkout details for an order
@@ -647,7 +870,8 @@ class OrderService
             'cod' => 'pending',
             'wallet' => 'completed',
             'card' => 'completed',
-            default => 'initiated',
+            'upi' => 'pending',
+            default => 'pending',
         };
 
         return Payment::create([
@@ -710,7 +934,7 @@ class OrderService
             $partnerName = $nearest->user ? $nearest->user->first_name.' '.$nearest->user->last_name : 'Unknown';
 
             $partnerPreview = [
-                'id' => $nearest->id,
+                'id' => (string) $nearest->id,
                 'name' => $partnerName,
                 'vehicle_type' => $nearest->vehicle_type,
                 'average_rating' => $nearest->average_rating,
@@ -900,7 +1124,7 @@ class OrderService
             ] : null,
             'items' => $order->orderItems->map(function ($item) {
                 return [
-                    'item_name' => (string) $item->item_name,
+                    'name' => (string) $item->item_name,
                     'quantity' => (int) $item->quantity,
                     'unit_price' => (float) $item->unit_price,
                     'total_price' => (float) $item->total_price,

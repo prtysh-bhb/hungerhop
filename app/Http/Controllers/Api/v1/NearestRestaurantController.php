@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Restaurant;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use App\Models\CustomerProfile;
 
 class NearestRestaurantController extends Controller
 {
@@ -414,19 +415,6 @@ class NearestRestaurantController extends Controller
         ]);
 
         $user = auth()->user();
-        $restaurant = request()->user()
-            ? Restaurant::where('id', $request->id)
-                ->when($user && in_array($user->role, ['admin', 'owner']), function ($q) use ($user) {
-                    $q->where('user_id', $user->id);
-                })
-                ->first()
-            : Restaurant::where('id', $request->id)->first();
-        if (! $restaurant) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Restaurant not found',
-            ], 404);
-        }
         $restaurant = Restaurant::with([
             'menuCategories.menuItems',
             'banners',
@@ -435,7 +423,28 @@ class NearestRestaurantController extends Controller
             ->when($user && in_array($user->role, ['admin', 'owner']), function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             })
-            ->firstOrFail();
+            ->first();
+        if (! $restaurant) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Restaurant not found',
+            ], 404);
+        }
+
+        $customerProfile = null;
+        if ($user && $user->role === 'customer') {
+            $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
+        }
+
+        // Use homepage-style formatting for restaurant details
+        $restaurantData = (new \App\Http\Controllers\Api\v1\CustomerRegistration)->formatRestaurantData(
+            $restaurant,
+            $customerProfile ? $customerProfile->id : null,
+            $request->input('latitude'),
+            $request->input('longitude'),
+            true
+        );
+
         // Get active promotions for this restaurant
         $coupons = \App\Models\Promotion::where('restaurant_id', $restaurant->id)
             ->where('is_active', true)
@@ -456,67 +465,10 @@ class NearestRestaurantController extends Controller
                     'is_active' => $promo->is_active,
                 ];
             });
-             $customerProfile = null;
-        if ($user && $user->role === 'customer') {
-            $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
-        }
-        // Get menu items with categories
-        $productData = [];
-        foreach ($restaurant->menuCategories as $category) {
-            foreach ($category->menuItems as $item) {
-                $productData[] = [
-                    'id' => $item->id,
-                    'name' => $item->item_name,
-                    'price' => (float) $item->base_price,
-                    'offer_price' => (float) $item->base_price, // You can implement offer logic later
-                    'description' => $item->description,
-                    'category_id' => $item->menu_category_id,
-                    'category_name' => $category->name,
-                    'image' => $item->image_url ? url('storage/'.$item->image_url) : null,
-                    'is_available' => $item->is_available,
-                    'rating' => (float) $item->average_rating,
-                    'is_vegetarian' => $item->is_vegetarian,
-                    'is_vegan' => $item->is_vegan,
-                    'is_favourite' => $customerProfile ? $customerProfile->hasFavoriteMenuItem($item->id) : false,
-                ];
-            }
-        }
 
-        // Restaurant data
-        $businessHours = $this->getTiming($restaurant->business_hours);
-        $todayHours = $businessHours[strtolower(now()->format('l'))] ?? null;
-
-        $restuarantData = [[
-            'id' => (string) $restaurant->id,
-            'name' => $restaurant->restaurant_name,
-            'address' => $restaurant->address,
-            'latitude' => (string) $restaurant->latitude,
-            'longitude' => (string) $restaurant->longitude,
-            'rating' => (string) number_format((float) $restaurant->average_rating, 1),
-            'total_reviews' => (int) $restaurant->total_reviews,
-            'is_open' => (bool) $restaurant->is_open,
-            'is_favourite' => $customerProfile ? $customerProfile->hasFavoriteRestaurant($restaurant->id) : false,
-            'opening_time' => $todayHours['open'] ?? null,
-            'closing_time' => $todayHours['close'] ?? null,
-            'estimated_delivery_time' => (string) $restaurant->estimated_delivery_time,
-            'logo_url' => $restaurant->full_image_url,
-            'cuisine_type' => $restaurant->cuisine_type,
-            'phone' => $restaurant->phone,
-            'email' => $restaurant->email,
-        ]];
-        $categoryData = $restaurant->menuCategories
-            ->whereNull('deleted_at')
-            ->map(function ($category) {
-                return [
-                    'id' => $category->id,
-                    'name' => $category->name ?? $category->category_name,
-                ];
-            })
-            ->values();
         // Gallery data (banners)
         $gallery = $restaurant->banners->map(function ($banner) {
             $defaultImage = asset('images/banner/default1.jpg');
-
             return [
                 'id' => $banner->id,
                 'cover_image' => $banner->cover_image ? url('storage/'.$banner->cover_image) : $defaultImage,
@@ -524,8 +476,6 @@ class NearestRestaurantController extends Controller
                 'title' => $banner->title,
             ];
         });
-
-        // If no banners, provide at least one default
         if ($gallery->isEmpty()) {
             $gallery = collect([
                 [
@@ -550,11 +500,44 @@ class NearestRestaurantController extends Controller
             ];
         });
 
+        // Menu items with categories
+        $productData = [];
+        foreach ($restaurant->menuCategories as $category) {
+            foreach ($category->menuItems as $item) {
+                $productData[] = [
+                    'id' => $item->id,
+                    'name' => $item->item_name,
+                    'price' => (float) $item->base_price,
+                    'offer_price' => (float) $item->base_price, // You can implement offer logic later
+                    'description' => $item->description,
+                    'category_id' => $item->menu_category_id,
+                    'category_name' => $category->name,
+                    'image' => $item->image_url ? url('storage/'.$item->image_url) : null,
+                    'is_available' => $item->is_available,
+                    'rating' => (float) $item->average_rating,
+                    'is_vegetarian' => $item->is_vegetarian,
+                    'is_vegan' => $item->is_vegan,
+                    'is_favourite' => $customerProfile ? $customerProfile->hasFavoriteMenuItem($item->id) : false,
+                ];
+            }
+        }
+
+        // Categories
+        $categoryData = $restaurant->menuCategories
+            ->whereNull('deleted_at')
+            ->map(function ($category) {
+                return [
+                    'id' =>(string) $category->id,
+                    'name' => $category->name ?? $category->category_name,
+                ];
+            })
+            ->values();
+
         return response()->json([
             'success' => true,
             'message' => 'Restaurant details retrieved successfully',
             'data' => [
-                'restaurant' => $restuarantData[0],
+                'restaurant' => $restaurantData,
                 'coupons' => $coupons,
                 'categories' => $categoryData,
                 'products' => $productData,

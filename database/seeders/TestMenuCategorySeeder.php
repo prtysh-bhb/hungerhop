@@ -21,11 +21,12 @@ class TestMenuCategorySeeder extends Seeder
             return;
         }
 
+
         $categories = [
             [
                 'tenant_id' => $user->tenant_id,
                 'restaurant_id' => $user->restaurant_id,
-                'category_name' => 'Appetizers',
+                'name' => 'Appetizers',
                 'description' => 'Start your meal with our delicious appetizers',
                 'sort_order' => 1,
                 'is_active' => true,
@@ -33,7 +34,7 @@ class TestMenuCategorySeeder extends Seeder
             [
                 'tenant_id' => $user->tenant_id,
                 'restaurant_id' => $user->restaurant_id,
-                'category_name' => 'Main Courses',
+                'name' => 'Main Courses',
                 'description' => 'Our signature main dishes',
                 'sort_order' => 2,
                 'is_active' => true,
@@ -41,7 +42,7 @@ class TestMenuCategorySeeder extends Seeder
             [
                 'tenant_id' => $user->tenant_id,
                 'restaurant_id' => $user->restaurant_id,
-                'category_name' => 'Desserts',
+                'name' => 'Desserts',
                 'description' => 'Sweet endings to your meal',
                 'sort_order' => 3,
                 'is_active' => true,
@@ -49,7 +50,7 @@ class TestMenuCategorySeeder extends Seeder
             [
                 'tenant_id' => $user->tenant_id,
                 'restaurant_id' => $user->restaurant_id,
-                'category_name' => 'Beverages',
+                'name' => 'Beverages',
                 'description' => 'Refreshing drinks and beverages',
                 'sort_order' => 4,
                 'is_active' => true,
@@ -58,7 +59,7 @@ class TestMenuCategorySeeder extends Seeder
 
         foreach ($categories as $category) {
             MenuCategory::updateOrCreate(
-                ['category_name' => $category['category_name'], 'tenant_id' => $category['tenant_id']],
+                ['name' => $category['name'], 'tenant_id' => $category['tenant_id']],
                 $category
             );
         }

@@ -17,6 +17,35 @@ class PaymentController extends Controller
     {
         $this->stripe = $stripe;
     }
+    public function paymentMethods(Request $request)
+    {
+        $methods = [
+            [
+                'key' => 'cod',
+                'name' => 'Cash on Delivery',
+                'description' => 'Pay with cash when your order arrives.'
+            ],
+            [
+                'key' => 'card',
+                'name' => 'Credit/Debit Card',
+                'description' => 'Pay securely using your card.'
+            ],
+            [
+                'key' => 'wallet',
+                'name' => 'Wallet',
+                'description' => 'Pay using your HungerHop wallet balance.'
+            ],
+            [
+                'key' => 'upi',
+                'name' => 'UPI',
+                'description' => 'Pay using UPI apps like PhonePe, Google Pay.'
+            ],
+        ];
+        return response()->json([
+            'success' => true,
+            'payment_methods' => $methods,
+        ]);
+    }
 
     /**
      * Create a PaymentIntent for an order
@@ -91,7 +120,7 @@ class PaymentController extends Controller
             'user_id' => $user->id,
             'user_name' => $user->first_name.' '.$user->last_name,
             'payment_getway' => $payment->payment_gateway,
-            // 'payment_getway_response' => $payment->gateway_response ? json_decode($payment->gateway_response) : null,
+            'payment_getway_response' => $payment->gateway_response ? json_decode($payment->gateway_response) : null,
         ]);
     }
 
@@ -202,6 +231,13 @@ class PaymentController extends Controller
             }])
             ->latest()
             ->get();
+
+        // Decode gateway_response for each payment
+        $payments = $payments->map(function ($payment) {
+            $paymentArr = $payment->toArray();
+            $paymentArr['gateway_response'] = $payment->gateway_response ? json_decode($payment->gateway_response) : null;
+            return $paymentArr;
+        });
 
         return response()->json([
             'success' => true,

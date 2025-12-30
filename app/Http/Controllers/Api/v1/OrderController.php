@@ -96,6 +96,35 @@ class OrderController extends Controller
 
         return response()->json($result, $statusCode);
     }
+    public function applyCoupon(Request $request, $id)
+    {
+        $user = auth()->user();
+
+        $validator = Validator::make($request->all(), [
+            'coupon_code' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $couponCode = strtoupper(trim($request->coupon_code));
+
+        $result = $this->orderService->applyCouponToOrder(
+            (int) $id,
+            $couponCode,
+            $user
+        );
+
+        $statusCode = $result['status_code'] ?? 200;
+        unset($result['status_code']);
+
+        return response()->json($result, $statusCode);
+    }
+
 
     /**
      * Get checkout details for an order.
