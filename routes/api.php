@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\v1\Auth\DeliveryPartnerPasswordController;
 use App\Http\Controllers\Api\v1\Auth\PasswordController;
 use App\Http\Controllers\Api\v1\AuthController;
+use App\Http\Controllers\Api\v1\CouponController;
 use App\Http\Controllers\Api\v1\CustomerFavoriteController;
 use App\Http\Controllers\Api\v1\CustomerRegistration;
 use App\Http\Controllers\API\v1\DeliveryBoyAssignController;
@@ -10,15 +11,14 @@ use App\Http\Controllers\Api\v1\DeliveryPartner_login;
 use App\Http\Controllers\Api\v1\DeliveryPartnerController;
 use App\Http\Controllers\Api\v1\DeliveryPartnerLocationController;
 use App\Http\Controllers\Api\v1\DeliveryPartnerWalletController;
-use App\Http\Controllers\Api\v1\DeliveryZoneController;
 // Controllers
+use App\Http\Controllers\Api\v1\DeliveryZoneController;
 use App\Http\Controllers\Api\v1\FAQController;
 use App\Http\Controllers\Api\v1\NearestRestaurantController;
 use App\Http\Controllers\API\v1\OrderController;
 use App\Http\Controllers\API\v1\PaymentController;
 use App\Http\Controllers\Api\v1\ReviewController;
 use App\Http\Controllers\Api\v1\SearchRestaurantController;
-use App\Http\Controllers\Api\v1\CouponController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -88,6 +88,7 @@ Route::prefix('v1')->group(function () {
         // ----------------------------------------------
         Route::post('/add-address', [CustomerRegistration::class, 'addAddress'])->middleware('auth:api');
         Route::get('/addresses', [CustomerRegistration::class, 'addressesList'])->middleware('auth:api');
+        Route::put('/addresses/{id}', [CustomerRegistration::class, 'updateAddress'])->middleware('auth:api');
         Route::post('/edit', [CustomerRegistration::class, 'editProfile'])->middleware('auth:api');
         Route::get('/homepage', [CustomerRegistration::class, 'homepage'])->middleware('auth:api');
         // Route::put('/addresses/{id}', [CustomerRegistration::class, 'updateAddress'])->middleware('auth:api');
@@ -136,7 +137,7 @@ Route::prefix('v1')->group(function () {
     // Payments
     // ----------------------------------------------
     Route::prefix('payment')->middleware('auth:api')->group(function () {
-            Route::get('/methods', [PaymentController::class, 'paymentMethods']);
+        Route::get('/methods', [PaymentController::class, 'paymentMethods']);
         Route::post('/intent', [PaymentController::class, 'createIntent']);
         Route::post('/confirm', [PaymentController::class, 'confirm']);
         Route::post('/confirm-with-method', [PaymentController::class, 'confirmWithMethod']);

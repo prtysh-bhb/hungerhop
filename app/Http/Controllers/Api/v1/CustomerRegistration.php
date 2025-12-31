@@ -223,6 +223,68 @@ class CustomerRegistration extends Controller
         ], 200);
     }
 
+    public function updateAddress(Request $request, $id)
+    {
+        $user = auth()->user();
+
+        if (! $user || $user->role !== 'customer') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only customers can update addresses.',
+            ], 403);
+        }
+
+        $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
+
+        if (! $customerProfile) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Customer profile not found.',
+            ], 404);
+        }
+
+        $address = $customerProfile->addresses()->find($id);
+
+        if (! $address) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Address not found.',
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'address_type' => 'nullable|string|in:home,work,other',
+            'address_line1' => 'nullable|string|max:255',
+            'address_line2' => 'nullable|string|max:255',
+            'landmark' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'city' => 'nullable|string|max:100',
+            'state' => 'nullable|string|max:100',
+            'postal_code' => 'nullable|string|max:20',
+            'country' => 'nullable|string|max:100',
+            'is_default' => 'nullable|boolean',
+        ]);
+
+        DB::transaction(function () use ($validated, $customerProfile, $address) {
+
+            // If setting this address as default, unset others
+            if (isset($validated['is_default']) && $validated['is_default']) {
+                $customerProfile->addresses()
+                    ->where('id', '!=', $address->id)
+                    ->update(['is_default' => false]);
+            }
+
+            $address->update($validated);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Address updated successfully.',
+            'data' => $address->fresh(),
+        ], 200);
+    }
+
     public function deleteAddress(Request $request, $id)
     {
         $user = auth()->user();
