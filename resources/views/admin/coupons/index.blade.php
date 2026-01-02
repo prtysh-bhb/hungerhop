@@ -140,7 +140,7 @@
                 </p>
             </div>
 
-            <div class="modal-footer">
+            <div class="modal-footer d-flex">
                 <button type="button"
                         class="btn btn-secondary"
                         data-bs-dismiss="modal">
