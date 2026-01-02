@@ -176,9 +176,22 @@ class CustomerRegistration extends Controller
             ], 404);
         }
 
+        // Check if address type already exists for this customer
+        $addressType = $validated['address_type'] ?? 'home';
+        $existingAddress = $customerProfile->addresses()
+            ->where('address_type', $addressType)
+            ->first();
+
+        if ($existingAddress) {
+            return response()->json([
+                'success' => false,
+                'message' => "An address with type '{$addressType}' already exists. Please update the existing one or use a different type.",
+            ], 422);
+        }
+
         $address = $customerProfile->addresses()->create([
             'customer_id' => $customerProfile->id,
-            'address_type' => $validated['address_type'] ?? 'home', // Default to home, can be extended later
+            'address_type' => $addressType,
             'address_line1' => $validated['address_line1'],
             'address_line2' => $validated['address_line2'] ?? null,
             'landmark' => $validated['landmark'] ?? null,

@@ -20,8 +20,11 @@ class OrderController extends Controller
         $user = auth()->user();
         $tenantId = $user->tenant_id;
         $restaurantIds = Restaurant::where('tenant_id', $tenantId)->pluck('id');
+
         // Get all orders with relations
-        $orders = Order::with(['customer.user', 'restaurant', 'deliveryAddress'])->whereIn('restaurant_id', $restaurantIds)->get();
+        $orders = Order::with(['customer.user', 'restaurant', 'deliveryAddress'])
+            // ->where('status', '!=', 'draft')
+            ->whereIn('restaurant_id', $restaurantIds)->get();
 
         return view('pages.restaurant_staff.order.index', compact('orders'));
     }
@@ -61,7 +64,7 @@ class OrderController extends Controller
                 $assignmentResult = $this->assignDeliveryPartner($order);
                 if ($assignmentResult['success']) {
                     $assignmentMessage = $assignmentResult['message'];
-                    // Update order status to assigned_to_delivery
+
                     $order->status = 'assigned_to_delivery';
                     $order->save();
                     // Log the status change
@@ -175,31 +178,43 @@ class OrderController extends Controller
             ->where('status', 'approved')
             ->get();
 
+        Log::info("Order {$order->id}: Found {$partners->count()} strictly available delivery partners");
+
+        // If no partners found with strict criteria, try relaxed search
+        if ($partners->isEmpty()) {
+            $partners = DeliveryPartner::where('status', 'approved')->get();
+        }
+
         $nearest = null;
         $minDistance = null;
 
         foreach ($partners as $partner) {
-            if ($partner->current_latitude !== null && $partner->current_longitude !== null) {
-                $partner_lat = (float) $partner->current_latitude;
-                $partner_lng = (float) $partner->current_longitude;
+            // Check if partner has valid coordinates
+            if ($partner->current_latitude === null || $partner->current_longitude === null) {
+                Log::warning("Order {$order->id}: Partner {$partner->id} has no coordinates. Skipping.");
 
-                // Calculate distance from delivery partner to restaurant (pickup point)
-                $distance = $this->calculateDistance(
-                    $restaurant_lat, $restaurant_lng,
-                    $partner_lat, $partner_lng
-                );
+                continue;
+            }
 
-                Log::info("Order {$order->id}: Partner {$partner->id} distance to restaurant: {$distance} km");
+            if (abs($partner->current_latitude) > 90 || abs($partner->current_longitude) > 180) {
+                Log::warning("Order {$order->id}: Partner {$partner->id} has invalid coordinates. Skipping.");
 
-                if ($minDistance === null || $distance < $minDistance) {
-                    $minDistance = $distance;
-                    $nearest = $partner;
-                }
+                continue;
+            }
+
+            $partner_lat = (float) $partner->current_latitude;
+            $partner_lng = (float) $partner->current_longitude;
+            $distance = $this->calculateDistance(
+                $restaurant_lat, $restaurant_lng,
+                $partner_lat, $partner_lng
+            );
+            if ($minDistance === null || $distance < $minDistance) {
+                $minDistance = $distance;
+                $nearest = $partner;
             }
         }
 
         if (! $nearest) {
-            Log::warning("Order {$order->id}: No available delivery partner found");
 
             return [
                 'success' => false,

@@ -12,7 +12,8 @@
                 <div class="d-inline-block align-items-center">
                     <nav>
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('home') }}"><i class="mdi mdi-home-outline"></i></a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('home') }}"><i class="mdi mdi-home-outline"></i></a>
+                            </li>
                             <li class="breadcrumb-item"><a href="{{ route('restaurant.orders') }}">Orders</a></li>
                             <li class="breadcrumb-item active">Order Details</li>
                         </ol>
@@ -394,12 +395,16 @@
                                             $menuName = optional($item->menuItem)->item_name;
                                             $imageUrl =
                                                 optional($item->menuItem)->image_url ??
-                                                ($item->product_image ?? asset('images/product/default.png'));
+                                                ($item->product_image ?? asset('images/avatar/1.jpg'));
                                             $unitPrice = $item->unit_price ?? ($item->price ?? 0);
                                             $lineTotal = $order->total_amount ?? $unitPrice * ($item->quantity ?? 1);
                                         @endphp
                                         <tr>
-                                            <td><img src="{{ $imageUrl }}" alt="" width="80"></td>
+                                            <td>
+                                                <img src="{{ $imageUrl }}" alt="{{ $menuName ?? 'Item' }}"
+                                                    width="80"
+                                                    onerror="this.src='{{ asset('images/avatar/1.jpg') }}'">
+                                            </td>
                                             <td>
 
                                                 <h4>{{ $menuName ?? ($item->item_name ?? 'Item') }}</h4>
