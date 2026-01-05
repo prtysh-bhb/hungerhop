@@ -3,6 +3,7 @@
 
 {{-- Define the title for this page --}}
 @section('title', 'Menu List')
+@stack('scripts')
 
 {{-- Define the main content for this page --}}
 @section('content')
@@ -14,8 +15,8 @@
                 <div class="d-inline-block align-items-center">
                     <nav>
                         <ol class="breadcrumb">
-                           <li class="breadcrumb-item"><a href="{{ route('home') }}"><i
-                                        class="mdi mdi-home-outline"></i></a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('home') }}"><i class="mdi mdi-home-outline"></i></a>
+                            </li>
                             <li class="breadcrumb-item" aria-current="page">Menu</li>
                             <li class="breadcrumb-item active" aria-current="page">Menu List</li>
                         </ol>
@@ -24,6 +25,26 @@
             </div>
         </div>
     </div>
+    <!-- Delete Menu Item Modal -->
+    <div class="modal fade" id="DeleteMMenuItem" tabindex="-1" aria-labelledby="deleteMenuItemLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger">
+                    <h5 class="modal-title text-white" id="deleteMenuItemLabel">Delete Menu Item</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Are you sure you want to delete this menu item? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteMenuItem">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Main content -->
     <section class="content">
@@ -62,15 +83,12 @@
                             <div class="box-body text-center">
                                 <div class="menu-item">
                                     @if ($menuItem->image_url)
-                                       <img src="{{ $menuItem->image_url }}"
-                                        alt="{{ $menuItem->item_name }}"
-                                        class="rounded-circle object-fit-cover"
-                                        style="width: 100px; height: 100px;" />
-
+                                        <img src="{{ $menuItem->image_url }}" alt="{{ $menuItem->item_name }}"
+                                            class="rounded-circle object-fit-cover" style="width: 100px; height: 100px;" />
                                     @else
                                         <img src="{{ asset('images/food/dish-1.png') }}"
-                                             class="rounded-circle object-fit-cover"
-                                        style="width: 100px; height: 100px;" alt="{{ $menuItem->item_name }}" />
+                                            class="rounded-circle object-fit-cover" style="width: 100px; height: 100px;"
+                                            alt="{{ $menuItem->item_name }}" />
                                     @endif
                                 </div>
                                 <div class="menu-details text-center">
@@ -114,7 +132,7 @@
                                         </a>
                                     </div>
 
-                                    <div class="text-center mx-5">
+                                    {{-- <div class="text-center mx-5">
                                         <form action="{{ route('restaurant.menu.destroy', $menuItem->id) }}" method="POST"
                                             onsubmit="return confirm('Are you sure you want to delete this menu item?')">
                                             @csrf
@@ -125,13 +143,22 @@
                                                 <i class="fa fa-trash"></i>
                                             </button>
                                         </form>
+                                    </div> --}}
+                                    <div class="text-center mx-5">
+                                        <button type="button"
+                                            class="waves-effect waves-circle btn btn-circle btn-primary-light btn-xs mb-5 deleteMenuBtn"
+                                            data-menu-id="{{ $menuItem->id }}" data-menu-name="{{ $menuItem->item_name }}"
+                                            data-delete-url="{{ route('restaurant.menu.destroy', $menuItem->id) }}"
+                                            data-bs-toggle="modal" data-bs-target="#DeleteMMenuItem" style="border: none;">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
                                     </div>
-
                                     <div class="text-center mx-5">
                                         <a href="{{ route('restaurant.menu.duplicate', $menuItem->id) }}"
                                             class="waves-effect waves-circle btn btn-circle btn-info-light btn-xs mb-5"
                                             title="Duplicate">
-                                            <i class="fa fa-plus-square-o"></i>
+                                            {{-- <i class="fa fa-plus-square-o"></i> --}}
+                                            <i class="fa fa-plus"></i>
                                         </a>
                                     </div>
                                 </div>
@@ -157,3 +184,34 @@
     </section>
     <!-- /.content -->
 @endsection
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let deleteMenuForm = null;
+            let deleteUrl = null;
+            const confirmDeleteBtn = document.getElementById('confirmDeleteMenuItem');
+
+            document.querySelectorAll('.deleteMenuBtn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    deleteUrl = this.dataset.deleteUrl;
+
+                    deleteMenuForm = document.createElement('form');
+                    deleteMenuForm.method = 'POST';
+                    deleteMenuForm.action = deleteUrl;
+
+                    deleteMenuForm.innerHTML = `
+                <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').content}">
+                <input type="hidden" name="_method" value="DELETE">
+            `;
+                });
+            });
+
+            confirmDeleteBtn.addEventListener('click', function() {
+                if (deleteMenuForm && deleteUrl) {
+                    document.body.appendChild(deleteMenuForm);
+                    deleteMenuForm.submit();
+                }
+            });
+        });
+    </script>
+@endpush

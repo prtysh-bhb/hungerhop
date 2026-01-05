@@ -211,6 +211,16 @@ class DeliveryBoyAssignController extends Controller
             ], 404);
         }
 
+        // Check if delivery partner is approved
+        if ($delivery_partner->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account has not been approved yet. Please wait for admin verification of your documents.',
+                'status' => $delivery_partner->status,
+                'action' => 'pending_verification',
+            ], 403);
+        }
+
         $order = Order::with(['deliveryAddress', 'restaurant'])->find($validated['order_id']);
 
         if (! $order) {
@@ -479,6 +489,16 @@ class DeliveryBoyAssignController extends Controller
                 'success' => false,
                 'message' => 'Delivery partner profile not found.',
             ], 404);
+        }
+
+        // Check if delivery partner is approved
+        if ($delivery_partner->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account has not been approved yet. Please wait for admin verification of your documents.',
+                'status' => $delivery_partner->status,
+                'action' => 'pending_verification',
+            ], 403);
         }
 
         $deliveryAddress = $order->deliveryAddress;

@@ -170,7 +170,9 @@ class DeliveryPartnerLocationController extends Controller
         if ($partner->status !== 'approved') {
             return response()->json([
                 'success' => false,
-                'message' => 'Your account is not approved yet.',
+                'message' => 'Your account has not been approved yet. You cannot toggle online status until your documents are verified and approved by admin.',
+                'status' => $partner->status,
+                'action' => 'pending_verification',
             ], 403);
         }
 
@@ -238,6 +240,16 @@ class DeliveryPartnerLocationController extends Controller
                 'success' => false,
                 'message' => 'Delivery partner profile not found.',
             ], 404);
+        }
+
+        // Check if delivery partner is approved
+        if ($partner->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account has not been approved yet. You cannot toggle availability until your documents are verified and approved by admin.',
+                'status' => $partner->status,
+                'action' => 'pending_verification',
+            ], 403);
         }
 
         if (! $partner->is_online) {

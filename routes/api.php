@@ -114,6 +114,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/add', [OrderController::class, 'CreateOrder']);
         Route::post('/{id}/update', [OrderController::class, 'editOrder']);
         Route::post('/{id}/apply-coupon', [OrderController::class, 'applyCoupon']);
+        Route::post('/{id}/remove-coupon', [OrderController::class, 'removeCoupon']);
         Route::get('/{id}/checkout', [OrderController::class, 'checkout']);
         Route::post('/details', [OrderController::class, 'getOrderDetails']);
         Route::get('/list', [OrderController::class, 'listOrders']);
@@ -222,8 +223,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/get-delivery-fee', [DeliveryZoneController::class, 'getDeliveryFee']);
     });
 
+    // ----------------------------------------------
+    // FAQs Routes
+    // ----------------------------------------------
     Route::get('/faqs', [FaqController::class, 'index']);
-
     Route::post('/faqs', [FaqController::class, 'store']);
     Route::get('faqs/{faq}', [FaqController::class, 'show']);
 });

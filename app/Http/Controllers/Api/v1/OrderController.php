@@ -80,22 +80,23 @@ class OrderController extends Controller
             'order_items.*.item_id' => 'required_with:order_items|exists:menu_items,id',
             'order_items.*.quantity' => 'required_with:order_items|integer|min:1',
             'order_items.*.special_instructions' => 'nullable|string',
+            'order_items.*.coupon_code' => 'nullable|string',
+            'coupon_code' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
-        $validated = $request->all();
 
         $validated = $validator->validated();
         $orderId = $id;
-
         $result = $this->orderService->editOrder($orderId, $validated, $user);
         $statusCode = $result['status_code'] ?? 200;
         unset($result['status_code']);
 
         return response()->json($result, $statusCode);
     }
+
     public function applyCoupon(Request $request, $id)
     {
         $user = auth()->user();
@@ -107,7 +108,7 @@ class OrderController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -124,7 +125,6 @@ class OrderController extends Controller
 
         return response()->json($result, $statusCode);
     }
-
 
     /**
      * Get checkout details for an order.
@@ -172,6 +172,27 @@ class OrderController extends Controller
         }
 
         $result = $this->orderService->getOrderDetails($id);
+        $statusCode = $result['status_code'] ?? 200;
+        unset($result['status_code']);
+
+        return response()->json($result, $statusCode);
+    }
+
+    public function removeCoupon(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'coupon_code' => 'required|string',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        $user = auth()->user();
+        $couponCode = strtoupper(trim($request->coupon_code));
+        $result = $this->orderService->removeCouponFromOrder((int) $id, $user, $couponCode);
+
         $statusCode = $result['status_code'] ?? 200;
         unset($result['status_code']);
 

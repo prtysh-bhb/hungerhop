@@ -23,6 +23,17 @@ class DeliveryPartnerController extends Controller
         if (! $partner) {
             return response()->json(['success' => false, 'message' => 'No delivery partner profile found for this user.'], 404);
         }
+
+        // Check if delivery partner is approved
+        if ($partner->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account has not been approved yet. You will be able to view assignments after your documents are verified and approved by admin.',
+                'status' => $partner->status,
+                'action' => 'pending_verification',
+            ], 403);
+        }
+
         $assignments = DeliveryAssignment::where('partner_id', $partner->id)
             ->orderByDesc('assigned_at')
             ->get();
@@ -68,6 +79,16 @@ class DeliveryPartnerController extends Controller
             return response()->json(['success' => false, 'message' => 'No delivery partner profile found for this user.'], 404);
         }
 
+        // Check if delivery partner is approved
+        if ($partner->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account has not been approved yet. You will be able to receive new orders after your documents are verified and approved by admin.',
+                'status' => $partner->status,
+                'action' => 'pending_verification',
+            ], 403);
+        }
+
         $assignments = DeliveryAssignment::where('partner_id', $partner->id)
             ->where('status', 'assigned')
             ->orderByDesc('assigned_at')
@@ -98,6 +119,16 @@ class DeliveryPartnerController extends Controller
         $partner = DeliveryPartner::where('user_id', $user->id)->first();
         if (! $partner) {
             return response()->json(['success' => false, 'message' => 'No delivery partner profile found for this user.'], 404);
+        }
+
+        // Check if delivery partner is approved
+        if ($partner->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account has not been approved yet. You will be able to view in-progress orders after your documents are verified and approved by admin.',
+                'status' => $partner->status,
+                'action' => 'pending_verification',
+            ], 403);
         }
 
         $assignments = DeliveryAssignment::where('partner_id', $partner->id)
@@ -131,6 +162,16 @@ class DeliveryPartnerController extends Controller
             return response()->json(['success' => false, 'message' => 'No delivery partner profile found for this user.'], 404);
         }
 
+        // Check if delivery partner is approved
+        if ($partner->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account has not been approved yet. You will be able to view past orders after your documents are verified and approved by admin.',
+                'status' => $partner->status,
+                'action' => 'pending_verification',
+            ], 403);
+        }
+
         $assignments = DeliveryAssignment::where('partner_id', $partner->id)
             ->whereIn('status', ['delivered', 'cancelled', 'rejected'])
             ->orderByDesc('delivered_at')
@@ -160,6 +201,16 @@ class DeliveryPartnerController extends Controller
         $partner = DeliveryPartner::where('user_id', $user->id)->first();
         if (! $partner) {
             return response()->json(['success' => false, 'message' => 'No delivery partner profile found for this user.'], 404);
+        }
+
+        // Check if delivery partner is approved
+        if ($partner->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account has not been approved yet. You will be able to view order summary after your documents are verified and approved by admin.',
+                'status' => $partner->status,
+                'action' => 'pending_verification',
+            ], 403);
         }
 
         $newOrdersCount = DeliveryAssignment::where('partner_id', $partner->id)
@@ -425,6 +476,17 @@ class DeliveryPartnerController extends Controller
         if (! $partner) {
             return response()->json(['success' => false, 'message' => 'No delivery partner profile found for this user.'], 404);
         }
+
+        // Check if delivery partner is approved
+        if ($partner->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account has not been approved yet. You will be able to view assignment details after your documents are verified and approved by admin.',
+                'status' => $partner->status,
+                'action' => 'pending_verification',
+            ], 403);
+        }
+
         $order_id = $request->input('order_id');
         if (! $order_id) {
             return response()->json(['success' => false, 'message' => 'order_id is required.'], 422);

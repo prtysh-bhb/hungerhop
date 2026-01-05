@@ -11,6 +11,7 @@ use App\Models\OrderStatus;
 use App\Models\Restaurant;
 use app\Models\User;
 use Illuminate\Http\Request;
+use App\Scopes\TenantScope;
 use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
@@ -353,7 +354,7 @@ class OrderController extends Controller
             return null;
         }
         // Use withoutGlobalScope to bypass TenantScope - delivery partners have NULL tenant_id
-        $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+        $user = User::withoutGlobalScope(TenantScope::class)
             ->find($deliveryPartner->user_id);
         if (! $user) {
             return null;

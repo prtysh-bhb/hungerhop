@@ -72,6 +72,25 @@ class DeliveryPartner_login extends Controller
     public function logout(Request $request)
     {
         try {
+
+            $user = auth()->user();
+            if (! $user || $user->role !== 'delivery_partner') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Access denied. Only delivery partners can access this API.',
+                ], 403);
+            }
+            $deliveryPartner = DeliveryPartner::where('user_id', $user->id)->first();
+            if (! $deliveryPartner) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Delivery partner profile not found.',
+                ], 404);
+            }
+            $deliveryPartner->is_online = false;
+            $deliveryPartner->is_available = false;
+            $deliveryPartner->save();
+
             JWTAuth::invalidate(JWTAuth::getToken());
 
             return response()->json([
@@ -88,7 +107,7 @@ class DeliveryPartner_login extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Logout failed',
-                'error' => 'Something went wrong during logout.',
+                'error' => 'Something went wrong during logout.',$e->getMessage(),
             ], 500);
         }
     }
@@ -261,6 +280,16 @@ class DeliveryPartner_login extends Controller
                 'success' => false,
                 'message' => 'Delivery partner profile not found.',
             ], 404);
+        }
+
+        // Check if delivery partner is approved
+        if ($deliveryPartner->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account has not been approved yet. You cannot update your profile until your documents are verified and approved by admin.',
+                'status' => $deliveryPartner->status,
+                'action' => 'pending_verification',
+            ], 403);
         }
 
         // 🔥 Manual Validation (NOT request->validate)

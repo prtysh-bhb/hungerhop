@@ -46,6 +46,16 @@ class DeliveryPartnerWalletController extends Controller
             ], 404);
         }
 
+        // Check if delivery partner is approved
+        if ($partner->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account has not been approved yet. You cannot process wallet transactions until your documents are verified and approved by admin.',
+                'status' => $partner->status,
+                'action' => 'pending_verification',
+            ], 403);
+        }
+
         // Base validation rules
         $rules = [
             'type' => 'required|in:in,out',
@@ -107,6 +117,24 @@ class DeliveryPartnerWalletController extends Controller
             ], 403);
         }
 
+        // Check if delivery partner profile exists and is approved
+        $partner = DeliveryPartner::where('user_id', $user->id)->first();
+        if (! $partner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Delivery partner profile not found.',
+            ], 404);
+        }
+
+        if ($partner->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account has not been approved yet. You cannot view wallet details until your documents are verified and approved by admin.',
+                'status' => $partner->status,
+                'action' => 'pending_verification',
+            ], 403);
+        }
+
         // Use WalletService to get wallet details
         $result = $this->walletService->getWalletDetails($user);
 
@@ -131,6 +159,24 @@ class DeliveryPartnerWalletController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Access denied. Only delivery partners can access this API.',
+            ], 403);
+        }
+
+        // Check if delivery partner profile exists and is approved
+        $partner = DeliveryPartner::where('user_id', $user->id)->first();
+        if (! $partner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Delivery partner profile not found.',
+            ], 404);
+        }
+
+        if ($partner->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account has not been approved yet. You cannot add payment details until your documents are verified and approved by admin.',
+                'status' => $partner->status,
+                'action' => 'pending_verification',
             ], 403);
         }
 
@@ -177,6 +223,24 @@ class DeliveryPartnerWalletController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Access denied. Only delivery partners can access this API.',
+            ], 403);
+        }
+
+        // Check if delivery partner profile exists and is approved
+        $partner = DeliveryPartner::where('user_id', $user->id)->first();
+        if (! $partner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Delivery partner profile not found.',
+            ], 404);
+        }
+
+        if ($partner->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account has not been approved yet. You cannot delete payment details until your documents are verified and approved by admin.',
+                'status' => $partner->status,
+                'action' => 'pending_verification',
             ], 403);
         }
 
