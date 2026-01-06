@@ -102,9 +102,9 @@ Route::prefix('v1')->group(function () {
         // Protected customer routes
         Route::middleware('auth:api')->group(function () {
             Route::get('/me', [AuthController::class, 'me']);
-            Route::post('/logout', [AuthController::class, 'logout']);
             Route::post('/refresh', [AuthController::class, 'refresh']);
         });
+        Route::post('/logout', [AuthController::class, 'logout']);
     });
 
     // ----------------------------------------------
@@ -152,17 +152,22 @@ Route::prefix('v1')->group(function () {
         // Public routes (no authentication required)
         Route::post('/login', [DeliveryPartner_login::class, 'login']);
         Route::post('/register', [DeliveryPartner_login::class, 'register']); // Delivery partner registration
-        Route::post('/upload-documents', [DeliveryPartner_login::class, 'uploadDocuments'])->middleware('auth:api');
-        Route::post('/update-profile', [DeliveryPartner_login::class, 'updateProfile'])->middleware('auth:api');
+
+        // Protected routes (authentication required)
+        Route::middleware('auth:api')->group(function () {
+            Route::post('/vehicle-location', [DeliveryPartner_login::class, 'updateVehicleAndLocation']); // Add vehicle and location
+            Route::post('/upload-documents', [DeliveryPartner_login::class, 'uploadDocuments']);
+            Route::post('/update-profile', [DeliveryPartner_login::class, 'updateProfile']);
+        });
 
         // // Password Reset Routes (Public - no auth required)
         // Route::post('/forgot-password', [DeliveryPartnerPasswordController::class, 'forgotPassword']);
         // Route::post('/verify-otp', [DeliveryPartnerPasswordController::class, 'verifyOtp']);
         // Route::post('/reset-password', [DeliveryPartnerPasswordController::class, 'resetPassword']);
 
+        Route::post('/logout', [DeliveryPartner_login::class, 'logout']);
         // Protected routes
         Route::middleware('auth:api')->group(function () {
-            Route::post('/logout', [DeliveryPartner_login::class, 'logout']);
             Route::post('/change-password', [DeliveryPartnerPasswordController::class, 'changePassword']);
             Route::get('/assignments', [DeliveryPartnerController::class, 'myAssignments']);
             Route::post('/assignments', [DeliveryPartnerController::class, 'assignmentDetails']);

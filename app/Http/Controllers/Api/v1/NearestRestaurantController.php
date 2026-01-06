@@ -10,6 +10,8 @@ use App\Models\Restaurant;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use App\Models\CustomerProfile;
+use App\Models\CustomerFavoriteItem;
+use App\Models\Promotion;
 
 class NearestRestaurantController extends Controller
 {
@@ -27,7 +29,7 @@ class NearestRestaurantController extends Controller
             ->firstOrFail();
         $customerProfile = null;
         if ($user && $user->role === 'customer') {
-            $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
+            $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
         }
 
         $categoryName = $request->input('category');
@@ -50,7 +52,7 @@ class NearestRestaurantController extends Controller
                 'items' => $cat->menuItems->map(function ($item) use ($customerProfile) {
                     $isFavourite = false;
                     if ($customerProfile) {
-                        $isFavourite = \App\Models\CustomerFavoriteItem::where('customer_id', $customerProfile->id)
+                        $isFavourite = CustomerFavoriteItem::where('customer_id', $customerProfile->id)
                             ->where('type', 'menu_item')
                             ->where('item_id', $item->id)
                             ->exists();
@@ -160,7 +162,7 @@ class NearestRestaurantController extends Controller
         $user = auth()->user();
         $customerProfile = null;
         if ($user && $user->role === 'customer') {
-            $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
+            $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
         }
         $data = $menuItems->map(function ($items) use ($category, $customerProfile) {
             // 1. Get FIRST NON-DELETED restaurant
@@ -176,7 +178,7 @@ class NearestRestaurantController extends Controller
 
             $isRestaurantFavourite = false;
             if ($customerProfile) {
-                $isRestaurantFavourite = \App\Models\CustomerFavoriteItem::where('customer_id', $customerProfile->id)
+                $isRestaurantFavourite = CustomerFavoriteItem::where('customer_id', $customerProfile->id)
                     ->where('type', 'restaurant')
                     ->where('restaurant_id', $restaurant->id)
                     ->exists();
@@ -197,7 +199,7 @@ class NearestRestaurantController extends Controller
                     ->map(function ($item) use ($customerProfile) {
                         $isFavourite = false;
                         if ($customerProfile) {
-                            $isFavourite = \App\Models\CustomerFavoriteItem::where('customer_id', $customerProfile->id)
+                            $isFavourite = CustomerFavoriteItem::where('customer_id', $customerProfile->id)
                                 ->where('type', 'menu_item')
                                 ->where('item_id', $item->id)
                                 ->exists();
@@ -361,7 +363,7 @@ class NearestRestaurantController extends Controller
         // Map restaurants to structured format with gallery fallback
         $customerProfile = null;
         if ($user && $user->role === 'customer') {
-            $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
+            $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
         }
         $restaurants = $restaurants->map(function ($restaurant) use ($customerProfile) {
             $businessHours = $this->getTiming($restaurant->business_hours);
@@ -408,7 +410,7 @@ class NearestRestaurantController extends Controller
 
             $isFavourite = false;
             if ($customerProfile) {
-                $isFavourite = \App\Models\CustomerFavoriteItem::where('customer_id', $customerProfile->id)
+                $isFavourite = CustomerFavoriteItem::where('customer_id', $customerProfile->id)
                     ->where('type', 'restaurant')
                     ->where('restaurant_id', $restaurant->id)
                     ->exists();
@@ -482,7 +484,7 @@ class NearestRestaurantController extends Controller
         );
 
         // Get active promotions for this restaurant
-        $coupons = \App\Models\Promotion::where('restaurant_id', $restaurant->id)
+        $coupons = Promotion::where('restaurant_id', $restaurant->id)
             ->where('is_active', true)
             ->where('valid_from', '<=', now())
             ->where(function ($q) {
@@ -503,7 +505,7 @@ class NearestRestaurantController extends Controller
             });
         $customerProfile = null;
         if ($user && $user->role === 'customer') {
-            $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
+            $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
         }
         // Get menu items with categories
         $productData = [];
@@ -664,14 +666,14 @@ class NearestRestaurantController extends Controller
         $user = auth()->user();
         $customerProfile = null;
         if ($user && $user->role === 'customer') {
-            $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
+            $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
         }
 
         // Get customer profile for is_favourite
         $user = auth()->user();
         $customerProfile = null;
         if ($user && $user->role === 'customer') {
-            $customerProfile = \App\Models\CustomerProfile::where('user_id', $user->id)->first();
+            $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
         }
 
         // 2️⃣ Fetch restaurants having menu items in this category
@@ -738,8 +740,8 @@ class NearestRestaurantController extends Controller
         // Add is_favourite key for each restaurant if customer profile is available
         if ($customerProfile) {
             $data = $data->map(function ($restaurantData) use ($customerProfile) {
-                $isFavourite = \App\Models\CustomerFavoriteItem::where('customer_id', $customerProfile->id)
-                    ->where('type', \App\Models\CustomerFavoriteItem::TYPE_RESTAURANT)
+                $isFavourite = CustomerFavoriteItem::where('customer_id', $customerProfile->id)
+                    ->where('type', CustomerFavoriteItem::TYPE_RESTAURANT)
                     ->where('restaurant_id', $restaurantData['id'])
                     ->exists();
                 $restaurantData['is_favourite'] = $isFavourite;

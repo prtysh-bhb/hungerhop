@@ -113,50 +113,57 @@ class DeliveryPartner_login extends Controller
     public function logout(Request $request)
     {
         try {
+            $token = JWTAuth::getToken();
+            $user = null;
 
-            $user = auth()->user();
-            if (! $user || $user->role !== 'delivery_partner') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Access denied. Only delivery partners can access this API.',
-                ], 403);
+            // Try authenticating user safely
+            if ($token) {
+                try {
+                    $user = JWTAuth::authenticate($token);
+                } catch (TokenExpiredException|TokenInvalidException $e) {
+                    // Token invalid/expired → continue logout silently
+                }
             }
-            $deliveryPartner = DeliveryPartner::where('user_id', $user->id)->first();
-            if (! $deliveryPartner) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Delivery partner profile not found.',
-                ], 404);
-            }
-            $deliveryPartner->is_online = false;
-            $deliveryPartner->is_available = false;
-            $deliveryPartner->save();
 
-            JWTAuth::invalidate(JWTAuth::getToken());
+            // Role-based cleanup (BEST EFFORT)
+            if ($user && $user->role === 'delivery_partner') {
+                $deliveryPartner = DeliveryPartner::where('user_id', $user->id)->first();
+
+                if ($deliveryPartner) {
+                    $deliveryPartner->update([
+                        'is_online' => false,
+                        'is_available' => false,
+                    ]);
+                }
+            }
+
+            // Invalidate token if possible
+            if ($token) {
+                try {
+                    JWTAuth::invalidate($token);
+                } catch (JWTException $e) {
+                    // Ignore — token already dead
+                }
+            }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Successfully logged out',
             ], 200);
-        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+
+        } catch (\Throwable $e) {
+            // Logout must NEVER fail
             return response()->json([
-                'success' => false,
-                'message' => 'Logout failed',
-                'error' => 'Could not invalidate token.',
-            ], 500);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Logout failed',
-                'error' => 'Something went wrong during logout.', $e->getMessage(),
-            ], 500);
+                'success' => true,
+                'message' => 'Successfully logged out',
+            ], 200);
         }
     }
 
     /**
      * Delivery Partner Self-Registration (API)
-     * This allows delivery partners to register themselves
-     * Admin approval is required before they can start working
+     * This allows delivery partners to register themselves with basic info only
+     * Vehicle and location details can be added later via updateVehicleAndLocation endpoint
      */
     public function register(Request $request)
     {
@@ -166,11 +173,6 @@ class DeliveryPartner_login extends Controller
             'email' => 'required|email|unique:users,email',
             'phone' => 'required|string|max:20|unique:users,phone',
             'password' => 'required|string|min:6|confirmed',
-            'vehicle_type' => 'required|string|in:'.implode(',', array_column(VehicleTypeEnums::cases(), 'value')),
-            'vehicle_number' => 'required|string|max:20',
-            'license_number' => 'required|string|max:50',
-            'current_longitude' => 'required|numeric|between:-180,180',
-            'current_latitude' => 'required|numeric|between:-90,90',
         ];
 
         try {
@@ -185,7 +187,7 @@ class DeliveryPartner_login extends Controller
 
         DB::beginTransaction();
         try {
-            // Create user as delivery_partner (pending approval)
+            // Create user as delivery_partner
             $user = User::create([
                 'first_name' => $validated['first_name'],
                 'last_name' => $validated['last_name'],
@@ -193,32 +195,32 @@ class DeliveryPartner_login extends Controller
                 'phone' => $validated['phone'],
                 'password' => Hash::make($validated['password']),
                 'role' => 'delivery_partner',
-                'status' => 'pending_approval', // Requires admin approval
+                'status' => 'pending_approval',
             ]);
 
-            // Create delivery partner profile
+            // Create delivery partner profile with placeholder values
             $deliveryPartner = DeliveryPartner::create([
                 'user_id' => $user->id,
-                'vehicle_type' => $validated['vehicle_type'],
-                'vehicle_number' => $validated['vehicle_number'],
-                'license_number' => $validated['license_number'],
-                'current_latitude' => $validated['current_latitude'],
-                'current_longitude' => $validated['current_longitude'],
-                'is_available' => false, // Not available until approved
+                'vehicle_type' => null,
+                'vehicle_number' => null,
+                'license_number' => null,
+                'current_latitude' => null,
+                'current_longitude' => null,
+                'is_available' => false,
                 'is_online' => false,
-                'status' => 'pending', // Pending admin approval
+                'status' => 'pending',
                 'total_deliveries' => 0,
                 'total_earnings' => 0.00,
                 'average_rating' => 0.00,
                 'total_reviews' => 0,
-                'commission_percentage' => 15.00, // Default commission
+                'commission_percentage' => 15.00,
             ]);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Registration successful! Your application is pending admin approval. You will be notified once approved.',
+                'message' => 'Registration successful! Please complete your profile by adding vehicle and location details.',
                 'data' => [
                     'user' => [
                         'id' => $user->id,
@@ -230,9 +232,7 @@ class DeliveryPartner_login extends Controller
                         'role' => $user->role,
                         'status' => 'pending_approval',
                         'delivery_partner_id' => $deliveryPartner->id,
-                        'vehicle_type' => $deliveryPartner->vehicle_type,
-                        'vehicle_number' => $deliveryPartner->vehicle_number,
-                        'application_submitted_at' => now()->toDateTimeString(),
+                        'next_step' => 'Add vehicle and location details using /delivery-partner/vehicle-location endpoint',
                     ],
                 ],
             ], 201);
@@ -243,6 +243,124 @@ class DeliveryPartner_login extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Registration failed: '.$e->getMessage(),
+                'errors' => ['general' => [$e->getMessage()]],
+            ], 422);
+        }
+    }
+
+    /**
+     * Add/Update Vehicle and Location Details (API)
+     * This endpoint allows delivery partners to add vehicle and location info after registration
+     */
+    public function updateVehicleAndLocation(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated. Please login first.',
+            ], 401);
+        }
+
+        if ($user->role !== 'delivery_partner') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only delivery partners can use this endpoint.',
+            ], 403);
+        }
+
+        $deliveryPartner = DeliveryPartner::where('user_id', $user->id)->first();
+        if (! $deliveryPartner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Delivery partner profile not found.',
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'vehicle_type' => 'required|string|in:'.implode(',', array_column(VehicleTypeEnums::cases(), 'value')),
+            'vehicle_number' => 'required|string|max:20',
+            'license_number' => 'required|string|max:50',
+            'current_longitude' => 'required|numeric|between:-180,180',
+            'current_latitude' => 'required|numeric|between:-90,90',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $validated = $validator->validated();
+
+        try {
+            $deliveryPartner->update([
+                'vehicle_type' => $validated['vehicle_type'],
+                'vehicle_number' => $validated['vehicle_number'],
+                'license_number' => $validated['license_number'],
+                'current_latitude' => $validated['current_latitude'],
+                'current_longitude' => $validated['current_longitude'],
+            ]);
+
+            // Calculate unified status (same as login)
+            $documents = DeliveryPartnerDocument::where('partner_id', $deliveryPartner->id)->get();
+            $status = $deliveryPartner->status;
+            $rejectionReason = null;
+            $nextStep = '';
+
+            if ($deliveryPartner->status === 'pending') {
+                if ($documents->count() === 0) {
+                    $status = 'pending_documents';
+                    $nextStep = 'Upload required documents using /delivery-partner/upload-documents endpoint';
+                } else {
+                    $rejectedDoc = $documents->firstWhere('status', 'rejected');
+                    if ($rejectedDoc) {
+                        $status = 'rejected';
+                        $rejectionReason = $rejectedDoc->rejection_reason ?? 'Your documents were rejected. Please contact admin for details.';
+                    } elseif ($documents->every(fn ($doc) => $doc->status === 'approved')) {
+                        $status = 'pending_approval';
+                        $nextStep = 'Your documents are approved. Awaiting final admin approval.';
+                    } else {
+                        $status = 'pending_approval';
+                        $nextStep = 'Documents pending review by admin.';
+                    }
+                }
+            } elseif ($deliveryPartner->status === 'rejected') {
+                $status = 'rejected';
+                $rejectionReason = $deliveryPartner->rejection_reason ?? 'Your application was rejected. Please contact admin for details.';
+            }
+
+            $responseData = [
+                'success' => true,
+                'message' => 'Vehicle and location details added successfully.',
+                'data' => [
+                    'delivery_partner' => [
+                        'id' => $deliveryPartner->id,
+                        'vehicle_type' => $deliveryPartner->vehicle_type,
+                        'vehicle_number' => $deliveryPartner->vehicle_number,
+                        'license_number' => $deliveryPartner->license_number,
+                        'current_latitude' => $deliveryPartner->current_latitude,
+                        'current_longitude' => $deliveryPartner->current_longitude,
+                        'is_available' => $deliveryPartner->is_available,
+                        'is_online' => $deliveryPartner->is_online,
+                    ],
+                    'status' => $status,
+                    'next_step' => $nextStep,
+                ],
+            ];
+
+            if ($rejectionReason) {
+                $responseData['data']['rejection_reason'] = $rejectionReason;
+            }
+
+            return response()->json($responseData, 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update vehicle and location details: '.$e->getMessage(),
                 'errors' => ['general' => [$e->getMessage()]],
             ], 422);
         }

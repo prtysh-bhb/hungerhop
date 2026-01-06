@@ -308,7 +308,7 @@ class CustomerFavoriteController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'is_favorite' => $isFavorite,
+                'is_favourite' => $isFavorite,
                 'data' => $isFavorite ? $this->formatFavoriteResponse($favorite) : null,
             ], $isFavorite ? 201 : 200);
 
@@ -363,7 +363,7 @@ class CustomerFavoriteController extends Controller
             'type' => $type,
             'item_id' => $itemId,
             'restaurant_id' => $restaurantId,
-            'is_favorite' => $isFavorite,
+            'is_favourite' => $isFavorite,
         ], 200);
     }
 

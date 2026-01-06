@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('delivery_partners', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->enum('vehicle_type', ['bicycle', 'motorcycle', 'car']);
-            $table->string('vehicle_number', 20);
-            $table->string('license_number', 50);
+            $table->enum('vehicle_type', ['bicycle', 'motorcycle', 'car'])->nullable();
+            $table->string('vehicle_number', 20)->nullable();
+            $table->string('license_number', 50)->nullable();
             $table->string('profile_image_url', 500)->nullable();
             $table->decimal('current_latitude', 10, 8)->nullable();
             $table->decimal('current_longitude', 11, 8)->nullable();

@@ -715,7 +715,7 @@ class CustomerRegistration extends Controller
             'is_featured' => (bool) $restaurant->is_featured,
             'status' => $restaurant->is_paused ? 'paused' : ($restaurant->is_open ? 'open' : 'closed'),
             'can_order' => $restaurant->is_open && ! $restaurant->is_paused && $restaurant->accepts_orders,
-            'is_favorite' => $isFavorite,
+            'is_favourite' => $isFavorite,
         ];
 
         // Add status message based on restaurant state
