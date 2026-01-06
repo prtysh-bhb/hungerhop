@@ -274,16 +274,16 @@ class OrderService
                 $couponCode = $data['coupon_code'];
                 unset($data['coupon_code']);
             }
-            
+
             // Coupon logic
             $coupon = null;
             $discountAmount = $order->discount_amount;
             if (isset($couponCode) && ! empty($couponCode)) {
                 $coupon = Coupon::where('code', $couponCode)
-                ->where('is_active', true)
-                ->where('valid_from', '<=', now())
-                ->where('valid_to', '>=', now())
-                ->first();
+                    ->where('is_active', true)
+                    ->where('valid_from', '<=', now())
+                    ->where('valid_to', '>=', now())
+                    ->first();
                 if (! $coupon) {
                     DB::rollBack();
 
@@ -449,12 +449,34 @@ class OrderService
             // Get the latest payment record
             $payment = Payment::where('order_id', $order->id)->latest()->first();
 
-            return [
+            // Build coupon details if a coupon was applied in this edit
+            $couponDetails = null;
+            if ($coupon) {
+                $couponDetails = [
+                    'id' => (string) $coupon->id,
+                    'code' => (string) $coupon->code,
+                    'title' => (string) $coupon->title,
+                    'description' => (string) $coupon->description,
+                    'discount_type' => (string) $coupon->discount_type,
+                    'discount_value' => (float) $coupon->discount_value,
+                    'max_discount' => $coupon->max_discount ? (float) $coupon->max_discount : null,
+                    'min_order_value' => (float) $coupon->min_order_value,
+                    'discount_applied' => (float) $discountAmount,
+                ];
+            }
+
+            $response = [
                 'success' => true,
                 'message' => 'Order updated successfully.',
                 'data' => $this->buildStandardizedOrderResponse($order, $payment),
                 'status_code' => 200,
             ];
+
+            if ($couponDetails) {
+                $response['coupon'] = $couponDetails;
+            }
+
+            return $response;
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -493,15 +515,17 @@ class OrderService
         }
         // Check if a coupon is already applied
         $coupon_code = Coupon::where('code', $couponCode)->first();
-        $coupon_if_applied = CouponUsage::where('order_id', $order->id)
-            ->where('coupon_id', $coupon_code->id)
-            ->first();
-        if ($coupon_if_applied) {
-            return [
-                'success' => false,
-                'message' => 'A coupon has already been applied to this order.',
-                'status_code' => 403,
-            ];
+        if ($coupon_code) {
+            $coupon_if_applied = CouponUsage::where('order_id', $order->id)
+                ->where('coupon_id', $coupon_code->id)
+                ->first();
+            if ($coupon_if_applied) {
+                return [
+                    'success' => false,
+                    'message' => 'A coupon has already been applied to this order.',
+                    'status_code' => 403,
+                ];
+            }
         }
         // Coupon can be applied ONLY in draft
         if ($order->status !== 'draft') {
@@ -635,9 +659,23 @@ class OrderService
             $order->refresh();
             $payment = Payment::where('order_id', $order->id)->latest()->first();
 
+            // Build coupon details for response
+            $couponDetails = [
+                'id' => (string) $coupon->id,
+                'code' => (string) $coupon->code,
+                'title' => (string) $coupon->title,
+                'description' => (string) $coupon->description,
+                'discount_type' => (string) $coupon->discount_type,
+                'discount_value' => (float) $coupon->discount_value,
+                'max_discount' => $coupon->max_discount ? (float) $coupon->max_discount : null,
+                'min_order_value' => (float) $coupon->min_order_value,
+                'discount_applied' => (float) $discountAmount,
+            ];
+
             return [
                 'success' => true,
                 'message' => 'Coupon applied successfully.',
+                'coupon' => $couponDetails,
                 'data' => $this->buildStandardizedOrderResponse($order, $payment),
                 'status_code' => 200,
             ];
@@ -688,7 +726,7 @@ class OrderService
         }
         $couponCode = strtoupper(trim($couponCode));
         $coupon = Coupon::where('code', $couponCode)->first();
-        
+
         if (! $coupon) {
             return [
                 'success' => false,
@@ -736,9 +774,22 @@ class OrderService
             $order->refresh();
             $payment = Payment::where('order_id', $order->id)->latest()->first();
 
+            // Build coupon details that was removed
+            $couponDetails = [
+                'id' => (string) $coupon->id,
+                'code' => (string) $coupon->code,
+                'title' => (string) $coupon->title,
+                'description' => (string) $coupon->description,
+                'discount_type' => (string) $coupon->discount_type,
+                'discount_value' => (float) $coupon->discount_value,
+                'max_discount' => $coupon->max_discount ? (float) $coupon->max_discount : null,
+                'min_order_value' => (float) $coupon->min_order_value,
+            ];
+
             return [
                 'success' => true,
                 'message' => 'Coupon removed successfully.',
+                'coupon' => $couponDetails,
                 'data' => $this->buildStandardizedOrderResponse($order, $payment),
                 'status_code' => 200,
             ];
@@ -1224,21 +1275,16 @@ class OrderService
             ->first();
 
         if ($couponUsage && $couponUsage->coupon) {
-            $userCouponUsageCount = CouponUsage::where('coupon_id', $couponUsage->coupon_id)
-                ->where('user_id', $order->customer->user_id)
-                ->count();
-
             $couponDetails = [
-                'coupon_id' => (string) $couponUsage->coupon->id,
-                'coupon_code' => (string) $couponUsage->coupon->code,
-                'coupon_name' => (string) ($couponUsage->coupon->name ?? $couponUsage->coupon->code),
+                'id' => (string) $couponUsage->coupon->id,
+                'code' => (string) $couponUsage->coupon->code,
+                'title' => (string) ($couponUsage->coupon->title ?? $couponUsage->coupon->code),
+                'description' => (string) ($couponUsage->coupon->description ?? ''),
                 'discount_type' => (string) $couponUsage->coupon->discount_type,
                 'discount_value' => (float) $couponUsage->coupon->discount_value,
+                'max_discount' => $couponUsage->coupon->max_discount ? (float) $couponUsage->coupon->max_discount : null,
+                'min_order_value' => (float) $couponUsage->coupon->min_order_value,
                 'discount_applied' => (float) $order->discount_amount,
-                'user_usage_count' => (int) $userCouponUsageCount,
-                'total_usage_limit' => $couponUsage->coupon->usage_limit ? (int) $couponUsage->coupon->usage_limit : null,
-                'usage_per_user' => (int) $couponUsage->coupon->usage_per_user,
-                'applied_at' => $couponUsage->used_at ? $couponUsage->used_at->toISOString() : null,
             ];
         }
 
@@ -1325,18 +1371,16 @@ class OrderService
             ->first();
 
         if ($couponUsage && $couponUsage->coupon) {
-            $userCouponUsageCount = CouponUsage::where('coupon_id', $couponUsage->coupon_id)
-                ->where('user_id', $order->customer->user_id)
-                ->count();
-
             $couponDetails = [
-                'coupon_id' => (string) $couponUsage->coupon->id,
-                'coupon_code' => (string) $couponUsage->coupon->code,
-                'coupon_name' => (string) ($couponUsage->coupon->name ?? $couponUsage->coupon->code),
+                'id' => (string) $couponUsage->coupon->id,
+                'code' => (string) $couponUsage->coupon->code,
+                'title' => (string) ($couponUsage->coupon->title ?? $couponUsage->coupon->code),
+                'description' => (string) ($couponUsage->coupon->description ?? ''),
                 'discount_type' => (string) $couponUsage->coupon->discount_type,
                 'discount_value' => (float) $couponUsage->coupon->discount_value,
+                'max_discount' => $couponUsage->coupon->max_discount ? (float) $couponUsage->coupon->max_discount : null,
+                'min_order_value' => (float) $couponUsage->coupon->min_order_value,
                 'discount_applied' => (float) $order->discount_amount,
-                'user_usage_count' => (int) $userCouponUsageCount,
             ];
         }
 

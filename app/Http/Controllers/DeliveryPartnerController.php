@@ -21,7 +21,16 @@ class DeliveryPartnerController extends Controller
         $document->reviewed_by = auth()->id();
         $document->save();
 
-        return redirect()->back()->with('success', 'Document approved successfully.');
+        // Get the delivery partner and update status to approved
+        $deliveryPartner = DeliveryPartner::find($document->partner_id);
+        if ($deliveryPartner) {
+            $deliveryPartner->status = 'approved';
+            $deliveryPartner->approved_at = now();
+            $deliveryPartner->approved_by = auth()->id();
+            $deliveryPartner->save();
+        }
+
+        return redirect()->back()->with('success', 'Document and delivery partner approved successfully.');
     }
 
     /**

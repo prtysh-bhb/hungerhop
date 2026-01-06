@@ -36,7 +36,39 @@ class DeliveryPartner_login extends Controller
             return response()->json(['success' => false, 'message' => 'Could not create token.'], 500);
         }
 
-        return response()->json([
+        // Determine unified status
+        $deliveryPartner = $user->deliveryPartner;
+        $documents = DeliveryPartnerDocument::where('partner_id', $deliveryPartner->id)->get();
+
+        $status = $deliveryPartner->status; // Default to delivery_partner status
+        $rejectionReason = null;
+
+        // If delivery partner status is pending, check documents
+        if ($deliveryPartner->status === 'pending') {
+            if ($documents->count() === 0) {
+                // No documents uploaded
+                $status = 'pending_documents';
+            } else {
+                // Check if any document is rejected
+                $rejectedDoc = $documents->firstWhere('status', 'rejected');
+                if ($rejectedDoc) {
+                    $status = 'rejected';
+                    $rejectionReason = $rejectedDoc->rejection_reason ?? 'Your documents were rejected. Please contact admin for details.';
+                } elseif ($documents->every(fn ($doc) => $doc->status === 'approved')) {
+                    // All documents approved, but still pending approval from admin
+                    $status = 'pending_approval';
+                } else {
+                    // Some documents are pending review
+                    $status = 'pending_approval';
+                }
+            }
+        } elseif ($deliveryPartner->status === 'rejected') {
+            // Partner was rejected at delivery_partner level
+            $status = 'rejected';
+            $rejectionReason = $deliveryPartner->rejection_reason ?? 'Your application was rejected. Please contact admin for details.';
+        }
+
+        $responseData = [
             'success' => true,
             'message' => 'Login successful',
             'data' => [
@@ -49,15 +81,17 @@ class DeliveryPartner_login extends Controller
                     'phone' => $user->phone,
                     'role' => $user->role,
                     'delivery_partner' => [
-                        'vehicle_type' => $user->deliveryPartner->vehicle_type,
-                        'vehicle_number' => $user->deliveryPartner->vehicle_number,
-                        'license_number' => $user->deliveryPartner->license_number,
-                        'rating' => (string) number_format((float) ($user->deliveryPartner->average_rating ?? 0), 1),
-                        'current_latitude' => $user->deliveryPartner->current_latitude,
-                        'current_longitude' => $user->deliveryPartner->current_longitude,
-                        'total_deliveries' => $user->deliveryPartner->total_deliveries,
+                        'vehicle_type' => $deliveryPartner->vehicle_type,
+                        'vehicle_number' => $deliveryPartner->vehicle_number,
+                        'license_number' => $deliveryPartner->license_number,
+                        'rating' => (string) number_format((float) ($deliveryPartner->average_rating ?? 0), 1),
+                        'current_latitude' => $deliveryPartner->current_latitude,
+                        'current_longitude' => $deliveryPartner->current_longitude,
+                        'total_deliveries' => $deliveryPartner->total_deliveries,
                     ],
-                    'status' => $user->status, // pending_approval / active
+                    'status' => $status,
+                    'is_available' => $deliveryPartner->is_available,
+                    'is_online' => $deliveryPartner->is_online,
                 ],
                 'token' => [
                     'access_token' => $token,
@@ -65,7 +99,14 @@ class DeliveryPartner_login extends Controller
                     'expires_in' => 360000,
                 ],
             ],
-        ], 200);
+        ];
+
+        // Add rejection reason if rejected
+        if ($status === 'rejected' && $rejectionReason) {
+            $responseData['data']['user']['rejection_reason'] = $rejectionReason;
+        }
+
+        return response()->json($responseData, 200);
 
     }
 
@@ -430,7 +471,7 @@ class DeliveryPartner_login extends Controller
                         'document_name' => $file->getClientOriginalName(),
                         'file_size' => $file->getSize(),
                         'mime_type' => $file->getMimeType(),
-                        'status' => 'pending', // Pending admin review
+                        'status' => 'pending',
                         'uploaded_at' => now(),
                     ]);
 
@@ -450,6 +491,8 @@ class DeliveryPartner_login extends Controller
                 'message' => 'Documents uploaded successfully. They are pending admin review.',
                 'data' => [
                     'delivery_partner_id' => $deliveryPartner->id,
+                    'is_available' => $deliveryPartner->is_available,
+                    'is_online' => $deliveryPartner->is_online,
                     'documents_uploaded' => $uploadedDocuments,
                     'documents_count' => count($uploadedDocuments),
                 ],
