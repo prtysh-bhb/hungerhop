@@ -73,7 +73,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/coupons', [CouponController::class, 'index'])->middleware('auth:api');
 
     // Restaurant Search
-    Route::post('/search/restaurants', [SearchRestaurantController::class, 'index']);
+    Route::post('/search/restaurants', [SearchRestaurantController::class, 'index'])->middleware('auth:api');
 
     // ----------------------------------------------
     // Customer Authentication Routes
@@ -155,6 +155,7 @@ Route::prefix('v1')->group(function () {
 
         // Protected routes (authentication required)
         Route::middleware('auth:api')->group(function () {
+            Route::get('/profile', [DeliveryPartner_login::class, 'getProfile']); // Get delivery partner profile
             Route::post('/vehicle-location', [DeliveryPartner_login::class, 'updateVehicleAndLocation']); // Add vehicle and location
             Route::post('/upload-documents', [DeliveryPartner_login::class, 'uploadDocuments']);
             Route::post('/update-profile', [DeliveryPartner_login::class, 'updateProfile']);

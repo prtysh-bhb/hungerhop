@@ -1334,8 +1334,8 @@ class OrderService
             'estimated_delivery_partner' => $deliveryPreview['nearest_partner'] ?? null,
             'delivery_address' => $order->deliveryAddress ? [
                 'id' => (string) $order->deliveryAddress->id,
-                'address_line_1' => (string) $order->deliveryAddress->address_line_1,
-                'address_line_2' => (string) $order->deliveryAddress->address_line_2,
+                'address_line_1' => (string) $order->deliveryAddress->address_line1,
+                'address_line_2' => (string) $order->deliveryAddress->address_line2,
                 'city' => (string) $order->deliveryAddress->city,
                 'state' => (string) $order->deliveryAddress->state,
                 'postal_code' => (string) $order->deliveryAddress->postal_code,
@@ -1405,6 +1405,16 @@ class OrderService
                 ];
             })->toArray(),
             'coupon' => $couponDetails,
+            'delivery_address' => $order->deliveryAddress ? [
+                'id' => (string) $order->deliveryAddress->id,
+                'address_line_1' => (string) $order->deliveryAddress->address_line1,
+                'address_line_2' => (string) $order->deliveryAddress->address_line2,
+                'city' => (string) $order->deliveryAddress->city,
+                'state' => (string) $order->deliveryAddress->state,
+                'postal_code' => (string) $order->deliveryAddress->postal_code,
+                'latitude' => (float) $order->deliveryAddress->latitude,
+                'longitude' => (float) $order->deliveryAddress->longitude,
+            ] : null,
             'delivery_partner' => $order->deliveryAssignment && $order->deliveryAssignment->partner && $order->deliveryAssignment->partner->user
                 ? [
                     'name' => (string) ($order->deliveryAssignment->partner->user->name ?? ''),

@@ -154,12 +154,12 @@ class User extends Authenticatable implements JWTSubject
     public function addresses()
     {
         return $this->hasManyThrough(
-            \App\Models\CustomerAddress::class,
-            \App\Models\CustomerProfile::class,
-            'user_id', // Foreign key on customer_profiles table
-            'customer_id', // Foreign key on customer_addresses table
-            'id', // Local key on users table
-            'id' // Local key on customer_profiles table
+            CustomerAddress::class,
+            CustomerProfile::class,
+            'user_id',              // FK on customer_profiles
+            'customer_profile_id',  // FK on customer_addresses
+            'id',                   // users.id
+            'id'                    // customer_profiles.id
         );
     }
 

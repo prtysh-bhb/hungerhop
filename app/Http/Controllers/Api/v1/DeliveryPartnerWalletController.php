@@ -54,9 +54,9 @@ class DeliveryPartnerWalletController extends Controller
                 'status' => $partner->status,
                 'action' => 'pending_verification',
             ], 403);
-        }
+        }    
 
-        // Base validation rules
+        // Base validation rules    
         $rules = [
             'type' => 'required|in:in,out',
             'amount' => 'required|numeric|min:1|max:100000',
@@ -171,14 +171,14 @@ class DeliveryPartnerWalletController extends Controller
             ], 404);
         }
 
-        if ($partner->status !== 'approved') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Your account has not been approved yet. You cannot add payment details until your documents are verified and approved by admin.',
-                'status' => $partner->status,
-                'action' => 'pending_verification',
-            ], 403);
-        }
+        // if ($partner->status !== 'approved') {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Your account has not been approved yet. You cannot add payment details until your documents are verified and approved by admin.',
+        //         'status' => $partner->status,
+        //         'action' => 'pending_verification',
+        //     ], 403);
+        // }
 
         // Validate request
         $validator = Validator::make($request->all(), [

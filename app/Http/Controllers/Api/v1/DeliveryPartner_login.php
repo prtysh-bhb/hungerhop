@@ -6,6 +6,7 @@ use App\Enums\VehicleTypeEnums;
 use App\Http\Controllers\Controller;
 use App\Models\DeliveryPartner;
 use App\Models\DeliveryPartnerDocument;
+use App\Models\PaymentDetail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
+use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class DeliveryPartner_login extends Controller
@@ -67,6 +71,7 @@ class DeliveryPartner_login extends Controller
             $status = 'rejected';
             $rejectionReason = $deliveryPartner->rejection_reason ?? 'Your application was rejected. Please contact admin for details.';
         }
+        $paymentDetail = PaymentDetail::where('user_id', $user->id)->exists();
 
         $responseData = [
             'success' => true,
@@ -92,6 +97,7 @@ class DeliveryPartner_login extends Controller
                     'status' => $status,
                     'is_available' => $deliveryPartner->is_available,
                     'is_online' => $deliveryPartner->is_online,
+                    'has_payment_details' => $paymentDetail,
                 ],
                 'token' => [
                     'access_token' => $token,
@@ -140,9 +146,8 @@ class DeliveryPartner_login extends Controller
             // Invalidate token if possible
             if ($token) {
                 try {
-                    JWTAuth::invalidate($token);
+                    JWTAuth::invalidate($token, true); // Force invalidation
                 } catch (JWTException $e) {
-                    // Ignore — token already dead
                 }
             }
 
@@ -158,6 +163,132 @@ class DeliveryPartner_login extends Controller
                 'message' => 'Successfully logged out',
             ], 200);
         }
+    }
+
+    /**
+     * Get Delivery Partner Profile (Self Introduction)
+     * Returns complete delivery partner profile data
+     */
+    public function getProfile(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated. Please login first.',
+            ], 401);
+        }
+
+        if ($user->role !== 'delivery_partner') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only delivery partners can access this endpoint.',
+            ], 403);
+        }
+
+        $deliveryPartner = DeliveryPartner::where('user_id', $user->id)->first();
+        if (! $deliveryPartner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Delivery partner profile not found.',
+            ], 404);
+        }
+
+        // Get documents
+        $documents = DeliveryPartnerDocument::where('partner_id', $deliveryPartner->id)->get();
+
+        // Calculate unified status (same as login)
+        $status = $deliveryPartner->status;
+        $rejectionReason = null;
+
+        if ($deliveryPartner->status === 'pending') {
+            if ($documents->count() === 0) {
+                $status = 'pending_documents';
+            } else {
+                $rejectedDoc = $documents->firstWhere('status', 'rejected');
+                if ($rejectedDoc) {
+                    $status = 'rejected';
+                    $rejectionReason = $rejectedDoc->rejection_reason ?? 'Your documents were rejected. Please contact admin for details.';
+                } elseif ($documents->every(fn ($doc) => $doc->status === 'approved')) {
+                    $status = 'pending_approval';
+                } else {
+                    $status = 'pending_approval';
+                }
+            }
+        } elseif ($deliveryPartner->status === 'rejected') {
+            $status = 'rejected';
+            $rejectionReason = $deliveryPartner->rejection_reason ?? 'Your application was rejected. Please contact admin for details.';
+        }
+
+        // Get payment details
+        $paymentDetail = PaymentDetail::where('user_id', $user->id)->first();
+
+        // Build documents array
+        $documentsArray = $documents->map(function ($doc) {
+            return [
+                'id' => (string) $doc->id,
+                'type' => (string) $doc->document_type,
+                'status' => (string) $doc->status,
+                'rejection_reason' => (string) ($doc->rejection_reason ?? ''),
+                'uploaded_at' => $doc->created_at ? $doc->created_at->toISOString() : null,
+                'approved_at' => $doc->approved_at ? $doc->approved_at->toISOString() : null,
+            ];
+        })->toArray();
+
+        $responseData = [
+            'success' => true,
+            'message' => 'Profile retrieved successfully.',
+            'data' => [
+                'user' => [
+                    'id' => (string) $user->id,
+                    'first_name' => (string) $user->first_name,
+                    'last_name' => (string) $user->last_name,
+                    'full_name' => (string) ($user->first_name.' '.$user->last_name),
+                    'email' => (string) $user->email,
+                    'phone' => (string) $user->phone,
+                    'role' => (string) $user->role,
+                ],
+                'delivery_partner' => [
+                    'id' => (string) $deliveryPartner->id,
+                    'vehicle_type' => (string) ($deliveryPartner->vehicle_type ?? ''),
+                    'vehicle_number' => (string) ($deliveryPartner->vehicle_number ?? ''),
+                    'license_number' => (string) ($deliveryPartner->license_number ?? ''),
+                    'current_latitude' => $deliveryPartner->current_latitude ? (float) $deliveryPartner->current_latitude : null,
+                    'current_longitude' => $deliveryPartner->current_longitude ? (float) $deliveryPartner->current_longitude : null,
+                    'is_available' => (bool) $deliveryPartner->is_available,
+                    'is_online' => (bool) $deliveryPartner->is_online,
+                    'status' => (string) $status,
+                    'total_deliveries' => (int) $deliveryPartner->total_deliveries,
+                    'total_earnings' => (float) $deliveryPartner->total_earnings,
+                    'average_rating' => (float) $deliveryPartner->average_rating,
+                    'total_reviews' => (int) $deliveryPartner->total_reviews,
+                    'commission_percentage' => (float) $deliveryPartner->commission_percentage,
+                ],
+                'documents' => [
+                    'uploaded_documents' => $documentsArray,
+                    'total_documents' => count($documentsArray),
+                    'pending_documents' => $documents->where('status', 'pending')->count(),
+                    'approved_documents' => $documents->where('status', 'approved')->count(),
+                    'rejected_documents' => $documents->where('status', 'rejected')->count(),
+                ],
+                'payment_details' => $paymentDetail ? [
+                    'id' => (string) $paymentDetail->id,
+                    'bank_name' => (string) ($paymentDetail->bank_name ?? ''),
+                    'account_holder_name' => (string) ($paymentDetail->account_holder_name ?? ''),
+                    'account_number' => (string) ($paymentDetail->account_number ?? ''),
+                    'ifsc_code' => (string) ($paymentDetail->ifsc_code ?? ''),
+                ] : null,
+                'has_payment_details' => (bool) $paymentDetail,
+            ],
+            'status_code' => 200,
+        ];
+
+        // Add rejection reason if applicable
+        if ($status === 'rejected' && $rejectionReason) {
+            $responseData['data']['rejection_reason'] = $rejectionReason;
+        }
+
+        return response()->json($responseData, 200);
     }
 
     /**
@@ -392,27 +523,27 @@ class DeliveryPartner_login extends Controller
         }
 
         // Check if delivery partner is approved
-        if ($deliveryPartner->status !== 'approved') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Your account has not been approved yet. You cannot update your profile until your documents are verified and approved by admin.',
-                'status' => $deliveryPartner->status,
-                'action' => 'pending_verification',
-            ], 403);
-        }
+        // if ($deliveryPartner->status !== 'approved') {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Your account has not been approved yet. You cannot update your profile until your documents are verified and approved by admin.',
+        //         'status' => $deliveryPartner->status,
+        //         'action' => 'pending_verification',
+        //     ], 403);
+        // }
 
         // 🔥 Manual Validation (NOT request->validate)
         $validator = Validator::make($request->all(), [
 
             'first_name' => 'sometimes|required|string|min:2|max:100',
             'last_name' => 'sometimes|required|string|min:2|max:100',
-            'email' => [
-                'sometimes',
-                'required',
-                'email',
-                'max:255',
-                Rule::unique('users', 'email')->ignore($user->id),
-            ],
+            // 'email' => [
+            //     'sometimes',
+            //     'required',
+            //     'email',
+            //     'max:255',
+            //     Rule::unique('users', 'email')->ignore($user->id),
+            // ],
             'phone' => [
                 'sometimes',
                 'required',

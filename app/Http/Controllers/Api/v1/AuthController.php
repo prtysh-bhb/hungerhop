@@ -268,16 +268,24 @@ class AuthController extends Controller
             $token = JWTAuth::getToken();
             if ($token) {
                 try {
+                    /**
+                     * This does NOT change exp claim.
+                     * It BLACKLISTS the token, making it unusable immediately.
+                     */
                     JWTAuth::invalidate($token);
                 } catch (TokenExpiredException|TokenInvalidException $e) {
+                    // Token already expired or invalid → treated as expired
+                } catch (JWTException $e) {
+                    \Log::warning('JWT invalidate failed during logout: '.$e->getMessage());
                 }
             }
         } catch (JWTException $e) {
+            \Log::warning('JWT getToken failed during logout: '.$e->getMessage());
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Successfully logged out',
+            'message' => 'Token expired successfully and user logged out',
             'data' => null,
         ], 200);
     }
