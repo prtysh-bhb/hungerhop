@@ -107,7 +107,7 @@ class DeliveryPartner_login extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Logout failed',
-                'error' => 'Something went wrong during logout.',$e->getMessage(),
+                'error' => 'Something went wrong during logout.', $e->getMessage(),
             ], 500);
         }
     }
@@ -119,14 +119,6 @@ class DeliveryPartner_login extends Controller
      */
     public function register(Request $request)
     {
-        $allowedDocuments = [
-            'id_proof',
-            'driving_license',
-            'rc',
-            'address_proof',
-            'bank_passbook',
-        ];
-
         $rules = [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -140,31 +132,8 @@ class DeliveryPartner_login extends Controller
             'current_latitude' => 'required|numeric|between:-90,90',
         ];
 
-        // Dynamically add file rules for all allowed document types
-        foreach ($allowedDocuments as $doc) {
-            $rules[$doc] = 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120';
-        }
-
         try {
             $validated = $request->validate($rules);
-
-            // Ensure at least one document is provided
-            $hasDocument = false;
-            foreach ($allowedDocuments as $doc) {
-                if ($request->hasFile($doc)) {
-                    $hasDocument = true;
-                    break;
-                }
-            }
-
-            if (! $hasDocument) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => ['document' => ['At least one document is required (id_proof, driving_license, rc, address_proof, or bank_passbook)']],
-                ], 422);
-            }
-
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -203,25 +172,6 @@ class DeliveryPartner_login extends Controller
                 'total_reviews' => 0,
                 'commission_percentage' => 15.00, // Default commission
             ]);
-
-            // Handle document upload - Process each document type
-            foreach ($allowedDocuments as $documentType) {
-                if ($request->hasFile($documentType)) {
-                    $file = $request->file($documentType);
-                    $documentPath = $file->store('delivery_partner_documents', 'public');
-
-                    DeliveryPartnerDocument::create([
-                        'partner_id' => $deliveryPartner->id,
-                        'document_type' => $documentType,
-                        'document_path' => $documentPath,
-                        'document_name' => $file->getClientOriginalName(),
-                        'file_size' => $file->getSize(),
-                        'mime_type' => $file->getMimeType(),
-                        'status' => 'pending', // Pending admin review
-                        'uploaded_at' => now(),
-                    ]);
-                }
-            }
 
             DB::commit();
 
@@ -392,5 +342,127 @@ class DeliveryPartner_login extends Controller
             ],
         ], 200);
 
+    }
+
+    /**
+     * Upload Delivery Partner Documents (API)
+     * This endpoint allows authenticated delivery partners to upload their documents
+     */
+    public function uploadDocuments(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated. Please login first.',
+            ], 401);
+        }
+
+        if ($user->role !== 'delivery_partner') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only delivery partners can use this endpoint.',
+            ], 403);
+        }
+
+        $deliveryPartner = DeliveryPartner::where('user_id', $user->id)->first();
+        if (! $deliveryPartner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Delivery partner profile not found.',
+            ], 404);
+        }
+
+        $allowedDocuments = [
+            'id_proof',
+            'driving_license',
+            'rc',
+            'address_proof',
+            'bank_passbook',
+        ];
+
+        $rules = [];
+        foreach ($allowedDocuments as $doc) {
+            $rules[$doc] = 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120';
+        }
+
+        try {
+            $validated = $request->validate($rules);
+
+            // Ensure at least one document is provided
+            $hasDocument = false;
+            foreach ($allowedDocuments as $doc) {
+                if ($request->hasFile($doc)) {
+                    $hasDocument = true;
+                    break;
+                }
+            }
+
+            if (! $hasDocument) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => ['documents' => ['At least one document is required (id_proof, driving_license, rc, address_proof, or bank_passbook)']],
+                ], 422);
+            }
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            $uploadedDocuments = [];
+
+            // Handle document upload - Process each document type
+            foreach ($allowedDocuments as $documentType) {
+                if ($request->hasFile($documentType)) {
+                    $file = $request->file($documentType);
+                    $documentPath = $file->store('delivery_partner_documents', 'public');
+
+                    $document = DeliveryPartnerDocument::create([
+                        'partner_id' => $deliveryPartner->id,
+                        'document_type' => $documentType,
+                        'document_path' => $documentPath,
+                        'document_name' => $file->getClientOriginalName(),
+                        'file_size' => $file->getSize(),
+                        'mime_type' => $file->getMimeType(),
+                        'status' => 'pending', // Pending admin review
+                        'uploaded_at' => now(),
+                    ]);
+
+                    $uploadedDocuments[] = [
+                        'document_type' => $documentType,
+                        'document_name' => $file->getClientOriginalName(),
+                        'status' => 'pending',
+                        'uploaded_at' => $document->uploaded_at,
+                    ];
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Documents uploaded successfully. They are pending admin review.',
+                'data' => [
+                    'delivery_partner_id' => $deliveryPartner->id,
+                    'documents_uploaded' => $uploadedDocuments,
+                    'documents_count' => count($uploadedDocuments),
+                ],
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Document upload failed: '.$e->getMessage(),
+                'errors' => ['general' => [$e->getMessage()]],
+            ], 422);
+        }
     }
 }

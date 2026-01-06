@@ -152,6 +152,7 @@ Route::prefix('v1')->group(function () {
         // Public routes (no authentication required)
         Route::post('/login', [DeliveryPartner_login::class, 'login']);
         Route::post('/register', [DeliveryPartner_login::class, 'register']); // Delivery partner registration
+        Route::post('/upload-documents', [DeliveryPartner_login::class, 'uploadDocuments'])->middleware('auth:api');
         Route::post('/update-profile', [DeliveryPartner_login::class, 'updateProfile'])->middleware('auth:api');
 
         // // Password Reset Routes (Public - no auth required)
