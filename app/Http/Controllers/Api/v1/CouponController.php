@@ -34,7 +34,7 @@ class CouponController extends Controller
                 if ($restaurantId) {
                     $q->orWhere(function ($sq) use ($restaurantId) {
                         $sq->where('coupon_scope', 'restaurant')
-                           ->where('restaurant_id', $restaurantId);
+                            ->where('restaurant_id', $restaurantId);
                     });
                 }
             })

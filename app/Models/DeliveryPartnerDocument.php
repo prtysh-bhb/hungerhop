@@ -68,9 +68,9 @@ class DeliveryPartnerDocument extends Model
      */
     public function hasBothSides(): bool
     {
-        return $this->document_format === 'photo_two_side' 
-            && !empty($this->document_path_front) 
-            && !empty($this->document_path_back);
+        return $this->document_format === 'photo_two_side'
+            && ! empty($this->document_path_front)
+            && ! empty($this->document_path_back);
     }
 
     public function partner()

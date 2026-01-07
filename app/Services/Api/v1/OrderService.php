@@ -472,9 +472,9 @@ class OrderService
                 'status_code' => 200,
             ];
 
-            if ($couponDetails) {
-                $response['coupon'] = $couponDetails;
-            }
+            // if ($couponDetails) {
+            //     $response['coupon'] = $couponDetails;
+            // }
 
             return $response;
 
@@ -964,12 +964,12 @@ class OrderService
 
         $orderData = $orders->map(function ($order) {
             return $this->buildOrderListItem($order);
-        });
+        })->toArray();
 
         return [
             'success' => true,
             'order_count' => $orders->count(),
-            'total_orders_amount' => $orders->sum('total_amount'),
+            'total_orders_amount' => (float) $orders->sum('total_amount'),
             'orders' => $orderData,
             'status_code' => 200,
         ];
@@ -978,15 +978,33 @@ class OrderService
     /**
      * Get order details
      */
-    public function getOrderDetails(int $orderId): array
+    public function getOrderDetails(int $orderId, $user): array
     {
-        $order = Order::with(['customer.user', 'restaurant', 'deliveryAddress', 'orderItems'])
-            ->find($orderId);
+        $customerProfile = CustomerProfile::where('user_id', $user->id)->first();
+        if (! $customerProfile) {
+            return [
+                'success' => false,
+                'message' => 'Customer profile not found',
+                'status_code' => 404,
+            ];
+        }
+
+        // Ensure user can only access their own orders
+        $order = Order::where('id', $orderId)
+            ->where('customer_id', $customerProfile->id)
+            ->with([
+                'customer.user',
+                'restaurant',
+                'deliveryAddress',
+                'orderItems',
+                'deliveryAssignment.partner.user',
+            ])
+            ->first();
 
         if (! $order) {
             return [
                 'success' => false,
-                'message' => 'Order not found',
+                'message' => 'Order not found or access denied',
                 'status_code' => 404,
             ];
         }

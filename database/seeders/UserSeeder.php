@@ -14,7 +14,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Super Admin user
-        $superAdminPhone = '98765' . rand(10000, 99999);
+        $superAdminPhone = '98765'.rand(10000, 99999);
         User::updateOrCreate(
             [
                 'email' => 'superadmin@hungerhop.com',

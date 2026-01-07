@@ -21,7 +21,6 @@ class TestMenuCategorySeeder extends Seeder
             return;
         }
 
-
         $categories = [
             [
                 'tenant_id' => $user->tenant_id,

@@ -78,36 +78,36 @@ class CouponAdminController extends Controller
 
     // In your CouponController.php
     public function toggle(Coupon $coupon)
-{
-    try {
-        $coupon->update([
-            'is_active' => !$coupon->is_active
-        ]);
-
-        // For AJAX requests
-        if (request()->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'is_active' => $coupon->is_active
+    {
+        try {
+            $coupon->update([
+                'is_active' => ! $coupon->is_active,
             ]);
-        }
 
-        // For regular form submission
-        return redirect()->back()
-            ->with('success', 'Coupon status updated successfully.');
-            
-    } catch (\Exception $e) {
-        if (request()->expectsJson()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update status'
-            ], 500);
+            // For AJAX requests
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'is_active' => $coupon->is_active,
+                ]);
+            }
+
+            // For regular form submission
+            return redirect()->back()
+                ->with('success', 'Coupon status updated successfully.');
+
+        } catch (\Exception $e) {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to update status',
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Failed to update coupon status.');
         }
-        
-        return redirect()->back()
-            ->with('error', 'Failed to update coupon status.');
     }
-}
 
     /**
      * Delete coupon

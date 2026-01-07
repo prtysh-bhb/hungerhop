@@ -280,6 +280,7 @@ class DeliveryPartner_login extends Controller
                 ] : null,
                 'has_payment_details' => (bool) $paymentDetail,
             ],
+            'currency' => env('CURRENCY', '₹'),
             'status_code' => 200,
         ];
 
@@ -702,6 +703,7 @@ class DeliveryPartner_login extends Controller
                     'errors' => ['documents' => ['At least one document is required (id_proof, driving_license, rc, address_proof, or bank_passbook)']],
                 ], 422);
             }
+
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -709,13 +711,39 @@ class DeliveryPartner_login extends Controller
                 'errors' => $e->errors(),
             ], 422);
         }
-
+        $existingDocuments = DeliveryPartnerDocument::where('partner_id', $deliveryPartner->id)
+            ->get()
+            ->groupBy('document_type');
         DB::beginTransaction();
         try {
             $uploadedDocuments = [];
 
             // Handle document upload - Process each document type
             foreach ($allowedDocuments as $documentType) {
+                $hasNewUpload = $request->hasFile("{$documentType}_front") || $request->hasFile("{$documentType}_back") || $request->hasFile($documentType);
+                if (! $hasNewUpload) {
+                    continue;
+                }
+
+                if (isset($existingDocuments[$documentType])) {
+                    $latestDoc = $existingDocuments[$documentType]
+                        ->sortByDesc('uploaded_at')
+                        ->first();
+
+                    if (in_array($latestDoc->status, ['pending', 'approved'])) {
+                        $uploadErrors[$documentType][] =
+                            "The {$documentType} document is already {$latestDoc->status} and cannot be re-uploaded.";
+                    }
+                }
+
+                if (! empty($uploadErrors)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Some documents cannot be re-uploaded.',
+                        'errors' => $uploadErrors,
+                    ], 422);
+                }
+
                 $hasFront = $request->hasFile("{$documentType}_front");
                 $hasSingle = $request->hasFile($documentType);
 
@@ -772,18 +800,14 @@ class DeliveryPartner_login extends Controller
                                 'uploaded_at' => now()->toISOString(),
                             ];
                         } else {
-                            // PDF or single image
-                            $data['document_path'] = $frontPath;
-                            $data['document_path_front'] = $frontPath;
-                            $data['document_format'] = $isFrontImage ? 'photo_single_side' : 'pdf';
-
-                            $uploadedDocuments[] = [
-                                'document_type' => $documentType,
-                                'document_format' => $data['document_format'],
-                                'document_name' => $frontFile->getClientOriginalName(),
-                                'status' => 'pending',
-                                'uploaded_at' => now()->toISOString(),
-                            ];
+                            if ($isFrontImage) {
+                                $data['document_path_front'] = $frontPath;
+                                $data['document_format'] = 'photo_single_side';
+                            } else {
+                                // PDF or single document
+                                $data['document_path'] = $frontPath;
+                                $data['document_format'] = 'pdf';
+                            }
                         }
 
                         DeliveryPartnerDocument::create($data);
@@ -797,7 +821,8 @@ class DeliveryPartner_login extends Controller
                             'partner_id' => $deliveryPartner->id,
                             'document_type' => $documentType,
                             'document_path' => $documentPath,
-                            'document_path_front' => $documentPath,
+                            'document_path_front' => null,
+                            'document_path_back' => null,
                             'document_format' => 'pdf',
                             'document_name' => $file->getClientOriginalName(),
                             'file_size' => $file->getSize(),

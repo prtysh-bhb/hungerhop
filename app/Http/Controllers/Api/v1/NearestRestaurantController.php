@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
+use App\Models\CustomerFavoriteItem;
+use App\Models\CustomerProfile;
 use App\Models\MenuCategory;
 use App\Models\MenuItem;
 use App\Models\Order;
+use App\Models\Promotion;
 use App\Models\Restaurant;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
-use App\Models\CustomerProfile;
-use App\Models\CustomerFavoriteItem;
-use App\Models\Promotion;
 
 class NearestRestaurantController extends Controller
 {
@@ -563,6 +563,7 @@ class NearestRestaurantController extends Controller
         // Gallery data (banners)
         $gallery = $restaurant->banners->map(function ($banner) {
             $defaultImage = asset('images/banner/default1.jpg');
+
             return [
                 'id' => $banner->id,
                 'cover_image' => $banner->cover_image ? url('storage/'.$banner->cover_image) : $defaultImage,
@@ -621,7 +622,7 @@ class NearestRestaurantController extends Controller
             ->whereNull('deleted_at')
             ->map(function ($category) {
                 return [
-                    'id' =>(string) $category->id,
+                    'id' => (string) $category->id,
                     'name' => $category->name ?? $category->category_name,
                 ];
             })

@@ -54,9 +54,9 @@ class DeliveryPartnerWalletController extends Controller
                 'status' => $partner->status,
                 'action' => 'pending_verification',
             ], 403);
-        }    
+        }
 
-        // Base validation rules    
+        // Base validation rules
         $rules = [
             'type' => 'required|in:in,out',
             'amount' => 'required|numeric|min:1|max:100000',

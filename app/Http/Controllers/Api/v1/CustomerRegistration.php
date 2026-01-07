@@ -611,7 +611,7 @@ class CustomerRegistration extends Controller
             'webname' => config('app.name', 'HungerHop'),
             'weblogo' => url('images/logo.png'),
             'timezone' => config('app.timezone', 'Asia/Kolkata'),
-            'currency' => '₹',
+            'currency' => env('CURRENCY', '₹'),
             'wname' => 'HungerHop Wallet',
             'pstore' => '100',
             'pdboy' => '4',

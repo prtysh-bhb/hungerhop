@@ -17,30 +17,32 @@ class PaymentController extends Controller
     {
         $this->stripe = $stripe;
     }
+
     public function paymentMethods(Request $request)
     {
         $methods = [
             [
                 'key' => 'cod',
                 'name' => 'Cash on Delivery',
-                'description' => 'Pay with cash when your order arrives.'
+                'description' => 'Pay with cash when your order arrives.',
             ],
             [
                 'key' => 'card',
                 'name' => 'Credit/Debit Card',
-                'description' => 'Pay securely using your card.'
+                'description' => 'Pay securely using your card.',
             ],
             [
                 'key' => 'wallet',
                 'name' => 'Wallet',
-                'description' => 'Pay using your HungerHop wallet balance.'
+                'description' => 'Pay using your HungerHop wallet balance.',
             ],
             [
                 'key' => 'upi',
                 'name' => 'UPI',
-                'description' => 'Pay using UPI apps like PhonePe, Google Pay.'
+                'description' => 'Pay using UPI apps like PhonePe, Google Pay.',
             ],
         ];
+
         return response()->json([
             'success' => true,
             'payment_methods' => $methods,
@@ -236,6 +238,7 @@ class PaymentController extends Controller
         $payments = $payments->map(function ($payment) {
             $paymentArr = $payment->toArray();
             $paymentArr['gateway_response'] = $payment->gateway_response ? json_decode($payment->gateway_response) : null;
+
             return $paymentArr;
         });
 

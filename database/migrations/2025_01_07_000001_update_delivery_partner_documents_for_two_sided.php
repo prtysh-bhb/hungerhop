@@ -17,7 +17,7 @@ return new class extends Migration
             // NEW two-sided support
             $table->string('document_path_front', 500)->nullable()->after('document_path');
             $table->string('document_path_back', 500)->nullable()->after('document_path_front');
-            $table->enum('document_format', ['pdf','photo_single_side','photo_two_side',])->default('pdf')->after('document_path_back');
+            $table->enum('document_format', ['pdf', 'photo_single_side', 'photo_two_side'])->default('pdf')->after('document_path_back');
             $table->string('document_name_back', 255)->nullable()->after('document_name');
             $table->integer('file_size_back')->nullable()->after('file_size');
             $table->string('mime_type_back', 100)->nullable()->after('mime_type');

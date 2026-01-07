@@ -34,7 +34,7 @@ class DeliveryPartnerController extends Controller
                 $deliveryPartner->approved_at = now();
                 $deliveryPartner->approved_by = auth()->id();
             }
-            
+
             $deliveryPartner->save();
         }
 

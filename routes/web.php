@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminWalletController;
+use App\Http\Controllers\Admin\CouponAdminController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\CustomerProfileController;
 use App\Http\Controllers\Admin\DocumentManagementController;
@@ -31,7 +32,6 @@ use App\Http\Controllers\Restaurant\MenuVariationController;
 use App\Http\Controllers\Restaurant\OrderController;
 use App\Http\Controllers\SuperAdmin\MemberController;
 use App\Http\Controllers\TenantAdmin\PaymentController;
-use App\Http\Controllers\Admin\CouponAdminController;
 use App\Models\City;
 use App\Models\State;
 use Illuminate\Support\Facades\Route;

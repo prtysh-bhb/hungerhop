@@ -12,15 +12,14 @@ use Illuminate\Support\Str;
 
 class DummyCustomerSeeder extends Seeder
 {
-
     public function run()
     {
         // Use updateOrCreate to avoid duplicate errors and ensure idempotency
         $tenantEmail = 'tenant.demo.'.uniqid().'@example.com';
-        $tenantPhone = '12345'.rand(10000,99999);
+        $tenantPhone = '12345'.rand(10000, 99999);
         $tenant = DB::table('tenants')->updateOrInsert(
             [
-                'email' => $tenantEmail
+                'email' => $tenantEmail,
             ],
             [
                 'tenant_name' => 'Demo Tenant',
@@ -42,10 +41,10 @@ class DummyCustomerSeeder extends Seeder
 
         // 2. Create User (Customer)
         $userEmail = 'customer.demo.'.uniqid().'@example.com';
-        $userPhone = '98765'.rand(10000,99999);
+        $userPhone = '98765'.rand(10000, 99999);
         $user = DB::table('users')->updateOrInsert(
             [
-                'email' => $userEmail
+                'email' => $userEmail,
             ],
             [
                 'tenant_id' => $tenantId,
@@ -61,11 +60,10 @@ class DummyCustomerSeeder extends Seeder
         );
         $userId = DB::table('users')->where('email', $userEmail)->value('id');
 
-
         // 3. Create Customer Profile (updateOrInsert for idempotency)
         $customerProfile = DB::table('customer_profiles')->updateOrInsert(
             [
-                'user_id' => $userId
+                'user_id' => $userId,
             ],
             [
                 'date_of_birth' => '1990-01-01',

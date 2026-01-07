@@ -129,7 +129,7 @@ class AdminDocumentVerificationController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to approve document: ' . $e->getMessage(),
+                'message' => 'Failed to approve document: '.$e->getMessage(),
             ], 422);
         }
     }
@@ -201,7 +201,7 @@ class AdminDocumentVerificationController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to reject document: ' . $e->getMessage(),
+                'message' => 'Failed to reject document: '.$e->getMessage(),
             ], 422);
         }
     }
@@ -236,7 +236,7 @@ class AdminDocumentVerificationController extends Controller
             'data' => [
                 'partner' => [
                     'id' => (string) $partner->id,
-                    'name' => $partner->user->first_name . ' ' . $partner->user->last_name,
+                    'name' => $partner->user->first_name.' '.$partner->user->last_name,
                     'email' => $partner->user->email,
                     'phone' => $partner->user->phone,
                     'status' => $partner->status,
@@ -285,7 +285,7 @@ class AdminDocumentVerificationController extends Controller
                 'recent_pending_partners' => $pendingPerPartner->map(function ($item) {
                     return [
                         'partner_id' => (string) $item->partner_id,
-                        'partner_name' => $item->partner ? $item->partner->user->first_name . ' ' . $item->partner->user->last_name : 'N/A',
+                        'partner_name' => $item->partner ? $item->partner->user->first_name.' '.$item->partner->user->last_name : 'N/A',
                         'pending_documents' => $item->count,
                     ];
                 }),
@@ -301,7 +301,7 @@ class AdminDocumentVerificationController extends Controller
         $data = [
             'id' => (string) $document->id,
             'partner_id' => (string) $document->partner_id,
-            'partner_name' => $document->partner ? $document->partner->user->first_name . ' ' . $document->partner->user->last_name : 'N/A',
+            'partner_name' => $document->partner ? $document->partner->user->first_name.' '.$document->partner->user->last_name : 'N/A',
             'type' => $document->document_type,
             'format' => $document->document_format ?? 'pdf',
             'status' => $document->status,
@@ -311,15 +311,15 @@ class AdminDocumentVerificationController extends Controller
 
         // Include document paths
         if ($document->document_format === 'photo_two_side') {
-            $data['document_front'] = $document->document_path_front ? asset('storage/' . $document->document_path_front) : null;
-            $data['document_back'] = $document->document_path_back ? asset('storage/' . $document->document_path_back) : null;
+            $data['document_front'] = $document->document_path_front ? asset('storage/'.$document->document_path_front) : null;
+            $data['document_back'] = $document->document_path_back ? asset('storage/'.$document->document_path_back) : null;
             $data['document_name_front'] = $document->document_name;
             $data['document_name_back'] = $document->document_name_back;
             $data['file_size_front'] = $document->file_size;
             $data['file_size_back'] = $document->file_size_back;
         } else {
-            $data['document_path'] = $document->document_path ? asset('storage/' . $document->document_path) : null;
-            $data['document_front'] = $document->document_path_front ? asset('storage/' . $document->document_path_front) : null;
+            $data['document_path'] = $document->document_path ? asset('storage/'.$document->document_path) : null;
+            $data['document_front'] = $document->document_path_front ? asset('storage/'.$document->document_path_front) : null;
             $data['document_name'] = $document->document_name;
             $data['file_size'] = $document->file_size;
         }
@@ -331,7 +331,7 @@ class AdminDocumentVerificationController extends Controller
         if ($document->reviewer) {
             $data['reviewed_by'] = [
                 'id' => (string) $document->reviewer->id,
-                'name' => $document->reviewer->first_name . ' ' . $document->reviewer->last_name,
+                'name' => $document->reviewer->first_name.' '.$document->reviewer->last_name,
             ];
         }
 

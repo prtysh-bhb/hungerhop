@@ -10,8 +10,8 @@ use App\Models\Order;
 use App\Models\OrderStatus;
 use App\Models\Restaurant;
 use app\Models\User;
-use Illuminate\Http\Request;
 use App\Scopes\TenantScope;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
