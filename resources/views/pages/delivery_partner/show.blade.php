@@ -50,9 +50,10 @@
                                     <thead class="table-light">
                                         <tr>
                                             <th>Document Type</th>
-                                            <th>File Name</th>
+                                            <th>Format</th>
                                             <th>Status</th>
                                             <th>Uploaded Date</th>
+                                            <th>Preview</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>
@@ -60,7 +61,15 @@
                                         @foreach ($partner->documents as $document)
                                             <tr>
                                                 <td>{{ ucfirst(str_replace('_', ' ', $document->document_type)) }}</td>
-                                                <td>{{ $document->document_name ?? 'N/A' }}</td>
+                                                <td>
+                                                    @if ($document->document_format === 'photo_two_side')
+                                                        <span class="badge bg-info">Photo (2-Side)</span>
+                                                    @elseif ($document->document_format === 'photo_single_side')
+                                                        <span class="badge bg-info">Photo (1-Side)</span>
+                                                    @else
+                                                        <span class="badge bg-secondary">PDF</span>
+                                                    @endif
+                                                </td>
                                                 <td>
                                                     @if ($document->status == 'approved')
                                                         <span class="badge bg-success">Approved</span>
@@ -75,86 +84,174 @@
                                                 <td>{{ $document->uploaded_at ? $document->uploaded_at->format('d M Y') : ($document->created_at ? $document->created_at->format('d M Y') : 'N/A') }}
                                                 </td>
                                                 <td>
-                                                    @if ($document->document_path)
+                                                    @if ($document->document_format === 'photo_two_side')
+                                                        <button type="button" class="btn btn-sm btn-info"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#previewModal-{{ $document->id }}">
+                                                            <i class="fa fa-images"></i> View Both
+                                                        </button>
+                                                    @elseif ($document->document_path_front || $document->document_path)
                                                         @php
-                                                            $documentPath = storage_path(
-                                                                'app/public/' . $document->document_path,
-                                                            );
-                                                            $fileExists = file_exists($documentPath);
+                                                            $documentPath =
+                                                                $document->document_path_front ??
+                                                                $document->document_path;
+                                                            $storagePath = storage_path('app/public/' . $documentPath);
+                                                            $fileExists = file_exists($storagePath);
                                                         @endphp
                                                         @if ($fileExists)
-                                                            <a href="{{ asset('storage/' . $document->document_path) }}"
+                                                            <a href="{{ asset('storage/' . $documentPath) }}"
                                                                 target="_blank" class="btn btn-sm btn-primary">
                                                                 <i class="fa fa-eye"></i> View
                                                             </a>
-                                                            <a href="{{ asset('storage/' . $document->document_path) }}"
-                                                                download class="btn btn-sm btn-success">
-                                                                <i class="fa fa-download"></i> Download
-                                                            </a>
                                                         @else
-                                                            <span class="text-muted">
-                                                                <i class="fa fa-file-pdf-o"></i>
-                                                                {{ basename($document->document_path) }}
-                                                                <small class="text-warning">(Placeholder)</small>
-                                                            </span>
+                                                            <span class="text-muted text-sm">File not found</span>
                                                         @endif
                                                     @else
                                                         <span class="text-muted">No file</span>
                                                     @endif
+                                                </td>
+                                                <td>
                                                     <div class="mt-2">
                                                         @if ($document->status !== 'approved')
                                                             <form
                                                                 action="{{ route('partners.document.approve', $document->id) }}"
                                                                 method="POST" style="display:inline-block;">
                                                                 @csrf
-                                                                <button type="submit"
-                                                                    class="btn btn-sm btn-success">Approve</button>
+                                                                <button type="submit" class="btn btn-sm btn-success"
+                                                                    title="Approve this document">Approve</button>
                                                             </form>
                                                             <button type="button" class="btn btn-sm btn-danger"
                                                                 data-bs-toggle="modal"
-                                                                data-bs-target="#rejectReasonModal-{{ $document->id }}">Reject</button>
+                                                                data-bs-target="#rejectReasonModal-{{ $document->id }}"
+                                                                title="Reject this document">Reject</button>
+                                                        @else
+                                                            <span class="badge bg-success">Approved</span>
                                                         @endif
-                                                    </div>
-                                                    <!-- Reject Reason Modal -->
-                                                    <div class="modal fade" id="rejectReasonModal-{{ $document->id }}"
-                                                        tabindex="-1"
-                                                        aria-labelledby="rejectReasonModalLabel-{{ $document->id }}"
-                                                        aria-hidden="true">
-                                                        <div class="modal-dialog">
-                                                            <div class="modal-content">
-                                                                <form
-                                                                    action="{{ route('partners.document.reject', $document->id) }}"
-                                                                    method="POST">
-                                                                    @csrf
-                                                                    <div class="modal-header">
-                                                                        <h5 class="modal-title"
-                                                                            id="rejectReasonModalLabel-{{ $document->id }}">
-                                                                            Rejection Reason</h5>
-                                                                        <button type="button" class="btn-close"
-                                                                            data-bs-dismiss="modal"
-                                                                            aria-label="Close"></button>
-                                                                    </div>
-                                                                    <div class="modal-body">
-                                                                        <div class="mb-3">
-                                                                            <label
-                                                                                for="rejection_reason_{{ $document->id }}"
-                                                                                class="form-label">Reason</label>
-                                                                            <textarea class="form-control" id="rejection_reason_{{ $document->id }}" name="rejection_reason" rows="3"
-                                                                                required></textarea>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="modal-footer">
-                                                                        <button type="button" class="btn btn-secondary"
-                                                                            data-bs-dismiss="modal">Cancel</button>
-                                                                        <button type="submit"
-                                                                            class="btn btn-danger">Reject</button>
-                                                                    </div>
-                                                                </form>
-                                                            </div>
-                                                        </div>
                                                     </div>
                                                 </td>
                                             </tr>
+
+                                            <!-- Preview Modal for Two-Sided Documents -->
+                                            @if ($document->document_format === 'photo_two_side')
+                                                <div class="modal fade" id="previewModal-{{ $document->id }}"
+                                                    tabindex="-1" aria-labelledby="previewModalLabel-{{ $document->id }}"
+                                                    aria-hidden="true">
+                                                    <div class="modal-dialog modal-lg">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title"
+                                                                    id="previewModalLabel-{{ $document->id }}">
+                                                                    {{ ucfirst(str_replace('_', ' ', $document->document_type)) }}
+                                                                    - Both Sides
+                                                                </h5>
+                                                                <button type="button" class="btn-close"
+                                                                    data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <div class="row">
+                                                                    @if ($document->document_path_front)
+                                                                        <div class="col-md-6 text-center">
+                                                                            <h6 class="mb-3">Front Side</h6>
+                                                                            @php
+                                                                                $frontPath = storage_path(
+                                                                                    'app/public/' .
+                                                                                        $document->document_path_front,
+                                                                                );
+                                                                            @endphp
+                                                                            @if (file_exists($frontPath))
+                                                                                <img src="{{ asset('storage/' . $document->document_path_front) }}"
+                                                                                    class="img-fluid border rounded"
+                                                                                    alt="Front Side"
+                                                                                    style="max-height: 400px; object-fit: contain;">
+                                                                                <p class="small text-muted mt-2">
+                                                                                    {{ $document->document_name ?? 'Front side' }}
+                                                                                </p>
+                                                                            @else
+                                                                                <div class="alert alert-warning">File not
+                                                                                    found</div>
+                                                                            @endif
+                                                                        </div>
+                                                                    @endif
+                                                                    @if ($document->document_path_back)
+                                                                        <div class="col-md-6 text-center">
+                                                                            <h6 class="mb-3">Back Side</h6>
+                                                                            @php
+                                                                                $backPath = storage_path(
+                                                                                    'app/public/' .
+                                                                                        $document->document_path_back,
+                                                                                );
+                                                                            @endphp
+                                                                            @if (file_exists($backPath))
+                                                                                <img src="{{ asset('storage/' . $document->document_path_back) }}"
+                                                                                    class="img-fluid border rounded"
+                                                                                    alt="Back Side"
+                                                                                    style="max-height: 400px; object-fit: contain;">
+                                                                                <p class="small text-muted mt-2">
+                                                                                    {{ $document->document_name_back ?? 'Back side' }}
+                                                                                </p>
+                                                                            @else
+                                                                                <div class="alert alert-warning">File not
+                                                                                    found</div>
+                                                                            @endif
+                                                                        </div>
+                                                                    @endif
+                                                                </div>
+                                                                @if ($document->status === 'rejected' && $document->rejection_reason)
+                                                                    <div class="alert alert-danger mt-3">
+                                                                        <strong>Rejection Reason:</strong>
+                                                                        <p class="mb-0">{{ $document->rejection_reason }}
+                                                                        </p>
+                                                                    </div>
+                                                                @endif
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary"
+                                                                    data-bs-dismiss="modal">Close</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endif
+
+                                            <!-- Reject Reason Modal -->
+                                            <div class="modal fade" id="rejectReasonModal-{{ $document->id }}"
+                                                tabindex="-1"
+                                                aria-labelledby="rejectReasonModalLabel-{{ $document->id }}"
+                                                aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <form
+                                                            action="{{ route('partners.document.reject', $document->id) }}"
+                                                            method="POST">
+                                                            @csrf
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title"
+                                                                    id="rejectReasonModalLabel-{{ $document->id }}">
+                                                                    Rejection Reason</h5>
+                                                                <button type="button" class="btn-close"
+                                                                    data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <div class="mb-3">
+                                                                    <label for="rejection_reason_{{ $document->id }}"
+                                                                        class="form-label">Reason</label>
+                                                                    <textarea class="form-control" id="rejection_reason_{{ $document->id }}" name="rejection_reason" rows="4"
+                                                                        required minlength="10" maxlength="500"
+                                                                        placeholder="Please provide a detailed reason for rejection (minimum 10 characters)"></textarea>
+                                                                    <small class="form-text text-muted">Minimum 10
+                                                                        characters required</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary"
+                                                                    data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit"
+                                                                    class="btn btn-danger">Reject</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         @endforeach
                                     </tbody>
                                 </table>

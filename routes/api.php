@@ -159,6 +159,10 @@ Route::prefix('v1')->group(function () {
             Route::post('/vehicle-location', [DeliveryPartner_login::class, 'updateVehicleAndLocation']); // Add vehicle and location
             Route::post('/upload-documents', [DeliveryPartner_login::class, 'uploadDocuments']);
             Route::post('/update-profile', [DeliveryPartner_login::class, 'updateProfile']);
+            
+            // Document retrieval routes
+            Route::get('/documents', [DeliveryPartner_login::class, 'getDocuments']);
+            Route::get('/documents/{id}', [DeliveryPartner_login::class, 'getDocumentDetails']);
         });
 
         // // Password Reset Routes (Public - no auth required)

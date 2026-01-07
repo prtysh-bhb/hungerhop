@@ -637,6 +637,7 @@ class DeliveryPartner_login extends Controller
     /**
      * Upload Delivery Partner Documents (API)
      * This endpoint allows authenticated delivery partners to upload their documents
+     * For photo documents, both front and back sides are required
      */
     public function uploadDocuments(Request $request)
     {
@@ -671,8 +672,14 @@ class DeliveryPartner_login extends Controller
             'bank_passbook',
         ];
 
+        // Dynamic validation rules
         $rules = [];
         foreach ($allowedDocuments as $doc) {
+            // Front side is required if document is provided
+            $rules["{$doc}_front"] = 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120';
+            // Back side is required only if front side is provided and is an image
+            $rules["{$doc}_back"] = 'nullable|file|mimes:jpeg,png,jpg|max:5120';
+            // For backward compatibility, also accept single file
             $rules[$doc] = 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120';
         }
 
@@ -682,7 +689,7 @@ class DeliveryPartner_login extends Controller
             // Ensure at least one document is provided
             $hasDocument = false;
             foreach ($allowedDocuments as $doc) {
-                if ($request->hasFile($doc)) {
+                if ($request->hasFile("{$doc}_front") || $request->hasFile($doc)) {
                     $hasDocument = true;
                     break;
                 }
@@ -709,27 +716,104 @@ class DeliveryPartner_login extends Controller
 
             // Handle document upload - Process each document type
             foreach ($allowedDocuments as $documentType) {
-                if ($request->hasFile($documentType)) {
-                    $file = $request->file($documentType);
-                    $documentPath = $file->store('delivery_partner_documents', 'public');
+                $hasFront = $request->hasFile("{$documentType}_front");
+                $hasSingle = $request->hasFile($documentType);
 
-                    $document = DeliveryPartnerDocument::create([
-                        'partner_id' => $deliveryPartner->id,
-                        'document_type' => $documentType,
-                        'document_path' => $documentPath,
-                        'document_name' => $file->getClientOriginalName(),
-                        'file_size' => $file->getSize(),
-                        'mime_type' => $file->getMimeType(),
-                        'status' => 'pending',
-                        'uploaded_at' => now(),
-                    ]);
+                if ($hasFront || $hasSingle) {
+                    // Check if this is a two-sided photo document
+                    if ($hasFront) {
+                        $frontFile = $request->file("{$documentType}_front");
+                        $isFrontImage = in_array($frontFile->getMimeType(), ['image/jpeg', 'image/png', 'image/jpg']);
 
-                    $uploadedDocuments[] = [
-                        'document_type' => $documentType,
-                        'document_name' => $file->getClientOriginalName(),
-                        'status' => 'pending',
-                        'uploaded_at' => $document->uploaded_at,
-                    ];
+                        // If front is an image, back is required
+                        if ($isFrontImage && ! $request->hasFile("{$documentType}_back")) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Validation failed',
+                                'errors' => [
+                                    "{$documentType}_back" => [
+                                        "The back side of {$documentType} is required when uploading photo documents",
+                                    ],
+                                ],
+                            ], 422);
+                        }
+
+                        // Store front side
+                        $frontPath = $frontFile->store('delivery_partner_documents', 'public');
+
+                        $data = [
+                            'partner_id' => $deliveryPartner->id,
+                            'document_type' => $documentType,
+                            'document_name' => $frontFile->getClientOriginalName(),
+                            'file_size' => $frontFile->getSize(),
+                            'mime_type' => $frontFile->getMimeType(),
+                            'status' => 'pending',
+                            'uploaded_at' => now(),
+                        ];
+
+                        // Handle two-sided photo
+                        if ($isFrontImage && $request->hasFile("{$documentType}_back")) {
+                            $backFile = $request->file("{$documentType}_back");
+                            $backPath = $backFile->store('delivery_partner_documents', 'public');
+
+                            $data['document_path_front'] = $frontPath;
+                            $data['document_path_back'] = $backPath;
+                            $data['document_format'] = 'photo_two_side';
+                            $data['document_name_back'] = $backFile->getClientOriginalName();
+                            $data['file_size_back'] = $backFile->getSize();
+                            $data['mime_type_back'] = $backFile->getMimeType();
+
+                            $uploadedDocuments[] = [
+                                'document_type' => $documentType,
+                                'document_format' => 'photo_two_side',
+                                'document_name_front' => $frontFile->getClientOriginalName(),
+                                'document_name_back' => $backFile->getClientOriginalName(),
+                                'status' => 'pending',
+                                'uploaded_at' => now()->toISOString(),
+                            ];
+                        } else {
+                            // PDF or single image
+                            $data['document_path'] = $frontPath;
+                            $data['document_path_front'] = $frontPath;
+                            $data['document_format'] = $isFrontImage ? 'photo_single_side' : 'pdf';
+
+                            $uploadedDocuments[] = [
+                                'document_type' => $documentType,
+                                'document_format' => $data['document_format'],
+                                'document_name' => $frontFile->getClientOriginalName(),
+                                'status' => 'pending',
+                                'uploaded_at' => now()->toISOString(),
+                            ];
+                        }
+
+                        DeliveryPartnerDocument::create($data);
+
+                    } elseif ($hasSingle) {
+                        // Backward compatibility: single file upload
+                        $file = $request->file($documentType);
+                        $documentPath = $file->store('delivery_partner_documents', 'public');
+
+                        $document = DeliveryPartnerDocument::create([
+                            'partner_id' => $deliveryPartner->id,
+                            'document_type' => $documentType,
+                            'document_path' => $documentPath,
+                            'document_path_front' => $documentPath,
+                            'document_format' => 'pdf',
+                            'document_name' => $file->getClientOriginalName(),
+                            'file_size' => $file->getSize(),
+                            'mime_type' => $file->getMimeType(),
+                            'status' => 'pending',
+                            'uploaded_at' => now(),
+                        ]);
+
+                        $uploadedDocuments[] = [
+                            'document_type' => $documentType,
+                            'document_format' => 'pdf',
+                            'document_name' => $file->getClientOriginalName(),
+                            'status' => 'pending',
+                            'uploaded_at' => $document->uploaded_at->toISOString(),
+                        ];
+                    }
                 }
             }
 
@@ -756,5 +840,159 @@ class DeliveryPartner_login extends Controller
                 'errors' => ['general' => [$e->getMessage()]],
             ], 422);
         }
+    }
+
+    /**
+     * Get Delivery Partner Documents
+     * Retrieves all documents for the authenticated delivery partner
+     */
+    public function getDocuments(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated. Please login first.',
+            ], 401);
+        }
+
+        if ($user->role !== 'delivery_partner') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only delivery partners can use this endpoint.',
+            ], 403);
+        }
+
+        $deliveryPartner = DeliveryPartner::where('user_id', $user->id)->first();
+        if (! $deliveryPartner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Delivery partner profile not found.',
+            ], 404);
+        }
+
+        $documents = DeliveryPartnerDocument::where('partner_id', $deliveryPartner->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        $formattedDocuments = $documents->map(function ($doc) {
+            $data = [
+                'id' => (string) $doc->id,
+                'type' => $doc->document_type,
+                'format' => $doc->document_format ?? 'pdf',
+                'status' => $doc->status,
+                'uploaded_at' => $doc->created_at ? $doc->created_at->toISOString() : null,
+                'reviewed_at' => $doc->reviewed_at ? $doc->reviewed_at->toISOString() : null,
+            ];
+
+            // Include document paths based on format
+            if ($doc->document_format === 'photo_two_side') {
+                $data['document_front'] = $doc->document_path_front ? asset('storage/'.$doc->document_path_front) : null;
+                $data['document_back'] = $doc->document_path_back ? asset('storage/'.$doc->document_path_back) : null;
+                $data['document_name_front'] = $doc->document_name;
+                $data['document_name_back'] = $doc->document_name_back;
+            } else {
+                $data['document_path'] = $doc->document_path ? asset('storage/'.$doc->document_path) : null;
+                $data['document_front'] = $doc->document_path_front ? asset('storage/'.$doc->document_path_front) : null;
+                $data['document_name'] = $doc->document_name;
+            }
+
+            if ($doc->status === 'rejected') {
+                $data['rejection_reason'] = $doc->rejection_reason;
+            }
+
+            return $data;
+        })->toArray();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Documents retrieved successfully.',
+            'data' => [
+                'delivery_partner_id' => (string) $deliveryPartner->id,
+                'documents' => $formattedDocuments,
+                'documents_count' => count($formattedDocuments),
+                'summary' => [
+                    'pending' => $documents->where('status', 'pending')->count(),
+                    'approved' => $documents->where('status', 'approved')->count(),
+                    'rejected' => $documents->where('status', 'rejected')->count(),
+                ],
+            ],
+        ], 200);
+    }
+
+    /**
+     * Get Single Document with Full Details
+     */
+    public function getDocumentDetails(Request $request, $documentId)
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated. Please login first.',
+            ], 401);
+        }
+
+        if ($user->role !== 'delivery_partner') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only delivery partners can use this endpoint.',
+            ], 403);
+        }
+
+        $deliveryPartner = DeliveryPartner::where('user_id', $user->id)->first();
+        if (! $deliveryPartner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Delivery partner profile not found.',
+            ], 404);
+        }
+
+        $document = DeliveryPartnerDocument::where('id', $documentId)
+            ->where('partner_id', $deliveryPartner->id)
+            ->first();
+
+        if (! $document) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document not found.',
+            ], 404);
+        }
+
+        $data = [
+            'id' => (string) $document->id,
+            'type' => $document->document_type,
+            'format' => $document->document_format ?? 'pdf',
+            'status' => $document->status,
+            'file_size' => $document->file_size,
+            'mime_type' => $document->mime_type,
+            'uploaded_at' => $document->created_at ? $document->created_at->toISOString() : null,
+            'reviewed_at' => $document->reviewed_at ? $document->reviewed_at->toISOString() : null,
+        ];
+
+        if ($document->document_format === 'photo_two_side') {
+            $data['document_front'] = $document->document_path_front ? asset('storage/'.$document->document_path_front) : null;
+            $data['document_back'] = $document->document_path_back ? asset('storage/'.$document->document_path_back) : null;
+            $data['document_name_front'] = $document->document_name;
+            $data['document_name_back'] = $document->document_name_back;
+            $data['file_size_front'] = $document->file_size;
+            $data['file_size_back'] = $document->file_size_back;
+            $data['mime_type_front'] = $document->mime_type;
+            $data['mime_type_back'] = $document->mime_type_back;
+        } else {
+            $data['document_path'] = $document->document_path ? asset('storage/'.$document->document_path) : null;
+            $data['document_front'] = $document->document_path_front ? asset('storage/'.$document->document_path_front) : null;
+            $data['document_name'] = $document->document_name;
+        }
+
+        if ($document->status === 'rejected') {
+            $data['rejection_reason'] = $document->rejection_reason;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Document details retrieved successfully.',
+            'data' => $data,
+        ], 200);
     }
 }

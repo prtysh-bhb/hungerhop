@@ -17,9 +17,15 @@ class DeliveryPartnerDocument extends Model
         'partner_id',
         'document_type',
         'document_path',
+        'document_path_front',
+        'document_path_back',
+        'document_format',
         'document_name',
+        'document_name_back',
         'file_size',
+        'file_size_back',
         'mime_type',
+        'mime_type_back',
         'status',
         'rejection_reason',
         'uploaded_at',
@@ -37,7 +43,35 @@ class DeliveryPartnerDocument extends Model
         'uploaded_at' => 'datetime',
         'reviewed_at' => 'datetime',
         'file_size' => 'integer',
+        'file_size_back' => 'integer',
     ];
+
+    /**
+     * Get the document paths as an array
+     */
+    public function getDocumentPaths()
+    {
+        if ($this->document_format === 'photo_two_side') {
+            return [
+                'front' => $this->document_path_front,
+                'back' => $this->document_path_back,
+            ];
+        }
+
+        return [
+            'front' => $this->document_path ?? $this->document_path_front,
+        ];
+    }
+
+    /**
+     * Check if document has both sides
+     */
+    public function hasBothSides(): bool
+    {
+        return $this->document_format === 'photo_two_side' 
+            && !empty($this->document_path_front) 
+            && !empty($this->document_path_back);
+    }
 
     public function partner()
     {

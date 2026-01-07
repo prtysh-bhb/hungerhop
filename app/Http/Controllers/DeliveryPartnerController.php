@@ -21,16 +21,24 @@ class DeliveryPartnerController extends Controller
         $document->reviewed_by = auth()->id();
         $document->save();
 
-        // Get the delivery partner and update status to approved
+        // Check if all documents for this partner are approved
         $deliveryPartner = DeliveryPartner::find($document->partner_id);
         if ($deliveryPartner) {
-            $deliveryPartner->status = 'approved';
-            $deliveryPartner->approved_at = now();
-            $deliveryPartner->approved_by = auth()->id();
+            $allApproved = DeliveryPartnerDocument::where('partner_id', $deliveryPartner->id)
+                ->where('status', '!=', 'approved')
+                ->count() === 0;
+
+            // If all documents are approved, update partner status to approved
+            if ($allApproved) {
+                $deliveryPartner->status = 'approved';
+                $deliveryPartner->approved_at = now();
+                $deliveryPartner->approved_by = auth()->id();
+            }
+            
             $deliveryPartner->save();
         }
 
-        return redirect()->back()->with('success', 'Document and delivery partner approved successfully.');
+        return redirect()->back()->with('success', 'Document approved successfully.');
     }
 
     /**
@@ -39,7 +47,7 @@ class DeliveryPartnerController extends Controller
     public function rejectDocument(Request $request, $documentId)
     {
         $request->validate([
-            'rejection_reason' => 'required|string|max:255',
+            'rejection_reason' => 'required|string|min:10|max:500',
         ]);
         $document = DeliveryPartnerDocument::findOrFail($documentId);
         $document->status = 'rejected';
@@ -47,6 +55,14 @@ class DeliveryPartnerController extends Controller
         $document->reviewed_at = now();
         $document->reviewed_by = auth()->id();
         $document->save();
+
+        // Update delivery partner status to rejected
+        $deliveryPartner = DeliveryPartner::find($document->partner_id);
+        if ($deliveryPartner) {
+            $deliveryPartner->status = 'rejected';
+            $deliveryPartner->rejection_reason = $request->rejection_reason;
+            $deliveryPartner->save();
+        }
 
         return redirect()->back()->with('success', 'Document rejected with reason.');
     }
