@@ -64,7 +64,7 @@ class CouponController extends Controller
             ->values()
             ->map(function ($coupon) {
                 return [
-                    'id' => (string)$coupon->id,
+                    'id' => (string) $coupon->id,
                     'code' => $coupon->code,
                     'title' => $coupon->title,
                     'description' => $coupon->description,

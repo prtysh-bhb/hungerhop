@@ -171,7 +171,7 @@ class OrderController extends Controller
             return response()->json(['success' => false, 'message' => 'Order ID is required'], 422);
         }
 
-        $result = $this->orderService->getOrderDetails($id,$request->user());
+        $result = $this->orderService->getOrderDetails($id, $request->user());
         $statusCode = $result['status_code'] ?? 200;
         unset($result['status_code']);
 
