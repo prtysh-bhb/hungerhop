@@ -72,15 +72,15 @@ class DeliveryPartner_login extends Controller
             $rejectionReason = $deliveryPartner->rejection_reason ?? 'Your application was rejected. Please contact admin for details.';
         }
         $paymentDetail = PaymentDetail::where('user_id', $user->id)->exists();
-        if($user->role === 'delivery_partner' && $status ==='approved'){
-        DeliveryPartner::where('user_id', $user->id)->update(['is_online' => true]);
+        if ($user->role === 'delivery_partner' && $status === 'approved') {
+            DeliveryPartner::where('user_id', $user->id)->update(['is_online' => true]);
         }
         $responseData = [
             'success' => true,
             'message' => 'Login successful',
             'data' => [
                 'user' => [
-                    'id' => $user->id,
+                    'id' => (string) $user->id,
                     'first_name' => $user->first_name,
                     'last_name' => $user->last_name,
                     'full_name' => $user->first_name.' '.$user->last_name,
@@ -152,7 +152,8 @@ class DeliveryPartner_login extends Controller
                 } catch (JWTException $e) {
                 }
             }
-            DeliveryPartner::where('user_id', $user->id)->update(['is_online' => false,'is_available' => false,]);
+            DeliveryPartner::where('user_id', $user->id)->update(['is_online' => false, 'is_available' => false]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Successfully logged out',
