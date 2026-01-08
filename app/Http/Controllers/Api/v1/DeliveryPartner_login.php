@@ -250,6 +250,8 @@ class DeliveryPartner_login extends Controller
                     'email' => (string) $user->email,
                     'phone' => (string) $user->phone,
                     'role' => (string) $user->role,
+                    'is_available' => (bool) $deliveryPartner->is_available,
+                    'is_online' => (bool) $deliveryPartner->is_online,
                 ],
                 'delivery_partner' => [
                     'id' => (string) $deliveryPartner->id,
@@ -258,8 +260,6 @@ class DeliveryPartner_login extends Controller
                     'license_number' => (string) ($deliveryPartner->license_number ?? ''),
                     'current_latitude' => $deliveryPartner->current_latitude ? (float) $deliveryPartner->current_latitude : null,
                     'current_longitude' => $deliveryPartner->current_longitude ? (float) $deliveryPartner->current_longitude : null,
-                    'is_available' => (bool) $deliveryPartner->is_available,
-                    'is_online' => (bool) $deliveryPartner->is_online,
                     'status' => (string) $status,
                     'total_deliveries' => (int) $deliveryPartner->total_deliveries,
                     'total_earnings' => (float) $deliveryPartner->total_earnings,
