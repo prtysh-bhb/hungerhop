@@ -278,7 +278,25 @@ class CustomerRegistration extends Controller
             'country' => 'nullable|string|max:100',
             'is_default' => 'nullable|boolean',
         ]);
+        $isExistingType = false;
+        if (isset($validated['address_type'])) {
+            // Check if address type already exists for this customer (excluding current address)
+            $existingAddress = $customerProfile->addresses()
+                ->where('address_type', $validated['address_type'])
+                ->where('id', '!=', $address->id)
+                ->first();
 
+            if ($existingAddress) {
+                $isExistingType = true;
+            }
+        }
+
+        if ($isExistingType) {
+            return response()->json([
+                'success' => false,
+                'message' => "An address with type '{$validated['address_type']}' already exists. Please update the existing one or use a different type.",
+            ], 422);
+        }
         DB::transaction(function () use ($validated, $customerProfile, $address) {
 
             // If setting this address as default, unset others
@@ -445,10 +463,10 @@ class CustomerRegistration extends Controller
         $user = auth()->user();
         if (! $user || $user->role !== 'customer') {
             return response()->json([
-                'ResponseCode' => '401',
+                'ResponseCode' => '403',
                 'Result' => 'false',
-                'ResponseMsg' => 'Unauthorized. Only customers can access homepage.',
-            ], 401);
+                'ResponseMsg' => 'Forbidden. Only customers can access homepage.',
+            ], 403);
         }
 
         $customerProfile = CustomerProfile::where('user_id', $user->id)->first();

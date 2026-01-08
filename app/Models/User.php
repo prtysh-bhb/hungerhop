@@ -157,7 +157,7 @@ class User extends Authenticatable implements JWTSubject
             CustomerAddress::class,
             CustomerProfile::class,
             'user_id',              // FK on customer_profiles
-            'customer_profile_id',  // FK on customer_addresses
+            'customer_id',  // FK on customer_addresses
             'id',                   // users.id
             'id'                    // customer_profiles.id
         );

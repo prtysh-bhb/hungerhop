@@ -57,10 +57,9 @@ class DeliveryPartnerController extends Controller
         $document->save();
 
         // Update delivery partner status to rejected
-        $deliveryPartner = DeliveryPartner::find($document->partner_id);
+        $deliveryPartner =  DeliveryPartner::find($document->partner_id);
         if ($deliveryPartner) {
             $deliveryPartner->status = 'rejected';
-            $deliveryPartner->rejection_reason = $request->rejection_reason;
             $deliveryPartner->save();
         }
 

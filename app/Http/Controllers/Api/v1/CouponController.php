@@ -18,7 +18,7 @@ class CouponController extends Controller
         if (! $user) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized',
+                'message' => 'Unauthenticated',
             ], 401);
         }
 
