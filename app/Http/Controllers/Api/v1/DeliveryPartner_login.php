@@ -21,59 +21,94 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class DeliveryPartner_login extends Controller
 {
+    /**
+     * Calculate document status based on document collection
+     * Returns: rejected, pending_approval, approved, pending_documents
+     */
+    private function calculateDocumentStatus($documents)
+    {
+        if ($documents->count() === 0) {
+            return 'pending_documents';
+        }
+
+        $rejectedCount = $documents->where('status', 'rejected')->count();
+        $approvedCount = $documents->where('status', 'approved')->count();
+        $pendingCount = $documents->where('status', 'pending')->count();
+        $totalCount = $documents->count();
+
+        // If ALL documents are rejected
+        if ($rejectedCount === $totalCount) {
+            return 'rejected';
+        }
+        // If there are any pending documents
+        elseif ($pendingCount > 0) {
+            return 'pending_approval';
+        }
+        // If all are approved
+        elseif ($approvedCount === $totalCount) {
+            return 'approved';
+        }
+        // Mixed statuses
+        else {
+            return 'pending_approval';
+        }
+    }
+
     public function login(Request $request)
     {
-
         $credentials = $request->only('email', 'password');
         $user = User::where('email', $request->email)->first();
         if (! $user) {
-            return response()->json(['success' => false, 'message' => 'No account found with this email address.'], 401);
+            return response()->json([
+                'success' => false,
+                'message' => 'No account found with this email address.',
+            ], 401);
         }
-        // Only allow delivery partners to login
+
+        // Allow only delivery partners
         if ($user->role !== 'delivery_partner') {
-            return response()->json(['success' => false, 'message' => 'Access denied: Only delivery partners can login here.'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Access denied: Only delivery partners can login here.',
+            ], 403);
         }
+
         if (! Hash::check($request->password, $user->password)) {
-            return response()->json(['success' => false, 'message' => 'Invalid credentials'], 401);
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid credentials',
+            ], 401);
         }
+
         if (! $token = JWTAuth::fromUser($user)) {
-            return response()->json(['success' => false, 'message' => 'Could not create token.'], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Could not create token.',
+            ], 500);
         }
 
-        // Determine unified status
         $deliveryPartner = $user->deliveryPartner;
-        $documents = DeliveryPartnerDocument::where('partner_id', $deliveryPartner->id)->get();
+        $documents = $deliveryPartner->documents;
 
-        $status = $deliveryPartner->status; // Default to delivery_partner status
+        // Get both statuses
+        $deliveryPartnerStatus = $deliveryPartner->status; // From DeliveryPartner table
+        $documentStatus = $this->calculateDocumentStatus($documents); // From documents
         $rejectionReason = null;
 
-        // If delivery partner status is pending, check documents
-        if ($deliveryPartner->status === 'pending') {
-            if ($documents->count() === 0) {
-                // No documents uploaded
-                $status = 'pending_documents';
-            } else {
-                // Check if any document is rejected
-                $rejectedDoc = $documents->firstWhere('status', 'rejected');
-                if ($rejectedDoc) {
-                    $status = 'rejected';
-                    $rejectionReason = $rejectedDoc->rejection_reason ?? 'Your documents were rejected. Please contact admin for details.';
-                } elseif ($documents->every(fn ($doc) => $doc->status === 'approved')) {
-                    // All documents approved, but still pending approval from admin
-                    $status = 'pending_approval';
-                } else {
-                    // Some documents are pending review
-                    $status = 'pending_approval';
-                }
-            }
-        } elseif ($deliveryPartner->status === 'rejected') {
-            // Partner was rejected at delivery_partner level
-            $status = 'rejected';
-            $rejectionReason = $deliveryPartner->rejection_reason ?? 'Your application was rejected. Please contact admin for details.';
+        // Get rejection reason if document is rejected
+        if ($documentStatus === 'rejected') {
+            $rejectedDoc = $documents->firstWhere('status', 'rejected');
+            $rejectionReason = $rejectedDoc->rejection_reason ?? 'Your documents were rejected. Please re-upload.';
         }
+
+        // 🔹 Payment details check
         $paymentDetail = PaymentDetail::where('user_id', $user->id)->exists();
-        if ($user->role === 'delivery_partner' && $status === 'approved') {
-            DeliveryPartner::where('user_id', $user->id)->update(['is_online' => true]);
+
+        // 🔹 Set online only if both delivery_partner and documents are approved
+        if ($deliveryPartnerStatus === 'approved' && $documentStatus === 'approved') {
+            DeliveryPartner::where('user_id', $user->id)->update([
+                'is_online' => true,
+            ]);
         }
         $responseData = [
             'success' => true,
@@ -96,7 +131,8 @@ class DeliveryPartner_login extends Controller
                         'current_longitude' => $deliveryPartner->current_longitude,
                         'total_deliveries' => $deliveryPartner->total_deliveries,
                     ],
-                    'status' => $status,
+                    'status' => $deliveryPartnerStatus,
+                    'document_status' => $documentStatus,
                     'is_available' => $deliveryPartner->is_available,
                     'is_online' => $deliveryPartner->is_online,
                     'has_payment_details' => $paymentDetail,
@@ -109,13 +145,12 @@ class DeliveryPartner_login extends Controller
             ],
         ];
 
-        // Add rejection reason if rejected
-        if ($status === 'rejected' && $rejectionReason) {
+        // 🔹 Attach rejection reason if document is rejected
+        if ($documentStatus === 'rejected' && $rejectionReason) {
             $responseData['data']['user']['rejection_reason'] = $rejectionReason;
         }
 
         return response()->json($responseData, 200);
-
     }
 
     public function logout(Request $request)
@@ -200,27 +235,15 @@ class DeliveryPartner_login extends Controller
         // Get documents
         $documents = DeliveryPartnerDocument::where('partner_id', $deliveryPartner->id)->get();
 
-        // Calculate unified status (same as login)
-        $status = $deliveryPartner->status;
+        // Get both statuses
+        $deliveryPartnerStatus = $deliveryPartner->status;
+        $documentStatus = $this->calculateDocumentStatus($documents);
         $rejectionReason = null;
 
-        if ($deliveryPartner->status === 'pending') {
-            if ($documents->count() === 0) {
-                $status = 'pending_documents';
-            } else {
-                $rejectedDoc = $documents->firstWhere('status', 'rejected');
-                if ($rejectedDoc) {
-                    $status = 'rejected';
-                    $rejectionReason = $rejectedDoc->rejection_reason ?? 'Your documents were rejected. Please contact admin for details.';
-                } elseif ($documents->every(fn ($doc) => $doc->status === 'approved')) {
-                    $status = 'pending_approval';
-                } else {
-                    $status = 'pending_approval';
-                }
-            }
-        } elseif ($deliveryPartner->status === 'rejected') {
-            $status = 'rejected';
-            $rejectionReason = $deliveryPartner->rejection_reason ?? 'Your application was rejected. Please contact admin for details.';
+        // Get rejection reason if document is rejected
+        if ($documentStatus === 'rejected') {
+            $rejectedDoc = $documents->firstWhere('status', 'rejected');
+            $rejectionReason = $rejectedDoc->rejection_reason ?? 'Your documents were rejected. Please contact admin for details.';
         }
 
         // Get payment details
@@ -260,7 +283,8 @@ class DeliveryPartner_login extends Controller
                     'license_number' => (string) ($deliveryPartner->license_number ?? ''),
                     'current_latitude' => $deliveryPartner->current_latitude ? (float) $deliveryPartner->current_latitude : null,
                     'current_longitude' => $deliveryPartner->current_longitude ? (float) $deliveryPartner->current_longitude : null,
-                    'status' => (string) $status,
+                    'status' => (string) $deliveryPartnerStatus,
+                    'document_status' => (string) $documentStatus,
                     'total_deliveries' => (int) $deliveryPartner->total_deliveries,
                     'total_earnings' => (float) $deliveryPartner->total_earnings,
                     'average_rating' => (float) $deliveryPartner->average_rating,
@@ -287,8 +311,8 @@ class DeliveryPartner_login extends Controller
             'status_code' => 200,
         ];
 
-        // Add rejection reason if applicable
-        if ($status === 'rejected' && $rejectionReason) {
+        // Add rejection reason if document is rejected
+        if ($documentStatus === 'rejected' && $rejectionReason) {
             $responseData['data']['rejection_reason'] = $rejectionReason;
         }
 
@@ -365,7 +389,7 @@ class DeliveryPartner_login extends Controller
                         'email' => $user->email,
                         'phone' => $user->phone,
                         'role' => $user->role,
-                        'status' => 'pending_approval',
+                        'status' => 'pending_Document_Upload',
                         'delivery_partner_id' => $deliveryPartner->id,
                         'next_step' => 'Add vehicle and location details using /delivery-partner/vehicle-location endpoint',
                     ],
@@ -439,32 +463,28 @@ class DeliveryPartner_login extends Controller
                 'current_longitude' => $validated['current_longitude'],
             ]);
 
-            // Calculate unified status (same as login)
+            // Calculate both statuses
             $documents = DeliveryPartnerDocument::where('partner_id', $deliveryPartner->id)->get();
-            $status = $deliveryPartner->status;
+            $deliveryPartnerStatus = $deliveryPartner->status;
+            $documentStatus = $this->calculateDocumentStatus($documents);
             $rejectionReason = null;
             $nextStep = '';
 
-            if ($deliveryPartner->status === 'pending') {
-                if ($documents->count() === 0) {
-                    $status = 'pending_documents';
-                    $nextStep = 'Upload required documents using /delivery-partner/upload-documents endpoint';
-                } else {
-                    $rejectedDoc = $documents->firstWhere('status', 'rejected');
-                    if ($rejectedDoc) {
-                        $status = 'rejected';
-                        $rejectionReason = $rejectedDoc->rejection_reason ?? 'Your documents were rejected. Please contact admin for details.';
-                    } elseif ($documents->every(fn ($doc) => $doc->status === 'approved')) {
-                        $status = 'pending_approval';
-                        $nextStep = 'Your documents are approved. Awaiting final admin approval.';
-                    } else {
-                        $status = 'pending_approval';
-                        $nextStep = 'Documents pending review by admin.';
-                    }
-                }
-            } elseif ($deliveryPartner->status === 'rejected') {
-                $status = 'rejected';
-                $rejectionReason = $deliveryPartner->rejection_reason ?? 'Your application was rejected. Please contact admin for details.';
+            // Get rejection reason if document is rejected
+            if ($documentStatus === 'rejected') {
+                $rejectedDoc = $documents->firstWhere('status', 'rejected');
+                $rejectionReason = $rejectedDoc->rejection_reason ?? 'Your documents were rejected. Please contact admin for details.';
+            }
+
+            // Set next step based on document status
+            if ($documentStatus === 'pending_documents') {
+                $nextStep = 'Upload required documents using /delivery-partner/upload-documents endpoint';
+            } elseif ($documentStatus === 'pending_approval') {
+                $nextStep = 'Documents pending review by admin.';
+            } elseif ($documentStatus === 'approved' && $deliveryPartnerStatus === 'pending') {
+                $nextStep = 'Your documents are approved. Awaiting final admin approval.';
+            } elseif ($deliveryPartnerStatus === 'approved') {
+                $nextStep = 'Your account is fully approved. You can now start accepting deliveries.';
             }
 
             $responseData = [
@@ -480,8 +500,9 @@ class DeliveryPartner_login extends Controller
                         'current_longitude' => $deliveryPartner->current_longitude,
                         'is_available' => $deliveryPartner->is_available,
                         'is_online' => $deliveryPartner->is_online,
+                        'status' => $deliveryPartnerStatus,
+                        'document_status' => $documentStatus,
                     ],
-                    'status' => $status,
                     'next_step' => $nextStep,
                 ],
             ];
