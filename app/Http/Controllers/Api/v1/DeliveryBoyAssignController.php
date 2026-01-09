@@ -182,7 +182,7 @@ class DeliveryBoyAssignController extends Controller
                 'delivery_fee' => $deliveryFee,
                 'total_amount' => $order->total_amount,
                 'delivery_zone' => $deliveryZone ? [
-                    'id' => $deliveryZone->id,
+                    'id' => (string) $deliveryZone->id,
                     'name' => $deliveryZone->zone_name,
                     'estimated_delivery_time' => $estimatedDeliveryTime,
                 ] : [

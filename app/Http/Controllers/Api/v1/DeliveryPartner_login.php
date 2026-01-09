@@ -495,7 +495,7 @@ class DeliveryPartner_login extends Controller
                 'message' => 'Vehicle and location details added successfully.',
                 'data' => [
                     'delivery_partner' => [
-                        'id' => $deliveryPartner->id,
+                        'id' => (string) $deliveryPartner->id,
                         'vehicle_type' => $deliveryPartner->vehicle_type,
                         'vehicle_number' => $deliveryPartner->vehicle_number,
                         'license_number' => $deliveryPartner->license_number,

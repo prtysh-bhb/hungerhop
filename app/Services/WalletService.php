@@ -115,7 +115,7 @@ class WalletService
                     : 'Withdrawal processed successfully.',
                 'data' => [
                     'transaction' => [
-                        'id' => $transaction->id,
+                        'id' => (string) $transaction->id,
                         'type' => $transaction->type,
                         'type_label' => $transactionType === 'in' ? 'Credit' : 'Debit',
                         'amount' => $transaction->amount,
@@ -124,7 +124,7 @@ class WalletService
                         'created_at' => $transaction->created_at,
                     ],
                     'payment_detail' => [
-                        'id' => $paymentDetail->id,
+                        'id' => (string) $paymentDetail->id,
                         'pay_type' => $paymentDetail->pay_type,
                         'pay_bank_name' => $paymentDetail->pay_bank_name,
                         'masked_account_number' => $paymentDetail->masked_account_number,
@@ -234,7 +234,7 @@ class WalletService
                 'success' => true,
                 'message' => 'Payment detail added successfully.',
                 'data' => [
-                    'id' => $paymentDetail->id,
+                    'id' => (string) $paymentDetail->id,
                     'pay_type' => $paymentDetail->pay_type,
                     'pay_bank_name' => $paymentDetail->pay_bank_name,
                     'masked_account_number' => $paymentDetail->masked_account_number,
@@ -320,7 +320,7 @@ class WalletService
             ->get()
             ->map(function ($transaction) {
                 return [
-                    'id' => $transaction->id,
+                    'id' => (string) $transaction->id,
                     'type' => $transaction->type,
                     'type_label' => $transaction->type === 'in' ? 'Credit' : 'Debit',
                     'amount' => $transaction->amount,
@@ -336,7 +336,7 @@ class WalletService
             ->get()
             ->map(function ($pd) {
                 return [
-                    'id' => $pd->id,
+                    'id' => (string) $pd->id,
                     'pay_type' => $pd->pay_type,
                     'pay_bank_name' => $pd->pay_bank_name,
                     'masked_account_number' => $pd->masked_account_number,

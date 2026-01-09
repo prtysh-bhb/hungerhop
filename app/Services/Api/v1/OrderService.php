@@ -1032,7 +1032,7 @@ class OrderService
                 $itemTotal = (float) ($menuItem->base_price ?? 0) * ($item['quantity'] ?? 1);
                 $subtotal += $itemTotal;
                 $items[] = [
-                    'id' => $item['item_id'],
+                    'id' => (string) $item['item_id'],
                     'name' => $menuItem->item_name,
                     'quantity' => $item['quantity'],
                     'price' => (float) ($menuItem->base_price ?? 0),
@@ -1318,7 +1318,7 @@ class OrderService
             ],
             'order_items' => $order->orderItems->map(function ($item) {
                 return [
-                    'id' => $item->item_id,
+                    'id' => (string) $item->item_id,
                     'name' => (string) $item->item_name,
                     'quantity' => (int) $item->quantity,
                     'unit_price' => (float) $item->unit_price,
