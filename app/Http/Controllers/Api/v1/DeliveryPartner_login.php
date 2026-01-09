@@ -744,6 +744,7 @@ class DeliveryPartner_login extends Controller
         DB::beginTransaction();
         try {
             $uploadedDocuments = [];
+            $uploadErrors = [];
 
             // Handle document upload - Process each document type
             foreach ($allowedDocuments as $documentType) {
@@ -757,7 +758,21 @@ class DeliveryPartner_login extends Controller
                         ->sortByDesc('uploaded_at')
                         ->first();
 
-                    if (in_array($latestDoc->status, ['pending', 'approved'])) {
+                    // If document is rejected, delete it and allow re-upload
+                    if ($latestDoc->status === 'rejected') {
+                        // Delete old file from storage
+                        if ($latestDoc->document_path) {
+                            \Illuminate\Support\Facades\Storage::disk('public')->delete($latestDoc->document_path);
+                        }
+                        if ($latestDoc->document_path_front) {
+                            \Illuminate\Support\Facades\Storage::disk('public')->delete($latestDoc->document_path_front);
+                        }
+                        if ($latestDoc->document_path_back) {
+                            \Illuminate\Support\Facades\Storage::disk('public')->delete($latestDoc->document_path_back);
+                        }
+                        // Delete the rejected document record
+                        $latestDoc->delete();
+                    } elseif (in_array($latestDoc->status, ['pending', 'approved'])) {
                         $uploadErrors[$documentType][] =
                             "The {$documentType} document is already {$latestDoc->status} and cannot be re-uploaded.";
                     }
