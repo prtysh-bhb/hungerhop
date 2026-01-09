@@ -59,7 +59,7 @@ class NearestRestaurantController extends Controller
                     }
 
                     return [
-                        'id' => $item->id,
+                        'id' => (string) $item->id,
                         'name' => $item->item_name,
                         'price' => (string) $item->base_price,
                         'is_available' => $item->is_available,
@@ -555,7 +555,7 @@ class NearestRestaurantController extends Controller
             ->whereNull('deleted_at')
             ->map(function ($category) {
                 return [
-                    'id' => $category->id,
+                    'id' => (string) $category->id,
                     'name' => $category->name ?? $category->category_name,
                 ];
             })
@@ -565,7 +565,7 @@ class NearestRestaurantController extends Controller
             $defaultImage = asset('images/banner/default1.jpg');
 
             return [
-                'id' => $banner->id,
+                'id' => (string) $banner->id,
                 'cover_image' => $banner->cover_image ? url('storage/'.$banner->cover_image) : $defaultImage,
                 'image_url' => $banner->image_url ? url('storage/'.$banner->image_url) : $defaultImage,
                 'title' => $banner->title,
@@ -574,7 +574,7 @@ class NearestRestaurantController extends Controller
         if ($gallery->isEmpty()) {
             $gallery = collect([
                 [
-                    'id' => 0,
+                    'id' => (string) 0,
                     'cover_image' => asset('images/banner/default1.jpg'),
                     'image_url' => asset('images/banner/default1.jpg'),
                     'title' => 'Default Banner',
@@ -585,7 +585,7 @@ class NearestRestaurantController extends Controller
         // Review data
         $reviewData = $restaurant->reviews->map(function ($review) {
             return [
-                'id' => $review->id,
+                'id' => (string) $review->id,
                 'user_name' => $review->customer && $review->customer->user
                     ? $review->customer->user->name
                     : 'Anonymous',
@@ -600,12 +600,12 @@ class NearestRestaurantController extends Controller
         foreach ($restaurant->menuCategories as $category) {
             foreach ($category->menuItems as $item) {
                 $productData[] = [
-                    'id' => $item->id,
+                    'id' => (string) $item->id,
                     'name' => $item->item_name,
                     'price' => (float) $item->base_price,
                     'offer_price' => (float) $item->base_price, // You can implement offer logic later
                     'description' => $item->description,
-                    'category_id' => $item->menu_category_id,
+                    'category_id' => (string) $item->menu_category_id,
                     'category_name' => $category->name,
                     'image' => $item->image_url ? url('storage/'.$item->image_url) : null,
                     'is_available' => $item->is_available,

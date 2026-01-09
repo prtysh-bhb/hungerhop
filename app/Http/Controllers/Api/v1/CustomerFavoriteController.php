@@ -464,7 +464,7 @@ class CustomerFavoriteController extends Controller
     private function formatFavoriteForList(CustomerFavoriteItem $favorite)
     {
         $baseData = [
-            'id' => $favorite->id,
+            'id' => (string) $favorite->id,
             'type' => $favorite->type,
             'added_at' => $favorite->added_at?->toDateTimeString(),
             'created_at' => $favorite->created_at?->toDateTimeString(),
@@ -475,9 +475,9 @@ class CustomerFavoriteController extends Controller
             $restaurant = $favorite->restaurant;
 
             return array_merge($baseData, [
-                'item_id' => $favorite->item_id,
+                'item_id' => (string) $favorite->item_id,
                 'menu_item' => $menuItem ? [
-                    'id' => $menuItem->id,
+                    'id' => (string) $menuItem->id,
                     'name' => $menuItem->item_name,
                     'description' => $menuItem->description,
                     'base_price' => $menuItem->base_price,
@@ -539,7 +539,7 @@ class CustomerFavoriteController extends Controller
     private function formatFavoriteResponse(CustomerFavoriteItem $favorite)
     {
         return [
-            'id' => $favorite->id,
+            'id' => (string) $favorite->id,
             'type' => $favorite->type,
             'item_id' => $favorite->item_id,
             'restaurant_id' => $favorite->restaurant_id,

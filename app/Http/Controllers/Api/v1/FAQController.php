@@ -66,7 +66,7 @@ class FaqController extends Controller
             'success' => true,
             'message' => 'Your question has been submitted. Our team will reply soon.',
             'data' => [
-                'id' => $faq->id,
+                'id' => (string) $faq->id,
                 'question' => $faq->question,
             ],
         ], 201);
@@ -85,7 +85,7 @@ class FaqController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'id' => $faq->id,
+                'id' => (string) $faq->id,
                 'question' => $faq->question,
                 'answer' => $faq->answer,
                 'category' => $faq->category,

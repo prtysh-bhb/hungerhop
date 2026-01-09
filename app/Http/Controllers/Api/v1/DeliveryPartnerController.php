@@ -305,15 +305,15 @@ class DeliveryPartnerController extends Controller
         if ($order && $order->items) {
             $orderItems = $order->items->map(function ($item) {
                 return [
-                    'id' => $item->id,
-                    'item_id' => $item->item_id,
+                    'id' => (string) $item->id,
+                    'item_id' => (string) $item->item_id,
                     'item_name' => $item->item_name,
                     'quantity' => $item->quantity,
                     'unit_price' => $item->unit_price,
                     'total_price' => $item->total_price,
                     'special_instructions' => $item->special_instructions,
                     'menu_item' => $item->menuItem ? [
-                        'id' => $item->menuItem->id,
+                        'id' => (string) $item->menuItem->id,
                         'name' => $item->menuItem->item_name ?? $item->menuItem->name,
                         'description' => $item->menuItem->description ?? null,
                         'image' => $item->menuItem->image_url ?? $item->menuItem->image ?? null,
