@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title', 'Coupons Management')
 @section('content')
-    <div class="content-header">
+    <div class="content-header mb-4">
         <div class="d-flex align-items-center">
 
             <div class="me-auto">
@@ -134,12 +134,7 @@
             </tbody>
         </table>
     </div>
-    @if ($coupons->hasPages())
-        <div class="d-flex">
-            {{ $coupons->appends(request()->query())->links('pagination::bootstrap-5') }}
-        </div>
-    @endif
-
+    <x-pagination-summary :paginator="$coupons" />
     </div>
 
     {{-- DELETE CONFIRMATION MODAL --}}
