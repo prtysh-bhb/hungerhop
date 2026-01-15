@@ -76,8 +76,8 @@
                                 <h2 class="my-0 fw-700 text-success">{{ $stats['approved_restaurants'] }}</h2>
                                 <p class="text-fade mb-0">Approved</p>
                                 <p class="fs-12 mb-0">
-                                    <a href="{{ route('restaurant-admin.list') }}?status=approved"
-                                        class="text-success">View Active</a>
+                                    <a href="{{ route('restaurant-admin.list') }}?status=approved" class="text-success">View
+                                        Active</a>
                                 </p>
                             </div>
                         </div>
@@ -97,8 +97,8 @@
                                 <h2 class="my-0 fw-700 text-danger">{{ $stats['rejected_restaurants'] }}</h2>
                                 <p class="text-fade mb-0">Rejected</p>
                                 <p class="fs-12 mb-0">
-                                    <a href="{{ route('restaurant-admin.list') }}?status=rejected"
-                                        class="text-danger">View Rejected</a>
+                                    <a href="{{ route('restaurant-admin.list') }}?status=rejected" class="text-danger">View
+                                        Rejected</a>
                                 </p>
                             </div>
                         </div>
@@ -135,8 +135,7 @@
                                 </a>
                             </div>
                             <div class="col-md-3 col-sm-6">
-                                <a href="{{ route('restaurant-admin.list') }}"
-                                    class="btn btn-success btn-block mb-3">
+                                <a href="{{ route('restaurant-admin.list') }}" class="btn btn-success btn-block mb-3">
                                     <i class="fa fa-cogs me-2"></i>Manage Restaurants
                                 </a>
                             </div>
@@ -285,7 +284,8 @@
                             </div>
                         @else
                             <div class="text-center py-4">
-                                <img src="{{ asset('images/svg-icon/color-svg/custom-14.svg') }}" class="w-120" alt="No Data">
+                                <img src="{{ asset('images/svg-icon/color-svg/custom-14.svg') }}" class="w-120"
+                                    alt="No Data">
                                 <h5 class="mt-3">No Recent Registrations</h5>
                                 <p class="text-fade">Start by adding your first restaurant</p>
                                 <a href="{{ route('restaurant-admin.registration.create') }}" class="btn btn-primary">
@@ -298,11 +298,67 @@
             </div>
         </div>
     </section>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1" role="dialog" aria-labelledby="successModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-body text-center py-5">
+                    <div class="mb-4">
+                        <div class="icon-circle-lg bg-success text-white mx-auto mb-3"
+                            style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 40px;">
+                            <i class="fa fa-check"></i>
+                        </div>
+                    </div>
+                    <h3 class="mb-2 fw-bold" id="successTitle">Restaurant Created Successfully!</h3>
+                    <p class="text-muted mb-4" id="successMessage">
+                        Your restaurant <span id="restaurantName" class="fw-bold"></span> has been successfully registered
+                        and is pending approval.
+                    </p>
+                    <div class="alert alert-info mb-4" style="text-align: left;">
+                        <i class="fa fa-info-circle me-2"></i>
+                        <strong>Next Steps:</strong>
+                        <ul class="mb-0 mt-2" style="padding-left: 20px;">
+                            <li>Your restaurant is now pending approval</li>
+                            <li>Admin will review your restaurant details</li>
+                            <li>You will receive notification once approved</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="{{ route('restaurant-admin.list') }}" class="btn btn-primary">
+                        <i class="fa fa-list me-2"></i>View All Restaurants
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
     <script>
         $(document).ready(function() {
+            // Check if we should show success modal (from query parameter)
+            const urlParams = new URLSearchParams(window.location.search);
+            const showSuccessModal = urlParams.get('show_success_modal');
+            const restaurantName = urlParams.get('restaurant_name');
+
+            if (showSuccessModal === 'true' || showSuccessModal === '1') {
+                // Update modal content with restaurant name if provided
+                if (restaurantName) {
+                    document.getElementById('restaurantName').textContent = restaurantName;
+                }
+
+                // Show the modal
+                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                successModal.show();
+
+                // Clean up URL - remove query parameters to avoid showing modal again on refresh
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
             // Add any dashboard-specific JavaScript here
 
             // Auto-refresh stats every 5 minutes

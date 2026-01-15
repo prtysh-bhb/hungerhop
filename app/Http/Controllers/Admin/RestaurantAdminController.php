@@ -65,8 +65,18 @@ class RestaurantAdminController extends Controller
                 ->get(['id', 'tenant_name']);
         }
 
-        $locationAdmins = User::where('role', 'location_admin')
-            ->get(['id', 'first_name', 'last_name', 'email']);
+        // Get location admins - filtered by tenant for tenant_admin users
+        $locationAdmins = collect();
+        if ($user->role === 'tenant_admin') {
+            // For tenant_admin, show only location_admins belonging to their tenant
+            $locationAdmins = User::where('role', 'location_admin')
+                ->where('tenant_id', $user->tenant_id)
+                ->get(['id', 'first_name', 'last_name', 'email', 'tenant_id']);
+        } else {
+            // For super_admin, show all location_admins
+            $locationAdmins = User::where('role', 'location_admin')
+                ->get(['id', 'first_name', 'last_name', 'email', 'tenant_id']);
+        }
 
         return view('restaurant_admin.registration.create', compact('states', 'tenants', 'locationAdmins'));
     }
@@ -84,7 +94,7 @@ class RestaurantAdminController extends Controller
         ]);
 
         // Define all validation rules upfront with comprehensive validation
-
+        $user = auth()->user();
         $rules = [
             // Basic Information
             'restaurant_name' => [
@@ -103,7 +113,8 @@ class RestaurantAdminController extends Controller
             ],
 
             'location_admin_name' => [
-                'required', 'string', 'min:3', 'max:50',
+                $user->role === 'tenant_admin' ? 'nullable' : 'required',
+                'string', 'min:3', 'max:50',
                 'regex:/^[A-Za-z\s]+$/',
             ],
 
@@ -306,10 +317,46 @@ class RestaurantAdminController extends Controller
                 $messages['location_admin_id.exists'] = 'Selected location admin is invalid.';
             }
         } else {
-            // For tenant_admin, require location_admin_id
-            $rules['location_admin_id'] = 'required|integer|exists:users,id';
-            $messages['location_admin_id.required'] = 'Please select a location admin.';
-            $messages['location_admin_id.exists'] = 'Selected location admin is invalid.';
+            // For tenant_admin, check if they're selecting or creating location admin
+            $hasLocationAdminId = !empty($request->location_admin_id);
+            $hasLocationAdminName = !empty($request->location_admin_name);
+            
+            if ($hasLocationAdminId && !$hasLocationAdminName) {
+                // SELECTING existing location admin
+                $rules['location_admin_id'] = 'required|integer|exists:users,id';
+                $messages['location_admin_id.required'] = 'Please select a location admin.';
+                $messages['location_admin_id.exists'] = 'Selected location admin is invalid.';
+                
+                // Make create fields optional
+                $rules['location_admin_name'] = 'nullable|string|min:3|max:50|regex:/^[A-Za-z\s]+$/';
+                $rules['location_admin_email'] = 'nullable|email|min:7|max:100';
+                $rules['location_admin_phone'] = 'nullable|string|min:10|max:15';
+            } elseif ($hasLocationAdminName && !$hasLocationAdminId) {
+                // CREATING new location admin
+                $rules['location_admin_id'] = 'nullable|integer|exists:users,id';
+                
+                // Make create fields required
+                $rules['location_admin_name'] = 'required|string|min:3|max:50|regex:/^[A-Za-z\s]+$/';
+                $rules['location_admin_email'] = 'required|email|min:7|max:100|unique:users,email';
+                $rules['location_admin_phone'] = [
+                    'required', 'string', 'min:10', 'max:15',
+                    'regex:/^[1-9][0-9]{9,14}$/',
+                    'unique:users,phone',
+                ];
+                
+                $messages['location_admin_name.required'] = 'Location admin name is required when creating new.';
+                $messages['location_admin_email.required'] = 'Location admin email is required when creating new.';
+                $messages['location_admin_email.unique'] = 'This location admin email is already registered.';
+                $messages['location_admin_phone.required'] = 'Location admin phone is required when creating new.';
+                $messages['location_admin_phone.unique'] = 'This location admin phone number is already registered.';
+                $messages['location_admin_phone.regex'] = 'Location admin phone must be valid (10-15 digits, cannot start with 0).';
+            } else {
+                // SKIP location admin (neither selecting nor creating)
+                $rules['location_admin_id'] = 'nullable|integer|exists:users,id';
+                $rules['location_admin_name'] = 'nullable|string|min:3|max:50|regex:/^[A-Za-z\s]+$/';
+                $rules['location_admin_email'] = 'nullable|email|min:7|max:100';
+                $rules['location_admin_phone'] = 'nullable|string|min:10|max:15';
+            }
         }
 
         if ('location_admin_phone' == 'tenant_phone') {
@@ -380,7 +427,7 @@ class RestaurantAdminController extends Controller
                 if (auth()->user()->role === 'super_admin') {
                     if ($request->filled('tenant_id') && $request->tenant_selection === 'existing') {
                         $tenantId = (int) $request->tenant_id;
-                        $locationAdminId = $data['location_admin_id'];
+                        $locationAdminId = !empty($data['location_admin_id']) ? $data['location_admin_id'] : null;
                     } else {
                         // Create new tenant logic...
                         $tenantInput = $request->validate([
@@ -466,8 +513,48 @@ class RestaurantAdminController extends Controller
                         ]);
                     }
                 } else {
+                    // For tenant_admin user
                     $tenantId = auth()->user()->tenant_id;
-                    $locationAdminId = $data['location_admin_id'];
+                    
+                    // Check if location_admin_id is provided (selecting existing)
+                    if (!empty($data['location_admin_id'])) {
+                        $locationAdminId = $data['location_admin_id'];
+                    }
+                    // Check if location_admin_name is provided (creating new)
+                    elseif (!empty($data['location_admin_name'])) {
+                        // Create new location admin user (check if email or phone exists first)
+                        $existingLocationAdminEmail = User::where('email', $data['location_admin_email'])->first();
+                        $existingLocationAdminPhone = User::where('phone', $data['location_admin_phone'])->first();
+
+                        if ($existingLocationAdminEmail) {
+                            throw new \Exception('Location admin email already exists: '.$data['location_admin_email']);
+                        }
+
+                        if ($existingLocationAdminPhone) {
+                            throw new \Exception('Location admin phone number already exists: '.$data['location_admin_phone']);
+                        }
+
+                        $locationAdmin = User::create([
+                            'tenant_id' => $tenantId,
+                            'restaurant_id' => null,
+                            'first_name' => $data['location_admin_name'],
+                            'last_name' => '',
+                            'email' => $data['location_admin_email'],
+                            'phone' => $data['location_admin_phone'],
+                            'role' => 'location_admin',
+                            'status' => 'active',
+                            'password' => bcrypt($data['location_admin_phone']), // Hash the password
+                            'email_verified_at' => now(),
+                        ]);
+                        $locationAdminId = $locationAdmin->id;
+                        
+                        Log::info('New location admin created for tenant', [
+                            'tenant_id' => $tenantId,
+                            'location_admin_id' => $locationAdminId,
+                            'location_admin_email' => $data['location_admin_email'],
+                        ]);
+                    }
+                    // Otherwise location admin is skipped (both fields empty)
                 }
 
                 // Generate slug from restaurant name
@@ -522,8 +609,8 @@ class RestaurantAdminController extends Controller
                 Tenant::where('id', $tenantId)->increment('total_restaurants');
 
                 return redirect()
-                    ->route('restaurant-admin.list')
-                    ->with('success', 'Restaurant created successfully with business hours.');
+                    ->route('restaurant-admin.list', ['show_success_modal' => true, 'restaurant_name' => $restaurant->restaurant_name])
+                    ->with('success_popup', true);
             });
 
         } catch (\Illuminate\Validation\ValidationException $e) {

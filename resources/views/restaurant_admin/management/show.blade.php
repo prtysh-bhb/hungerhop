@@ -250,7 +250,8 @@
                             </div>
                             <div class="col-12">
                                 <div class="detail-item">
-                                    <label class="text-muted small">Commission Rate: {{ $restaurant->restaurant_commission_percentage }}%</label>
+                                    <label class="text-muted small">Commission Rate:
+                                        {{ $restaurant->restaurant_commission_percentage }}%</label>
                                     <div class="d-flex align-items-center">
                                         <div class="progress flex-grow-1 me-2" style="height: 8px;">
                                             <div class="progress-bar bg-success"
@@ -457,75 +458,227 @@
             </div>
         @endif
     </div>
+
+    <!-- Confirmation Modal for Status -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1" role="dialog"
+        aria-labelledby="confirmationModalLabel">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-body text-center py-5">
+                    <div class="mb-4">
+                        <div id="confirmIconWrapper" class="icon-circle-lg text-white mx-auto mb-3"
+                            style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 40px;">
+                            <i id="confirmIcon" class="fa fa-question-circle"></i>
+                        </div>
+                    </div>
+                    <h3 class="mb-2 fw-bold" id="confirmTitle">Confirm Action</h3>
+                    <p class="text-muted mb-4" id="confirmMessage">Are you sure?</p>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fa fa-times me-2"></i>Cancel
+                    </button>
+                    <button type="button" class="btn" id="confirmActionBtn" onclick="executeConfirmedAction()">
+                        <i class="fa fa-check me-2"></i>Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rejection Reason Modal -->
+    <div class="modal fade" id="rejectionModal" tabindex="-1" role="dialog" aria-labelledby="rejectionModalLabel">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-bottom bg-danger text-white">
+                    <h5 class="modal-title" id="rejectionModalLabel">
+                        <i class="fa fa-times-circle me-2"></i>Reject Restaurant
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <p class="text-muted mb-3">Please provide a detailed reason for rejecting this restaurant:</p>
+                    <textarea class="form-control" id="rejectionReason" rows="5"
+                        placeholder="Explain why this restaurant is being rejected..." style="border-color: #dc3545;"></textarea>
+                    <small class="text-danger d-block mt-2">This reason will be sent to the restaurant owner.</small>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fa fa-times me-2"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="submitRejection()">
+                        <i class="fa fa-check me-2"></i>Confirm Rejection
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" role="dialog"
+        aria-labelledby="deleteConfirmModalLabel">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-body text-center py-5">
+                    <div class="mb-4">
+                        <div class="icon-circle-lg bg-danger text-white mx-auto mb-3"
+                            style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 40px;">
+                            <i class="fa fa-trash"></i>
+                        </div>
+                    </div>
+                    <h3 class="mb-2 fw-bold text-danger">Delete Restaurant?</h3>
+                    <p class="text-muted mb-4">
+                        Are you sure you want to delete <strong>{{ $restaurant->restaurant_name }}</strong>? This action
+                        cannot be undone and will delete all associated data including orders, menu items, and documents.
+                    </p>
+                    <div class="alert alert-danger">
+                        <i class="fa fa-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> This will permanently remove all restaurant data from the system.
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fa fa-times me-2"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="executeDelete()">
+                        <i class="fa fa-trash me-2"></i>Yes, Delete Restaurant
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
     <script>
+        let pendingAction = null;
+        let pendingRejectionReason = null;
+
         function updateStatus(newStatus) {
-            let confirmMessage = `Are you sure you want to ${newStatus} this restaurant?`;
-            let rejectionReason = null;
-
             if (newStatus === 'rejected') {
-                rejectionReason = prompt('Please provide a reason for rejection:');
-                if (rejectionReason === null) {
-                    return; // User cancelled
-                }
-                if (rejectionReason.trim() === '') {
-                    alert('Rejection reason is required.');
-                    return;
-                }
-            }
-
-            if (confirm(confirmMessage)) {
-                let data = {
-                    status: newStatus,
-                    _token: '{{ csrf_token() }}'
-                };
-
-                if (rejectionReason) {
-                    data.rejection_reason = rejectionReason;
-                }
-
-                $.post('{{ route('restaurant-admin.management.update-status', $restaurant->id) }}', data)
-                    .done(function(response) {
-                        location.reload();
-                    })
-                    .fail(function(xhr) {
-                        let errorMessage = 'Unknown error';
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        } else if (xhr.responseText) {
-                            try {
-                                let parsed = JSON.parse(xhr.responseText);
-                                errorMessage = parsed.message || parsed.error || errorMessage;
-                            } catch (e) {
-                                errorMessage = xhr.responseText;
-                            }
-                        }
-                        alert('Failed to update status: ' + errorMessage);
-                    });
+                // Show rejection reason modal
+                const rejectionModal = new bootstrap.Modal(document.getElementById('rejectionModal'));
+                rejectionModal.show();
+                pendingAction = 'reject';
+            } else if (newStatus === 'approved') {
+                // Show approval confirmation modal
+                showConfirmationModal('Approve Restaurant?',
+                    'Are you sure you want to approve this restaurant? It will become active and visible to customers.',
+                    'fa-check-circle', 'btn-success', 'Yes, Approve', 'approved');
+            } else if (newStatus === 'suspended') {
+                // Show suspension confirmation modal
+                showConfirmationModal('Suspend Restaurant?',
+                    'Are you sure you want to suspend this restaurant? It will no longer accept orders from customers.',
+                    'fa-pause-circle', 'btn-warning', 'Yes, Suspend', 'suspended');
             }
         }
 
-        function deleteRestaurant() {
-            if (confirm(
-                    'Are you sure you want to delete this restaurant? This action cannot be undone and will delete all associated data.'
-                )) {
-                $.ajax({
-                    url: '{{ route('restaurant-admin.management.destroy', $restaurant->id) }}',
-                    method: 'DELETE',
-                    data: {
-                        _token: '{{ csrf_token() }}'
-                    },
-                    success: function(response) {
-                        window.location.href = '{{ route('restaurant-admin.list') }}';
-                    },
-                    error: function(xhr) {
-                        alert('Failed to delete restaurant: ' + (xhr.responseJSON ? xhr.responseJSON.message :
-                            'Unknown error'));
-                    }
-                });
+        function showConfirmationModal(title, message, icon, btnColor, btnText, action) {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            document.getElementById('confirmIcon').className = 'fa ' + icon;
+
+            const iconWrapper = document.getElementById('confirmIconWrapper');
+            iconWrapper.className = 'icon-circle-lg text-white mx-auto mb-3';
+            iconWrapper.style.cssText =
+                'width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 40px;';
+
+            if (btnColor === 'btn-success') {
+                iconWrapper.style.backgroundColor = '#10b981';
+            } else if (btnColor === 'btn-warning') {
+                iconWrapper.style.backgroundColor = '#f59e0b';
+            } else if (btnColor === 'btn-danger') {
+                iconWrapper.style.backgroundColor = '#ef4444';
             }
+
+            const confirmActionBtn = document.getElementById('confirmActionBtn');
+            confirmActionBtn.className = 'btn ' + btnColor;
+            confirmActionBtn.innerHTML = '<i class="fa fa-check me-2"></i>' + btnText;
+
+            pendingAction = action;
+            const confirmModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+            confirmModal.show();
+        }
+
+        function executeConfirmedAction() {
+            if (pendingAction === 'approved') {
+                performStatusUpdate('approved', null);
+                bootstrap.Modal.getInstance(document.getElementById('confirmationModal')).hide();
+            } else if (pendingAction === 'suspended') {
+                performStatusUpdate('suspended', null);
+                bootstrap.Modal.getInstance(document.getElementById('confirmationModal')).hide();
+            }
+        }
+
+        function submitRejection() {
+            let rejectionReason = document.getElementById('rejectionReason').value.trim();
+
+            if (!rejectionReason) {
+                alert('Please provide a rejection reason.');
+                return;
+            }
+
+            if (rejectionReason.length < 10) {
+                alert('Please provide at least 10 characters for the rejection reason.');
+                return;
+            }
+
+            performStatusUpdate('rejected', rejectionReason);
+            bootstrap.Modal.getInstance(document.getElementById('rejectionModal')).hide();
+        }
+
+        function performStatusUpdate(status, rejectionReason) {
+            let data = {
+                status: status,
+                _token: '{{ csrf_token() }}'
+            };
+
+            if (rejectionReason) {
+                data.rejection_reason = rejectionReason;
+            }
+
+            $.post('{{ route('restaurant-admin.management.update-status', $restaurant->id) }}', data)
+                .done(function(response) {
+                    location.reload();
+                })
+                .fail(function(xhr) {
+                    let errorMessage = 'Unknown error';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseText) {
+                        try {
+                            let parsed = JSON.parse(xhr.responseText);
+                            errorMessage = parsed.message || parsed.error || errorMessage;
+                        } catch (e) {
+                            errorMessage = xhr.responseText;
+                        }
+                    }
+                    alert('Failed to update status: ' + errorMessage);
+                });
+        }
+
+        function deleteRestaurant() {
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            deleteModal.show();
+        }
+
+        function executeDelete() {
+            $.ajax({
+                url: '{{ route('restaurant-admin.management.destroy', $restaurant->id) }}',
+                method: 'DELETE',
+                data: {
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    window.location.href = '{{ route('restaurant-admin.list') }}';
+                },
+                error: function(xhr) {
+                    bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+                    alert('Failed to delete restaurant: ' + (xhr.responseJSON ? xhr.responseJSON.message :
+                        'Unknown error'));
+                }
+            });
         }
     </script>
 @endpush

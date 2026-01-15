@@ -67,6 +67,11 @@ class MenuItemService
     {
         $user = Auth::user();
 
+        \Log::info('=== MenuItemService::create START ===');
+        \Log::info('User role: '.$user->role);
+        \Log::info('User restaurant_id: '.($user->restaurant_id ?? 'NULL'));
+        \Log::info('Data received:', $data);
+
         // Handle image upload
         if (isset($data['image']) && $data['image']) {
             $data['image_url'] = $this->handleImageUpload($data['image']);
@@ -75,9 +80,15 @@ class MenuItemService
 
         // Set tenant and restaurant information
         $data['tenant_id'] = $user->tenant_id;
-        $data['restaurant_id'] = $user->restaurant_id ?? null;
 
-        // Ensure menu_category_id is set and mapped to the correct field in DB
+        if ($user->role === 'tenant_admin') {
+            if (! isset($data['restaurant_id'])) {
+                $data['restaurant_id'] = null;
+            }
+        } else {
+            $data['restaurant_id'] = $user->restaurant_id ?? null;
+        }
+
         if (isset($data['menu_category_id'])) {
             $data['menu_category_id'] = (int) $data['menu_category_id'];
         }
@@ -100,8 +111,8 @@ class MenuItemService
         $data['total_sales'] = 0;
         $data['total_reviews'] = 0;
         $data['average_rating'] = 0.00;
-
-        return MenuItem::create($data);
+        $menuItem = MenuItem::create($data);
+        return $menuItem;
     }
 
     /**

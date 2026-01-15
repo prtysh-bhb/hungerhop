@@ -83,30 +83,115 @@
                                             <div class="invalid-feedback" id="item_name_error"></div>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="fw-700 fs-16 form-label">Category <span
-                                                    class="text-danger">*</span></label>
-                                            <select name="menu_category_id" id="menu_category_id"
-                                                class="form-select @error('menu_category_id') is-invalid @enderror"
-                                                required>
-                                                <option value="">Select Category</option>
-                                                @if (isset($categories))
-                                                    @foreach ($categories as $category)
-                                                        <option value="{{ $category->id }}"
-                                                            {{ old('menu_category_id', $menuItem->menu_category_id ?? '') == $category->id ? 'selected' : '' }}>
-                                                            {{ $category->name }}
-                                                        </option>
-                                                    @endforeach
+                                    @if ($user->role === 'tenant_admin')
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label class="fw-700 fs-16 form-label">Restaurant <span
+                                                        class="text-danger">*</span></label>
+                                                @if ($restaurants->count() > 0)
+                                                    <select name="restaurant_id" id="restaurant_id"
+                                                        class="form-select @error('restaurant_id') is-invalid @enderror"
+                                                        required>
+                                                        <option value="">Select Restaurant</option>
+                                                        @foreach ($restaurants as $restaurant)
+                                                            <option value="{{ $restaurant->id }}"
+                                                                {{ old('restaurant_id', $menuItem->restaurant_id ?? '') == $restaurant->id ? 'selected' : '' }}>
+                                                                {{ $restaurant->restaurant_name }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    @error('restaurant_id')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                    <div class="invalid-feedback" id="restaurant_id_error"></div>
+                                                @else
+                                                    <div class="alert alert-warning mb-0">
+                                                        <i class="fa fa-exclamation-triangle me-2"></i>
+                                                        No restaurants found. Please create a restaurant first before adding menu items.
+                                                    </div>
                                                 @endif
-                                            </select>
-                                            @error('menu_category_id')
-                                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                                            @enderror
-                                            <div class="invalid-feedback" id="menu_category_id_error"></div>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label class="fw-700 fs-16 form-label">Category <span
+                                                        class="text-danger">*</span></label>
+                                                <select name="menu_category_id" id="menu_category_id"
+                                                    class="form-select @error('menu_category_id') is-invalid @enderror"
+                                                    required>
+                                                    <option value="">Select Category</option>
+                                                    @if (isset($categories))
+                                                        @foreach ($categories as $category)
+                                                            <option value="{{ $category->id }}"
+                                                                {{ old('menu_category_id', $menuItem->menu_category_id ?? '') == $category->id ? 'selected' : '' }}>
+                                                                {{ $category->name }}
+                                                            </option>
+                                                        @endforeach
+                                                    @endif
+                                                </select>
+                                                @error('menu_category_id')
+                                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                @enderror
+                                                <div class="invalid-feedback" id="menu_category_id_error"></div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+
+                                @if ($user->role !== 'tenant_admin')
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label class="fw-700 fs-16 form-label">Category <span
+                                                        class="text-danger">*</span></label>
+                                                <select name="menu_category_id" id="menu_category_id"
+                                                    class="form-select @error('menu_category_id') is-invalid @enderror"
+                                                    required>
+                                                    <option value="">Select Category</option>
+                                                    @if (isset($categories))
+                                                        @foreach ($categories as $category)
+                                                            <option value="{{ $category->id }}"
+                                                                {{ old('menu_category_id', $menuItem->menu_category_id ?? '') == $category->id ? 'selected' : '' }}>
+                                                                {{ $category->name }}
+                                                            </option>
+                                                        @endforeach
+                                                    @endif
+                                                </select>
+                                                @error('menu_category_id')
+                                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                @enderror
+                                                <div class="invalid-feedback" id="menu_category_id_error"></div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                @else
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label class="fw-700 fs-16 form-label">Category <span
+                                                        class="text-danger">*</span></label>
+                                                <select name="menu_category_id" id="menu_category_id"
+                                                    class="form-select @error('menu_category_id') is-invalid @enderror"
+                                                    required>
+                                                    <option value="">Select Category</option>
+                                                    @if (isset($categories))
+                                                        @foreach ($categories as $category)
+                                                            <option value="{{ $category->id }}"
+                                                                {{ old('menu_category_id', $menuItem->menu_category_id ?? '') == $category->id ? 'selected' : '' }}>
+                                                                {{ $category->name }}
+                                                            </option>
+                                                        @endforeach
+                                                    @endif
+                                                </select>
+                                                @error('menu_category_id')
+                                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                @enderror
+                                                <div class="invalid-feedback" id="menu_category_id_error"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
 
                                 <div class="row">
                                     <div class="col-md-3">
@@ -473,6 +558,22 @@
                 });
             }
 
+            // Restaurant selection validation (for tenant_admin only)
+            const restaurantSelect = document.getElementById('restaurant_id');
+            if (restaurantSelect) {
+                restaurantSelect.addEventListener('change', function() {
+                    const errorDiv = document.getElementById('restaurant_id_error');
+                    if (!this.value) {
+                        this.classList.add('is-invalid');
+                        errorDiv.textContent = 'Please select a restaurant.';
+                        errorDiv.style.display = 'block';
+                    } else {
+                        this.classList.remove('is-invalid');
+                        errorDiv.style.display = 'none';
+                    }
+                });
+            }
+
             // Category validation
             const categorySelect = document.getElementById('menu_category_id');
             if (categorySelect) {
@@ -580,10 +681,20 @@
                         {
                             id: 'base_price',
                             name: 'Base price'
+                        },
+                        {
+                            id: 'restaurant_id',
+                            name: 'Restaurant',
+                            conditional: @json($user->role === 'tenant_admin')
                         }
                     ];
 
                     requiredFields.forEach(field => {
+                        // Skip if this is a conditional field and the condition is false
+                        if (field.conditional === false) {
+                            return;
+                        }
+
                         const element = document.getElementById(field.id);
                         if (element) {
                             let value = element.value;

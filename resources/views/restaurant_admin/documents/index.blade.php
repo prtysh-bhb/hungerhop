@@ -174,7 +174,6 @@
                                                     @if ($document->expires_at->isPast())
                                                         <br><span class="badge badge-danger">Expired</span>
                                                     @elseif($document->expires_at->diffInDays() <= 30)
-                                                        <br><span class="badge badge-warning">Expiring Soon</span>
                                                     @endif
                                                 @else
                                                     <span class="text-muted">No Expiry</span>

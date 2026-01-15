@@ -7,6 +7,7 @@ use App\Http\Requests\Menu\StoreMenuItemRequest;
 use App\Http\Requests\Menu\UpdateMenuItemRequest;
 use App\Models\MenuCategory;
 use App\Models\MenuItem;
+use App\Models\Restaurant;
 use App\Services\MenuItemService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -56,7 +57,16 @@ class MenuItemController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        return view('pages.restaurant_staff.menu.create', compact('categories'));
+        // Get restaurants for tenant_admin users
+        $restaurants = [];
+        if ($user->role === 'tenant_admin') {
+            $restaurants = Restaurant::where('tenant_id', $user->tenant_id)
+                ->where('status', 'approved')
+                ->orderBy('restaurant_name')
+                ->get();
+        }
+
+        return view('pages.restaurant_staff.menu.create', compact('categories', 'restaurants', 'user'));
     }
 
     /**

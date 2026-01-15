@@ -280,7 +280,7 @@ class TenantController extends Controller
             abort(403, 'Unauthorized: You can only access your own tenant.');
         }
 
-        $tenant->load(['restaurants']);
+        $tenant->load(['restaurants.cityRelation', 'restaurants.stateRelation']);
 
         // Get tenant statistics
         $stats = [

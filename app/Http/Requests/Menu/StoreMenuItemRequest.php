@@ -20,7 +20,8 @@ class StoreMenuItemRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $user = Auth::user();
+        $rules = [
             // Basic required fields - Name max 50 chars, allows letters, numbers, spaces and special chars
             'item_name' => ['required', 'string', 'max:50', 'regex:/^[a-zA-Z0-9\s&\'.\/\-]+$/'],
             'base_price' => 'required|numeric|min:1|max:99999.99',
@@ -39,6 +40,13 @@ class StoreMenuItemRequest extends FormRequest
             'is_popular' => 'nullable|boolean',
             'sort_order' => 'nullable|integer|min:0|max:9999',
         ];
+
+        // For tenant_admin, restaurant_id is required
+        if ($user && $user->role === 'tenant_admin') {
+            $rules['restaurant_id'] = 'required|exists:restaurants,id';
+        }
+
+        return $rules;
     }
 
     /**
@@ -56,6 +64,8 @@ class StoreMenuItemRequest extends FormRequest
             'base_price.max' => 'Base price cannot exceed 99,999.99.',
             'menu_category_id.required' => 'Category selection is required.',
             'menu_category_id.exists' => 'Selected category does not exist.',
+            'restaurant_id.required' => 'Restaurant selection is required.',
+            'restaurant_id.exists' => 'Selected restaurant does not exist.',
             'description.max' => 'Description cannot exceed 255 characters.',
             'image.image' => 'The uploaded file must be an image.',
             'image.mimes' => 'Image must be in JPEG, PNG, JPG, GIF, or WebP format.',
